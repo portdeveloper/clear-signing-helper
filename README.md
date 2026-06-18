@@ -4,15 +4,15 @@ An agent skill that makes any smart contract's transactions and signed messages 
 
 ## Use it
 
-Easiest, with any agent: point your coding agent (Claude Code, Cursor, and others) at this repo and tell it to add clear signing to your contract. For example:
+Paste this into your coding agent (Claude Code, Cursor, and others):
 
-> read https://github.com/portdeveloper/clear-signing-helper and add clear signing to my contract at 0xYourContract on <chain>
-
-Or install it as a standing skill via the skills CLI:
-
+```text
+read https://github.com/portdeveloper/clear-signing-helper and use it to add clear signing to my contract at <address> on <chain>
 ```
-npx skills add portdeveloper/clear-signing-helper
-```
+
+It checks the registry, drafts the descriptor, verifies the address on-chain, and preps the PR for you to review.
+
+Prefer it as a standing skill? Install with `npx skills add portdeveloper/clear-signing-helper`.
 
 ## What it does
 
