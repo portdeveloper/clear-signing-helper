@@ -9,6 +9,8 @@ Turn a smart contract into a reviewed, validated ERC-7730 descriptor plus a read
 
 ERC-7730 is chain-agnostic. This works for any EVM chain and any contract, not just one project.
 
+The authoritative spec and build guide is the Ethereum Foundation's https://clearsigning.org/build/ and the ERC-7730 EIP. Defer to them for schema questions; this skill is the agent-runnable workflow on top of that standard.
+
 ## Inputs to collect first
 
 Ask for whatever is missing before starting:

@@ -7,7 +7,7 @@ An agent skill that makes any smart contract's transactions and signed messages 
 Paste this into your coding agent (Claude Code, Cursor, and others):
 
 ```text
-read https://github.com/portdeveloper/clear-signing-helper and use it to add clear signing to my contract at <address> on <chain>
+read https://github.com/portdeveloper/clear-signing-helper and use it to make my contract clear-signable: <address> on <chain>
 ```
 
 It checks the registry, drafts the descriptor, verifies the address on-chain, and preps the PR for you to review.
@@ -32,6 +32,7 @@ The skill is a plain playbook plus two bash scripts (`verify-address.sh`, `find-
 
 ## Links
 
-- Clear signing guide: https://docs.monad.xyz/guides/clear-signing
+- Official build guide (Ethereum Foundation): https://clearsigning.org/build/
+- Clear signing guide (Monad): https://docs.monad.xyz/guides/clear-signing
 - Registry: https://github.com/ethereum/clear-signing-erc7730-registry
 - ERC-7730 spec: https://eips.ethereum.org/EIPS/eip-7730
