@@ -2,13 +2,17 @@
 
 An agent skill that makes any smart contract's transactions and signed messages human-readable in wallets. It creates or extends an [ERC-7730](https://eips.ethereum.org/EIPS/eip-7730) clear-signing descriptor and prepares a PR to the [clear signing registry](https://github.com/ethereum/clear-signing-erc7730-registry).
 
-## Install
+## Use it
+
+Easiest, with any agent: point your coding agent (Claude Code, Cursor, and others) at this repo and tell it to add clear signing to your contract. For example:
+
+> read https://github.com/portdeveloper/clear-signing-helper and add clear signing to my contract at 0xYourContract on <chain>
+
+Or install it as a standing skill via the skills CLI:
 
 ```
 npx skills add portdeveloper/clear-signing-helper
 ```
-
-Works with Claude Code, Cursor, and other agents that read the skills format.
 
 ## What it does
 
