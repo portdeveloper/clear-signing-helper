@@ -32,17 +32,29 @@ Most well-known protocols already have a descriptor and are only missing a chain
 - First get the candidate address from the protocol's own deployment source: their docs, an addresses file in their GitHub, or their API. Do not assume a same-address-on-every-chain vanity address is deployed on your chain; it often is not.
 - `scripts/verify-address.sh <chainId> <address> <rpcUrl> [eip712Name] [eip712Version]`.
 - It confirms there is bytecode at the address, then matches the live `DOMAIN_SEPARATOR()` against the EIP-712 domain shapes in use (2-field with no name like Morpho, 3-field with a name like Permit2, 4-field with name and version like most tokens) and reports which matched. The 2-field check runs even with no name, so pass the name and version when you have them. A match is proof the address is the contract you think it is.
-- If the contract has no domain getter, call an identifying view function instead and confirm it responds.
+- Many contracts (routers, factories) have no `DOMAIN_SEPARATOR()`. Then confirm identity by calling a known view function from the ABI and checking it returns a sane value: a router's `factory()` or `WETH9()`, or an `owner()`. Bytecode present plus a sensible view response is enough.
 
 ### 3. Generate (only when authoring from scratch)
-`uvx erc7730 generate --chain-id <id> --address <addr> --abi ./abi.json --owner "<Owner>"`
-Get the ABI from the verified contract (Etherscan V2 multichain API with `ETHERSCAN_API_KEY`, addressed by chain id) or the project source.
+First get the ABI. From Etherscan's V2 multichain API, addressed by chain id (works for any supported chain, needs `ETHERSCAN_API_KEY`):
+```
+curl -s "https://api.etherscan.io/v2/api?chainid=<id>&module=contract&action=getsourcecode&address=<addr>&apikey=$ETHERSCAN_API_KEY" | jq -r '.result[0].ABI' > abi.json
+```
+Confirm it is verified (`status:1`); if `getsourcecode` shows a proxy, fetch the implementation's ABI; if it is unverified, get the ABI from the project's source.
+
+Then generate, minding two traps:
+```
+COLUMNS=10000 uvx erc7730 generate --chain-id <id> --address <addr> --abi ./abi.json --owner "<Owner>" > calldata-<Name>.json
+```
+- `COLUMNS=10000` is required. `generate` pretty-prints and wraps long lines, which corrupts the JSON it writes; a wide terminal prevents it.
+- Name the file with the `calldata-` (or `eip712-`) prefix from the start, or `lint` will refuse it.
+- `--owner` may not fill `metadata.owner`. Set it yourself, with the real protocol name. It also picks the registry folder `registry/<owner>/`, so identify the actual protocol rather than guessing from the contract style.
 
 ### 4. Write human-readable intents and labels (the part that needs judgment)
 This is what makes a descriptor good. For each function or signed message:
 - `intent`: the action in plain language, like "Approve USDC", "Supply collateral", "Swap exact tokens". Keep it 30 characters or fewer; Ledger devices truncate longer text.
 - Label every field a user should see: which parameter is the token, the amount, the spender, the recipient, the deadline.
-- Pick the right format: `tokenAmount` for amounts (set `tokenPath` when the token address is another field in the same call), `addressName` for addresses (with `params.types`), `amount` for native value, a percentage for rates, `raw` only as a last resort.
+- Pick the right format: `tokenAmount` for amounts (set `tokenPath` when the token address is another field in the same call), `addressName` for addresses (it needs `params`, e.g. `{ "types": ["token"] }`; a bare `addressName` fails lint), `amount` for native value, a percentage for rates, `raw` only as a last resort.
+- Every ABI field must be either shown or explicitly excluded. If lint reports "Missing Display field" on a function, add the fields you are not showing to an `excluded` list on that function. This is normal for opaque params (callback `data`, fee tiers, `sqrtPriceLimit`).
 - Mark the fields that matter `"visible": "always"`.
 Base every label on real contract semantics. Read the ABI parameter names and any NatSpec. If a parameter's meaning is unclear, look at the source or ask. Do not guess.
 
@@ -52,7 +64,7 @@ Base every label on real contract semantics. Read the ABI parameter names and an
 - Nested or arbitrary calldata cannot be statically decoded: multicall, `batch`, router `execute`, connector `call`/`batch`, permit-with-`data`. Cover the functions that decode cleanly and state plainly which you left out. Never ship a descriptor that renders a half-empty screen and call it done.
 
 ### 6. Validate
-`uvx erc7730 lint <file>`. Fix real issues. The no-API-key ABI warning, and warnings inherited from an existing upstream descriptor, are acceptable. Re-check that every intent is 30 characters or fewer.
+`uvx erc7730 lint <file>` (the file needs the `calldata-`/`eip712-` prefix or lint refuses it). Tell the warnings apart: "could not fetch ABI" (no `ETHERSCAN_API_KEY`) is harmless, but "Missing Display field" is a real error, fixed with an `excluded` list (step 4). Setting `ETHERSCAN_API_KEY` clears the fetch warning and lets lint validate your display fields against the ABI. Re-check that every intent is 30 characters or fewer.
 
 ### 7. Preview
 See the render before shipping: the Sourcify live preview, or `uvx erc7730 calldata --chain-id <id> <file>` for the device payload.
