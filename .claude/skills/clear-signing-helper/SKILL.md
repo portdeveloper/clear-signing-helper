@@ -24,14 +24,15 @@ Ask for whatever is missing before starting:
 
 ### 1. Check the registry FIRST (the highest-leverage step)
 Most well-known protocols already have a descriptor and are only missing a chain. When that is the case the change is one line, not a new file, and it merges easily.
-- Search for the contract address and the protocol name: `scripts/find-in-registry.sh <address-or-name> <path-to-registry-clone>`.
+- Search for the contract address and the protocol name: `scripts/find-in-registry.sh <address-or-name> <path-to-registry-clone>`. No local clone? Search the registry on GitHub instead (browse `registry/<owner>/` or use GitHub code search for the address).
 - If a descriptor exists and only the chain is missing, add `{ "chainId": <id>, "address": "<addr>" }` to that file's `context.contract.deployments` array and stop. The display formats are chain-agnostic and carry over unchanged. This is exactly how Permit2 and Morpho reached new chains.
 - Only author a new descriptor if none exists.
 
 ### 2. Verify the address on-chain (never trust an address you were handed)
+- First get the candidate address from the protocol's own deployment source: their docs, an addresses file in their GitHub, or their API. Do not assume a same-address-on-every-chain vanity address is deployed on your chain; it often is not.
 - `scripts/verify-address.sh <chainId> <address> <rpcUrl> [eip712Name] [eip712Version]`.
-- It confirms there is bytecode at the address, and for EIP-712 contracts it matches the live `DOMAIN_SEPARATOR()` against the value computed for that name/version/chain/address. A match is proof the address is the contract you think it is.
-- If the contract has no standard domain getter, call an identifying view function instead and confirm it responds.
+- It confirms there is bytecode at the address, then matches the live `DOMAIN_SEPARATOR()` against the EIP-712 domain shapes in use (2-field with no name like Morpho, 3-field with a name like Permit2, 4-field with name and version like most tokens) and reports which matched. The 2-field check runs even with no name, so pass the name and version when you have them. A match is proof the address is the contract you think it is.
+- If the contract has no domain getter, call an identifying view function instead and confirm it responds.
 
 ### 3. Generate (only when authoring from scratch)
 `uvx erc7730 generate --chain-id <id> --address <addr> --abi ./abi.json --owner "<Owner>"`

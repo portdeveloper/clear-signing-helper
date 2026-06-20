@@ -3,8 +3,12 @@
 #
 # Usage: verify-address.sh <chainId> <address> <rpcUrl> [eip712Name] [eip712Version]
 #   - Always confirms there is bytecode at the address.
-#   - If eip712Name is given, matches the live DOMAIN_SEPARATOR() against the value
-#     computed for that domain (4-field if a version is given, else 3-field name+chain+contract).
+#   - If the contract exposes DOMAIN_SEPARATOR(), it matches the live value against the
+#     EIP-712 domain shapes seen in the wild and reports which one matched:
+#       * 2-field: EIP712Domain(uint256 chainId,address verifyingContract)                          (e.g. Morpho Blue)
+#       * 3-field: EIP712Domain(string name,uint256 chainId,address verifyingContract)              (e.g. Permit2)
+#       * 4-field: EIP712Domain(string name,string version,uint256 chainId,address verifyingContract) (most ERC-2612 tokens)
+#     The 2-field check always runs. Pass the name (and version) to also try the 3- and 4-field shapes.
 #
 # Requires foundry's `cast` (https://getfoundry.sh).
 set -euo pipefail
@@ -19,37 +23,44 @@ command -v cast >/dev/null || { echo "needs foundry's cast: https://getfoundry.s
 
 CODE=$(cast code "$ADDR" --rpc-url "$RPC")
 if [ "$CODE" = "0x" ] || [ -z "$CODE" ]; then
-  echo "FAIL: no contract code at $ADDR on chain $CHAIN" >&2
+  echo "FAIL: no contract code at $ADDR on chain $CHAIN (a same-address-everywhere vanity address may not be deployed here)" >&2
   exit 1
 fi
 echo "OK: bytecode present (${#CODE} hex chars)"
 
-if [ -z "$NAME" ]; then
-  echo "no EIP-712 name given; bytecode-only check. Confirm identity with a known view function."
-  exit 0
-fi
-
 ONCHAIN=$(cast call "$ADDR" "DOMAIN_SEPARATOR()(bytes32)" --rpc-url "$RPC" 2>/dev/null || true)
 if [ -z "$ONCHAIN" ]; then
-  echo "no DOMAIN_SEPARATOR() getter on this contract; confirm identity another way."
+  echo "no DOMAIN_SEPARATOR() getter; confirm identity with a known view function instead."
   exit 0
 fi
+echo "on-chain DOMAIN_SEPARATOR: $ONCHAIN"
 
-NAMEHASH=$(cast keccak "$NAME")
-if [ -n "$VERSION" ]; then
-  TH=$(cast keccak "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
-  VHASH=$(cast keccak "$VERSION")
-  EXP=$(cast keccak "$(cast abi-encode 'x(bytes32,bytes32,bytes32,uint256,address)' "$TH" "$NAMEHASH" "$VHASH" "$CHAIN" "$ADDR")")
-else
-  TH=$(cast keccak "EIP712Domain(string name,uint256 chainId,address verifyingContract)")
-  EXP=$(cast keccak "$(cast abi-encode 'x(bytes32,bytes32,uint256,address)' "$TH" "$NAMEHASH" "$CHAIN" "$ADDR")")
+match=""
+
+# 2-field (no name) -- e.g. Morpho Blue
+TH2=$(cast keccak "EIP712Domain(uint256 chainId,address verifyingContract)")
+EXP2=$(cast keccak "$(cast abi-encode 'x(bytes32,uint256,address)' "$TH2" "$CHAIN" "$ADDR")")
+[ "$ONCHAIN" = "$EXP2" ] && match="2-field (chainId, verifyingContract)"
+
+if [ -z "$match" ] && [ -n "$NAME" ]; then
+  NH=$(cast keccak "$NAME")
+  # 3-field (name) -- e.g. Permit2
+  TH3=$(cast keccak "EIP712Domain(string name,uint256 chainId,address verifyingContract)")
+  EXP3=$(cast keccak "$(cast abi-encode 'x(bytes32,bytes32,uint256,address)' "$TH3" "$NH" "$CHAIN" "$ADDR")")
+  [ "$ONCHAIN" = "$EXP3" ] && match="3-field (name, chainId, verifyingContract)"
+  if [ -z "$match" ] && [ -n "$VERSION" ]; then
+    VH=$(cast keccak "$VERSION")
+    # 4-field (name + version) -- most ERC-2612 tokens
+    TH4=$(cast keccak "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+    EXP4=$(cast keccak "$(cast abi-encode 'x(bytes32,bytes32,bytes32,uint256,address)' "$TH4" "$NH" "$VH" "$CHAIN" "$ADDR")")
+    [ "$ONCHAIN" = "$EXP4" ] && match="4-field (name, version, chainId, verifyingContract)"
+  fi
 fi
 
-echo "on-chain : $ONCHAIN"
-echo "expected : $EXP"
-if [ "$ONCHAIN" = "$EXP" ]; then
-  echo "MATCH: address is the contract for this domain on chain $CHAIN"
+if [ -n "$match" ]; then
+  echo "MATCH: domain is $match -- address is the genuine contract on chain $CHAIN"
 else
-  echo "MISMATCH: do not use this address/domain. Check name/version (some omit version)." >&2
+  echo "no match among tried domain shapes (2-field always; 3/4-field need name/version)."
+  echo "the contract may use a different domain. pass the right name/version, or compute its domain by hand before trusting the address."
   exit 1
 fi
