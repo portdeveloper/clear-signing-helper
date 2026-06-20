@@ -24,7 +24,7 @@ Ask for whatever is missing before starting:
 
 ### 1. Check the registry FIRST (the highest-leverage step)
 Most well-known protocols already have a descriptor and are only missing a chain. When that is the case the change is one line, not a new file, and it merges easily.
-- Search for the contract address and the protocol name: `scripts/find-in-registry.sh <address-or-name> <path-to-registry-clone>`. No local clone? Search the registry on GitHub instead (browse `registry/<owner>/` or use GitHub code search for the address).
+- Search for the contract address and the protocol name: `scripts/find-in-registry.sh <address-or-name> <path-to-registry-clone>`. No local clone? Use the GitHub contents API to list `registry/` and grep the raw files for the address (`gh api ...`). Unauthenticated GitHub code search is blocked, so use the contents API or an authenticated `gh search code`, not a plain `curl` to the search endpoint.
 - If a descriptor exists and only the chain is missing, add `{ "chainId": <id>, "address": "<addr>" }` to that file's `context.contract.deployments` array and stop. The display formats are chain-agnostic and carry over unchanged. This is exactly how Permit2 and Morpho reached new chains.
 - Only author a new descriptor if none exists.
 
@@ -40,13 +40,13 @@ First get the ABI. From Etherscan's V2 multichain API, addressed by chain id (wo
 export ETHERSCAN_API_KEY=<your key>   # export it; an inline KEY=val prefix won't expand inside the URL
 curl -s "https://api.etherscan.io/v2/api?chainid=<id>&module=contract&action=getsourcecode&address=<addr>&apikey=$ETHERSCAN_API_KEY" | jq -r '.result[0].ABI' > abi.json
 ```
-Confirm it is verified (`status:1`); if `getsourcecode` shows a proxy, fetch the implementation's ABI; if it is unverified, get the ABI from the project's source.
+Confirm it is verified (`status:1`); if `getsourcecode` shows a proxy, fetch the implementation's ABI. Etherscan V2 does not serve every chain and may reject newer ones with "Missing/Invalid API Key"; if the contract is unverified or the chain is not covered, get the ABI from the project's verified source or repo instead.
 
 Then generate, minding two traps:
 ```
 COLUMNS=10000 uvx erc7730 generate --chain-id <id> --address <addr> --abi ./abi.json --owner "<Owner>" > calldata-<Name>.json
 ```
-- `COLUMNS=10000` is required. `generate` pretty-prints and wraps long lines, which corrupts the JSON it writes; a wide terminal prevents it.
+- `COLUMNS=10000` is required. `generate` pretty-prints and wraps long lines, which corrupts the JSON it writes; a wide terminal prevents it. Then confirm it parses (`jq . calldata-<Name>.json`); if it still does not, the wrapping bit anyway, so widen `COLUMNS` further or strip the stray newlines inside string values.
 - Name the file with the `calldata-` (or `eip712-`) prefix from the start, or `lint` will refuse it.
 - `--owner` may not fill `metadata.owner`, and `$schema` may come out null. Set both yourself. The owner picks the registry folder `registry/<owner>/`, so identify the real protocol from the verified source on the explorer (contract name, NatSpec `@title`, imported packages) or the project's site, not from the contract's code style. If you add `metadata.info`, it requires a `url` (keep it short, Ledger truncates past ~26 chars).
 
