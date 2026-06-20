@@ -37,6 +37,7 @@ Most well-known protocols already have a descriptor and are only missing a chain
 ### 3. Generate (only when authoring from scratch)
 First get the ABI. From Etherscan's V2 multichain API, addressed by chain id (works for any supported chain, needs `ETHERSCAN_API_KEY`):
 ```
+export ETHERSCAN_API_KEY=<your key>   # export it; an inline KEY=val prefix won't expand inside the URL
 curl -s "https://api.etherscan.io/v2/api?chainid=<id>&module=contract&action=getsourcecode&address=<addr>&apikey=$ETHERSCAN_API_KEY" | jq -r '.result[0].ABI' > abi.json
 ```
 Confirm it is verified (`status:1`); if `getsourcecode` shows a proxy, fetch the implementation's ABI; if it is unverified, get the ABI from the project's source.
@@ -47,14 +48,14 @@ COLUMNS=10000 uvx erc7730 generate --chain-id <id> --address <addr> --abi ./abi.
 ```
 - `COLUMNS=10000` is required. `generate` pretty-prints and wraps long lines, which corrupts the JSON it writes; a wide terminal prevents it.
 - Name the file with the `calldata-` (or `eip712-`) prefix from the start, or `lint` will refuse it.
-- `--owner` may not fill `metadata.owner`. Set it yourself, with the real protocol name. It also picks the registry folder `registry/<owner>/`, so identify the actual protocol rather than guessing from the contract style.
+- `--owner` may not fill `metadata.owner`, and `$schema` may come out null. Set both yourself. The owner picks the registry folder `registry/<owner>/`, so identify the real protocol from the verified source on the explorer (contract name, NatSpec `@title`, imported packages) or the project's site, not from the contract's code style. If you add `metadata.info`, it requires a `url` (keep it short, Ledger truncates past ~26 chars).
 
 ### 4. Write human-readable intents and labels (the part that needs judgment)
 This is what makes a descriptor good. For each function or signed message:
 - `intent`: the action in plain language, like "Approve USDC", "Supply collateral", "Swap exact tokens". Keep it 30 characters or fewer; Ledger devices truncate longer text.
 - Label every field a user should see: which parameter is the token, the amount, the spender, the recipient, the deadline.
 - Pick the right format: `tokenAmount` for amounts (set `tokenPath` when the token address is another field in the same call), `addressName` for addresses (it needs `params`, e.g. `{ "types": ["token"] }`; a bare `addressName` fails lint), `amount` for native value, a percentage for rates, `raw` only as a last resort.
-- Every ABI field must be either shown or explicitly excluded. If lint reports "Missing Display field" on a function, add the fields you are not showing to an `excluded` list on that function. This is normal for opaque params (callback `data`, fee tiers, `sqrtPriceLimit`).
+- You do not have to render every field. To omit an opaque one (callback `data`, fee tiers, `sqrtPriceLimit`), just leave it out of `fields`. In v2 a left-out field is a lint *warning*, not an error, so it does not block. Do NOT add an `excluded` key: that is a v1 concept and the v2 schema rejects unknown keys, which is a hard lint error.
 - Mark the fields that matter `"visible": "always"`.
 Base every label on real contract semantics. Read the ABI parameter names and any NatSpec. If a parameter's meaning is unclear, look at the source or ask. Do not guess.
 
@@ -64,10 +65,10 @@ Base every label on real contract semantics. Read the ABI parameter names and an
 - Nested or arbitrary calldata cannot be statically decoded: multicall, `batch`, router `execute`, connector `call`/`batch`, permit-with-`data`. Cover the functions that decode cleanly and state plainly which you left out. Never ship a descriptor that renders a half-empty screen and call it done.
 
 ### 6. Validate
-`uvx erc7730 lint <file>` (the file needs the `calldata-`/`eip712-` prefix or lint refuses it). Tell the warnings apart: "could not fetch ABI" (no `ETHERSCAN_API_KEY`) is harmless, but "Missing Display field" is a real error, fixed with an `excluded` list (step 4). Setting `ETHERSCAN_API_KEY` clears the fetch warning and lets lint validate your display fields against the ABI. Re-check that every intent is 30 characters or fewer.
+`uvx erc7730 lint <file>` (the file needs the `calldata-`/`eip712-` prefix or lint refuses it). What counts as an error vs noise: "could not fetch ABI" (no `ETHERSCAN_API_KEY`) and "Missing display field" / "Missing display format" are warnings, not errors. The last two just mean you chose not to render a field or a whole function (fine for opaque params and nested-calldata functions you bounded out); silence them by leaving the field out, never by adding an `excluded` key. Setting `ETHERSCAN_API_KEY` clears the fetch warning and lets lint validate your fields against the ABI. Re-check that every intent is 30 characters or fewer.
 
-### 7. Preview
-See the render before shipping: the Sourcify live preview, or `uvx erc7730 calldata --chain-id <id> <file>` for the device payload.
+### 7. Preview (optional)
+`lint` is the real gate. To eyeball the render, use the Sourcify live preview. (`uvx erc7730 calldata` needs real sample calldata bytes as input, so skip it unless you have an actual transaction to decode.)
 
 ### 8. PR step (default: stop at a draft)
 - The file belongs at `registry/<owner>/<calldata|eip712>-<Name>.json`.
