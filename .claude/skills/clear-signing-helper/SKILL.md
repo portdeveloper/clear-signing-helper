@@ -18,7 +18,7 @@ Ask for whatever is missing before starting:
 - Owner / protocol name (used in `metadata.owner` and the registry folder).
 - An RPC URL for the chain (for on-chain verification).
 - The ABI, or a way to get it: a verified contract on the chain's explorer, or the project's source.
-- Whether to open the PR or stop at a draft. Default is to stop at a draft (see step 8).
+- Whether to open the PR or stop at a draft. Default is to stop at a draft (see step 9).
 
 ## Procedure
 
@@ -67,10 +67,20 @@ Base every label on real contract semantics. Read the ABI parameter names and an
 ### 6. Validate
 `uvx erc7730 lint <file>` (the file needs the `calldata-`/`eip712-` prefix or lint refuses it). What counts as an error vs noise: "could not fetch ABI" (no `ETHERSCAN_API_KEY`) and "Missing display field" / "Missing display format" are warnings, not errors. The last two just mean you chose not to render a field or a whole function (fine for opaque params and nested-calldata functions you bounded out); silence them by leaving the field out, never by adding an `excluded` key. Setting `ETHERSCAN_API_KEY` clears the fetch warning and lets lint validate your fields against the ABI. Re-check that every intent is 30 characters or fewer.
 
-### 7. Preview (optional)
+### 7. Add reference tests (v2 format)
+Tests let wallet vendors verify the descriptor renders correctly, and registry CI runs them against both the TypeScript and Rust libraries. Use the v2 format only. The old `tests/` folder with an `expectedTexts` array is deprecated, and maintainers will ask you to convert it before they review (this is exactly what happened on the Permit2-on-Monad PR).
+- Location: `registry/<owner>/testsv2/<descriptor-name>.tests.json`, mirroring the descriptor filename with a `.tests.json` suffix. NOT the old `tests/` folder.
+- Header: `"$schema": "../../../specs/erc7730-tests-v2.schema.json"` and `"descriptor": "../<descriptor-name>.json"`.
+- `dataProvider.tokens` maps each token address a test touches (LOWERCASED) to `{ "decimals", "name", "symbol" }`, so `tokenAmount` fields resolve to a symbol instead of `???`.
+- Each test needs a unique `description`; for EIP-712 the full `data` typed-data object (`types`, `primaryType`, `domain`, `message`); for calldata an unsigned `rawTx` plus optional `txHash`; and an `expected` block.
+- `expected` is `{ "intent", "owner", "fields": [{ "label", "value" }] }`. The `value`s are the exact rendered strings the runner compares against, so they must match precisely: amounts formatted by the token's decimals (e.g. `2500000000` at 6 decimals renders as `2500 USDC`), dates as `YYYY-MM-DD HH:MM:SSZ` in UTC, addresses in full checksummed form. A `tokenAmount` only renders "Unlimited" when the descriptor field sets both `threshold` and `message`; without them a max value renders as its full (huge) number, so pick a realistic amount for the test.
+- Fastest way to get the `value`s right without a device: copy an existing passing test for the same message or function type in the registry and change only the domain/message data. The rendering is format-driven, so identical formats plus identical amount/decimals produce identical output regardless of chain or address. Adding a chain to an existing descriptor is usually one new test case alongside the existing ones.
+- Validate: the file must pass `specs/erc7730-tests-v2.schema.json` (e.g. a quick `jsonschema` check). Delete any old-format `tests/<descriptor-name>.tests.json` you are replacing.
+
+### 8. Preview (optional)
 `lint` is the real gate. To eyeball the render, use the Sourcify live preview. (`uvx erc7730 calldata` needs real sample calldata bytes as input, so skip it unless you have an actual transaction to decode.)
 
-### 8. PR step (default: stop at a draft)
+### 9. PR step (default: stop at a draft)
 - The file belongs at `registry/<owner>/<calldata|eip712>-<Name>.json`.
 - DEFAULT: do NOT open the PR. Output the validated file, the target path, and the exact `git`/`gh` commands, and tell the user to open the PR from an account tied to the contract owner (maintainers may ask for proof of ownership).
 - Only if the user explicitly opts in to opening the PR: show the full diff, confirm, then open it.
