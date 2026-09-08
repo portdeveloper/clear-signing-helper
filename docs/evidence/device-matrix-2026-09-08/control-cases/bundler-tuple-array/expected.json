@@ -1,0 +1,46 @@
+{
+  "intent": "Multicall",
+  "owner": "Morpho DAO",
+  "fields": [
+    {
+      "label": "To",
+      "value": "0x0000000000000000000000000000000000000011"
+    },
+    {
+      "label": "Data",
+      "value": "0xabcd"
+    },
+    {
+      "label": "Value",
+      "value": "111"
+    },
+    {
+      "label": "Skip Revert",
+      "value": "false"
+    },
+    {
+      "label": "Callback Hash",
+      "value": "0x1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "label": "To",
+      "value": "0x0000000000000000000000000000000000000022"
+    },
+    {
+      "label": "Data",
+      "value": "0x1234"
+    },
+    {
+      "label": "Value",
+      "value": "222"
+    },
+    {
+      "label": "Skip Revert",
+      "value": "true"
+    },
+    {
+      "label": "Callback Hash",
+      "value": "0x2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ]
+}

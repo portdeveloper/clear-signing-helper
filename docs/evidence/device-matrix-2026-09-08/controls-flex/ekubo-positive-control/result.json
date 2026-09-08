@@ -1,0 +1,98 @@
+{
+  "case": "ekubo-positive-control",
+  "device": "flex",
+  "exitCode": 1,
+  "testerStatus": "blind_signed",
+  "clearSigningType": "eip7730",
+  "usedFallback": true,
+  "blindSigning": true,
+  "signatureProduced": false,
+  "contextErrorCount": 3,
+  "fields": [
+    {
+      "label": "Token0",
+      "value": "0x0000000000000000000000000000000000000001",
+      "foundTogether": false,
+      "foundInOrder": false
+    },
+    {
+      "label": "Token1",
+      "value": "0x0000000000000000000000000000000000000002",
+      "foundTogether": false,
+      "foundInOrder": false
+    },
+    {
+      "label": "Config",
+      "value": "0x0101010101010101010101010101010101010101010101010101010101010101",
+      "foundTogether": false,
+      "foundInOrder": false
+    },
+    {
+      "label": "Is Token1",
+      "value": "false",
+      "foundTogether": false,
+      "foundInOrder": false
+    },
+    {
+      "label": "Amount",
+      "value": "3",
+      "foundTogether": false,
+      "foundInOrder": false
+    },
+    {
+      "label": "Sqrt Ratio Limit",
+      "value": "4",
+      "foundTogether": false,
+      "foundInOrder": false
+    },
+    {
+      "label": "Skip Ahead",
+      "value": "5",
+      "foundTogether": false,
+      "foundInOrder": false
+    },
+    {
+      "label": "Calculated Amount Threshold",
+      "value": "6",
+      "foundTogether": false,
+      "foundInOrder": false
+    }
+  ],
+  "capturedTexts": [],
+  "fieldOrderMatches": false,
+  "command": [
+    "pnpm",
+    "cs-tester",
+    "cli",
+    "raw-file",
+    "/tmp/csh-device-shape-controls/ekubo-positive-control/raw.json",
+    "--device",
+    "flex",
+    "--custom-app",
+    "/tmp/csh-app-ethereum-flex-1.22.3.elf",
+    "--docker-image-tag",
+    "csh-device-20260908",
+    "--speculos-port",
+    "19191",
+    "--speculos-vnc-port",
+    "29191",
+    "--erc7730-files",
+    "/tmp/csh-device-shape-controls/ekubo-positive-control/calldata-ekubo-positive-control.json",
+    "--screenshot-folder-path",
+    "/tmp/csh-ledger-controls-flex/ekubo-positive-control/screenshots",
+    "--log-file",
+    "/tmp/csh-ledger-controls-flex/ekubo-positive-control/tester.log",
+    "--file-log-level",
+    "debug",
+    "--log-level",
+    "info"
+  ],
+  "broadcast": false,
+  "passed": false,
+  "deviceError": {
+    "_tag": "EthAppCommandError",
+    "errorCode": "6a80",
+    "message": "Invalid data"
+  },
+  "analysis": "Rechecked saved captures with final screen checker: ordered complete pairs, no value-prefix matches, final SDK state retained even when no signature."
+}

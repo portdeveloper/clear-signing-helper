@@ -1,0 +1,9 @@
+{
+  "contract": "contracts/SwapRouter.sol:SwapRouter",
+  "chainId": 31337,
+  "to": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+  "data": "0x12210e8a",
+  "value": "0",
+  "tokens": {},
+  "addressNames": {}
+}

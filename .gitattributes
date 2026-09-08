@@ -1,0 +1,4 @@
+# Preserve pinned upstream files and captured evidence byte for byte.
+schemas/** -whitespace
+vendor/** -whitespace
+docs/evidence/** -whitespace

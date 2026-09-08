@@ -1,0 +1,38 @@
+{
+  "intent": "Swap",
+  "owner": "Ekubo Protocol",
+  "fields": [
+    {
+      "label": "Token0",
+      "value": "0x0000000000000000000000000000000000000001"
+    },
+    {
+      "label": "Token1",
+      "value": "0x0000000000000000000000000000000000000002"
+    },
+    {
+      "label": "Config",
+      "value": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    {
+      "label": "Is Token1",
+      "value": "false"
+    },
+    {
+      "label": "Amount",
+      "value": "3"
+    },
+    {
+      "label": "Sqrt Ratio Limit",
+      "value": "4"
+    },
+    {
+      "label": "Skip Ahead",
+      "value": "5"
+    },
+    {
+      "label": "Amount limit",
+      "value": "6"
+    }
+  ]
+}

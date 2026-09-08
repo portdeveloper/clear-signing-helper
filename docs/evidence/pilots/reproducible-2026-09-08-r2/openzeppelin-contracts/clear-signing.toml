@@ -1,0 +1,8 @@
+version = 1
+profile = "default"
+engine = "94693ed48fdb22b6903c468054689615c97131f324ddf9b031eb208958e1655a"
+
+[[contracts]]
+id = "contracts/mocks/token/ERC4626Mock.sol:ERC4626Mock"
+descriptor = "clear-signing/descriptors/calldata-ERC4626Mock-50844998.json"
+exclusions = { }

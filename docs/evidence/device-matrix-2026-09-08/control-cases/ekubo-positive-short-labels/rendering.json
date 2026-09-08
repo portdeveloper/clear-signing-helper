@@ -1,0 +1,68 @@
+{
+  "engine": {
+    "tool": "0.2.0",
+    "renderer": "@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1",
+    "schema": "f1da6154187a258475139f1b871f74a7bade0af23ff45c782fb85ecd4d7e8a3f",
+    "subset": 2
+  },
+  "contract": "src/Registry.sol:Registry",
+  "signature": "swap((address,address,bytes32),bool,int128,uint96,uint256,int256)",
+  "chainId": 1,
+  "to": "0xd26f20001a72a18c002b00e6710000d68700ce00",
+  "value": "0",
+  "localBinding": false,
+  "intent": "Swap",
+  "fields": [
+    {
+      "label": "Token0",
+      "value": "0x0000000000000000000000000000000000000001",
+      "fieldType": "address",
+      "format": "raw",
+      "rawAddress": "0x0000000000000000000000000000000000000001"
+    },
+    {
+      "label": "Token1",
+      "value": "0x0000000000000000000000000000000000000002",
+      "fieldType": "address",
+      "format": "raw",
+      "rawAddress": "0x0000000000000000000000000000000000000002"
+    },
+    {
+      "label": "Config",
+      "value": "0x0101010101010101010101010101010101010101010101010101010101010101",
+      "fieldType": "bytes",
+      "format": "raw"
+    },
+    {
+      "label": "Is Token1",
+      "value": "false",
+      "fieldType": "bool",
+      "format": "raw"
+    },
+    {
+      "label": "Amount",
+      "value": "3",
+      "fieldType": "int",
+      "format": "raw"
+    },
+    {
+      "label": "Sqrt Ratio Limit",
+      "value": "4",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Skip Ahead",
+      "value": "5",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Amount limit",
+      "value": "6",
+      "fieldType": "int",
+      "format": "raw"
+    }
+  ],
+  "warnings": []
+}

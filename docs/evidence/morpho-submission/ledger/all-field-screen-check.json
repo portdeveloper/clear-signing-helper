@@ -1,0 +1,52 @@
+{
+  "fixture": "clear-signing/fixtures/registry-3.json",
+  "comparison": "Every exported label/value pair appears together in a captured screen, ignoring whitespace added by device line wrapping. This is a text-pair check, not a pixel-layout assertion.",
+  "fields": [
+    {
+      "label": "Loan Token",
+      "value": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "found": true
+    },
+    {
+      "label": "Collateral Token",
+      "value": "0x38EEb52F0771140d10c4E9A9a72349A329Fe8a6A",
+      "found": true
+    },
+    {
+      "label": "Oracle",
+      "value": "0xff1487BDa8049a536F912e41E27B82a8A3845862",
+      "found": true
+    },
+    {
+      "label": "Irm",
+      "value": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+      "found": true
+    },
+    {
+      "label": "Lltv",
+      "value": "860000000000000000",
+      "found": true
+    },
+    {
+      "label": "Assets",
+      "value": "90000000",
+      "found": true
+    },
+    {
+      "label": "Shares",
+      "value": "0",
+      "found": true
+    },
+    {
+      "label": "On Behalf",
+      "value": "0xe689F793882A9FbF80B26EE16f530076E0130311",
+      "found": true
+    },
+    {
+      "label": "Data",
+      "value": "0x",
+      "found": true
+    }
+  ],
+  "passed": true
+}

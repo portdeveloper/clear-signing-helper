@@ -1,0 +1,820 @@
+{
+  "runner": "@ethereum-sourcify/clear-signing-test-runner",
+  "implementation": "@ethereum-sourcify/clear-signing@0.2.2",
+  "cases": [
+    {
+      "description": "clear-signing/fixtures/registry-1.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Borrow",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0xCAcd6fd266aF91b8AeD52aCCc382b4e165586E29"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x3B855AA8CC56a3cBd5dBb5456F5A13Ce86AA0fe8"
+          },
+          {
+            "label": "Oracle",
+            "value": "0xC5860e9e6b6F6E9D79DCe5c5AB0F7A4b878Bd431"
+          },
+          {
+            "label": "Irm",
+            "value": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC"
+          },
+          {
+            "label": "Lltv",
+            "value": "945000000000000000"
+          },
+          {
+            "label": "Assets",
+            "value": "59000000000000000000000"
+          },
+          {
+            "label": "Shares",
+            "value": "0"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0x8449f934dbFbFA050f5E7738bf2E73a811022904"
+          },
+          {
+            "label": "Receiver",
+            "value": "0x8449f934dbFbFA050f5E7738bf2E73a811022904"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/registry-2.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Repay",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
+          },
+          {
+            "label": "Oracle",
+            "value": "0xc53c90d6E9A5B69E4ABf3d5Ae4c79225C7FeF3d2"
+          },
+          {
+            "label": "Irm",
+            "value": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC"
+          },
+          {
+            "label": "Lltv",
+            "value": "860000000000000000"
+          },
+          {
+            "label": "Assets",
+            "value": "3526000000"
+          },
+          {
+            "label": "Shares",
+            "value": "0"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0xE4916bF722d5B2d397fd2F3A925029d2c4e83B51"
+          },
+          {
+            "label": "Data",
+            "value": "0x"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/registry-3.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Supply",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x38EEb52F0771140d10c4E9A9a72349A329Fe8a6A"
+          },
+          {
+            "label": "Oracle",
+            "value": "0xff1487BDa8049a536F912e41E27B82a8A3845862"
+          },
+          {
+            "label": "Irm",
+            "value": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC"
+          },
+          {
+            "label": "Lltv",
+            "value": "860000000000000000"
+          },
+          {
+            "label": "Assets",
+            "value": "90000000"
+          },
+          {
+            "label": "Shares",
+            "value": "0"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0xe689F793882A9FbF80B26EE16f530076E0130311"
+          },
+          {
+            "label": "Data",
+            "value": "0x"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/registry-4.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Supply Collateral",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0xdC035D45d973E3EC169d2276DDab16f1e407384F"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0xE0f63A424a4439cBE457D80E4f4b51aD25b2c56C"
+          },
+          {
+            "label": "Oracle",
+            "value": "0xdA63266b5184D08DbFBace96267837c45D7D34dA"
+          },
+          {
+            "label": "Irm",
+            "value": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC"
+          },
+          {
+            "label": "Lltv",
+            "value": "625000000000000000"
+          },
+          {
+            "label": "Assets",
+            "value": "88163383478"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0xf11Cc888d8Da84D3bF735b7b357814fD071e8B1A"
+          },
+          {
+            "label": "Data",
+            "value": "0x"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/registry-5.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Withdraw",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x3EAA0F0f0A5d3D595ae4e4b0D27f439d01c3E7b2"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x12d66602C691Aa93E90415aB22FB0760695AC768"
+          },
+          {
+            "label": "Irm",
+            "value": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC"
+          },
+          {
+            "label": "Lltv",
+            "value": "915000000000000000"
+          },
+          {
+            "label": "Assets",
+            "value": "0"
+          },
+          {
+            "label": "Shares",
+            "value": "490064251891825428"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0xd7583E3CF08bbcaB66F1242195227bBf9F865Fda"
+          },
+          {
+            "label": "Receiver",
+            "value": "0xd7583E3CF08bbcaB66F1242195227bBf9F865Fda"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/registry-6.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Withdraw Collateral",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0xDcEe70654261AF21C44c093C300eD3Bb97b78192"
+          },
+          {
+            "label": "Oracle",
+            "value": "0xb7948b5bEEe825E609990484A99340D8767B420e"
+          },
+          {
+            "label": "Irm",
+            "value": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC"
+          },
+          {
+            "label": "Lltv",
+            "value": "860000000000000000"
+          },
+          {
+            "label": "Assets",
+            "value": "40000000000000000"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0xB1bAf4287894eB272258651e7C581d16da883DdA"
+          },
+          {
+            "label": "Receiver",
+            "value": "0xB1bAf4287894eB272258651e7C581d16da883DdA"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-accrueInterest-151c1ade.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Accrue Interest",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Lltv",
+            "value": "5"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-borrow-50d8cd4b.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Borrow",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Lltv",
+            "value": "5"
+          },
+          {
+            "label": "Assets",
+            "value": "2"
+          },
+          {
+            "label": "Shares",
+            "value": "3"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Receiver",
+            "value": "0x0000000000000000000000000000000000000005"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-createMarket-8c1358a2.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Create Market",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Lltv",
+            "value": "5"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-enableIrm-5a64f51e.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Enable Irm",
+        "fields": [
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000001"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-enableLltv-4d98a93b.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Enable Lltv",
+        "fields": [
+          {
+            "label": "Lltv",
+            "value": "1"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-flashLoan-e0232b42.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Flash Loan",
+        "fields": [
+          {
+            "label": "Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Assets",
+            "value": "2"
+          },
+          {
+            "label": "Data",
+            "value": "0x1234"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-liquidate-d8eabcb8.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Liquidate",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Lltv",
+            "value": "5"
+          },
+          {
+            "label": "Borrower",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Seized Assets",
+            "value": "3"
+          },
+          {
+            "label": "Repaid Shares",
+            "value": "4"
+          },
+          {
+            "label": "Data",
+            "value": "0x1234"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-repay-20b76e81.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Repay",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Lltv",
+            "value": "5"
+          },
+          {
+            "label": "Assets",
+            "value": "2"
+          },
+          {
+            "label": "Shares",
+            "value": "3"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Data",
+            "value": "0x1234"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-setAuthorization-eecea000.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Set Authorization",
+        "fields": [
+          {
+            "label": "Authorized",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "New Is Authorized",
+            "value": "false"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-setAuthorizationWithSig-8069218f.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Set Authorization With Sig",
+        "fields": [
+          {
+            "label": "Authorizer",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Authorized",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Is Authorized",
+            "value": "true"
+          },
+          {
+            "label": "Nonce",
+            "value": "4"
+          },
+          {
+            "label": "Deadline",
+            "value": "5"
+          },
+          {
+            "label": "V",
+            "value": "1"
+          },
+          {
+            "label": "R",
+            "value": "0x0101010101010101010101010101010101010101010101010101010101010101"
+          },
+          {
+            "label": "S",
+            "value": "0x0101010101010101010101010101010101010101010101010101010101010101"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-setFee-2b4f013c.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Set Fee",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Lltv",
+            "value": "5"
+          },
+          {
+            "label": "New Fee",
+            "value": "2"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-setFeeRecipient-e74b981b.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Set Fee Recipient",
+        "fields": [
+          {
+            "label": "New Fee Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-setOwner-13af4035.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Set Owner",
+        "fields": [
+          {
+            "label": "New Owner",
+            "value": "0x0000000000000000000000000000000000000001"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-supply-a99aad89.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Supply",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Lltv",
+            "value": "5"
+          },
+          {
+            "label": "Assets",
+            "value": "2"
+          },
+          {
+            "label": "Shares",
+            "value": "3"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Data",
+            "value": "0x1234"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-supplyCollateral-238d6579.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Supply Collateral",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Lltv",
+            "value": "5"
+          },
+          {
+            "label": "Assets",
+            "value": "2"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Data",
+            "value": "0x1234"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-withdraw-5c2bea49.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Withdraw",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Lltv",
+            "value": "5"
+          },
+          {
+            "label": "Assets",
+            "value": "2"
+          },
+          {
+            "label": "Shares",
+            "value": "3"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Receiver",
+            "value": "0x0000000000000000000000000000000000000005"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/synthetic-withdrawCollateral-8720316d.json",
+      "status": "pass",
+      "rendered": {
+        "intent": "Withdraw Collateral",
+        "fields": [
+          {
+            "label": "Loan Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Collateral Token",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Oracle",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Irm",
+            "value": "0x0000000000000000000000000000000000000004"
+          },
+          {
+            "label": "Lltv",
+            "value": "5"
+          },
+          {
+            "label": "Assets",
+            "value": "2"
+          },
+          {
+            "label": "On Behalf",
+            "value": "0x0000000000000000000000000000000000000003"
+          },
+          {
+            "label": "Receiver",
+            "value": "0x0000000000000000000000000000000000000004"
+          }
+        ],
+        "owner": "Morpho"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"ok":false,"diagnostics":[{"code":"FILE_EXISTS","message":"Refusing to overwrite clear-signing/fixtures/exact-input-single.json."}]}

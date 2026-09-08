@@ -1,0 +1,117 @@
+{
+  "registryCommit": "0318f9a51ec4fc7ba4aed6de5e315c8884d1fe38",
+  "stagedChanges": [
+    "registry/morpho/calldata-MorphoBlue.json",
+    "registry/morpho/testsv2/calldata-MorphoBlue.tests.json"
+  ],
+  "checks": [
+    {
+      "name": "descriptor-schema",
+      "command": [
+        "/tmp/csh-production-python/bin/check-jsonschema",
+        "--schemafile",
+        "specs/erc7730-v2.schema.json",
+        "registry/morpho/calldata-MorphoBlue.json"
+      ],
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "tests-schema",
+      "command": [
+        "/tmp/csh-production-python/bin/check-jsonschema",
+        "--schemafile",
+        "specs/erc7730-tests-v2.schema.json",
+        "registry/morpho/testsv2/calldata-MorphoBlue.tests.json"
+      ],
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "lint",
+      "command": [
+        "/tmp/csh-production-python/bin/erc7730",
+        "lint",
+        "registry/morpho/calldata-MorphoBlue.json",
+        "--gha"
+      ],
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "recommendations",
+      "command": [
+        "node",
+        ".github/scripts/check-recommended-fields.js",
+        "registry/morpho/calldata-MorphoBlue.json"
+      ],
+      "exitCode": 0,
+      "passed": true,
+      "advisory": true,
+      "hasRecommendations": true
+    },
+    {
+      "name": "index",
+      "command": [
+        "node",
+        "tools/scripts/generate-index.js",
+        "--validate"
+      ],
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "sourcify",
+      "command": [
+        "node",
+        "/tmp/csh-production-sourcify/dist/cli.js",
+        "/tmp/csh-production-registry/registry/morpho/testsv2/calldata-MorphoBlue.tests.json",
+        "--output",
+        "/tmp/csh-morpho-upstream-results/sourcify-results.json",
+        "--verbose"
+      ],
+      "exitCode": 0,
+      "passed": true,
+      "cases": {
+        "pass": 23
+      },
+      "expectedCases": 23
+    },
+    {
+      "name": "rust",
+      "command": [
+        "/tmp/csh-production-rust/target/debug/cs-test",
+        "run",
+        "/tmp/csh-production-registry/registry/morpho/testsv2/calldata-MorphoBlue.tests.json",
+        "--registry",
+        "/tmp/csh-production-registry/registry",
+        "--output",
+        "/tmp/csh-morpho-upstream-results/rust-results.json"
+      ],
+      "exitCode": 0,
+      "passed": true,
+      "cases": {
+        "pass": 23
+      },
+      "expectedCases": 23,
+      "scanWarningCount": 181
+    }
+  ],
+  "note": "Internal replacement in a disposable registry clone. Not a proposed downgrade of the curated Morpho submission; nothing published.",
+  "walletRendering": {
+    "device": "Ledger Flex via Speculos",
+    "ethereumApp": "1.22.3",
+    "casesPassed": 1,
+    "case": "Morpho supply",
+    "clearSigningType": "eip7730",
+    "blindSigning": false,
+    "usedFallback": false,
+    "expectedTextChecks": 13,
+    "exportedFieldPairsChecked": 9,
+    "broadcast": false,
+    "contextErrorCount": 2,
+    "evidence": "ledger/manifest.json",
+    "scope": "One tuple-bearing supply case; other calls, arrays and physical devices remain unverified"
+  },
+  "maintainerReview": "not requested"
+}

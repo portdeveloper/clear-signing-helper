@@ -1,0 +1,576 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": [
+        {
+          "chainId": 1,
+          "address": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "owner": "Morpho DAO",
+    "contractName": "MorphoBlue"
+  },
+  "display": {
+    "formats": {
+      "accrueInterest((address loanToken,address collateralToken,address oracle,address irm,uint256 lltv) marketParams)": {
+        "intent": "Accrue Interest",
+        "fields": [
+          {
+            "path": "marketParams.loanToken",
+            "label": "Loan Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.collateralToken",
+            "label": "Collateral Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.oracle",
+            "label": "Oracle",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.irm",
+            "label": "Irm",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.lltv",
+            "label": "Lltv",
+            "format": "raw"
+          }
+        ]
+      },
+      "borrow((address loanToken,address collateralToken,address oracle,address irm,uint256 lltv) marketParams,uint256 assets,uint256 shares,address onBehalf,address receiver)": {
+        "intent": "Borrow",
+        "fields": [
+          {
+            "path": "marketParams.loanToken",
+            "label": "Loan Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.collateralToken",
+            "label": "Collateral Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.oracle",
+            "label": "Oracle",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.irm",
+            "label": "Irm",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.lltv",
+            "label": "Lltv",
+            "format": "raw"
+          },
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          },
+          {
+            "path": "shares",
+            "label": "Shares",
+            "format": "raw"
+          },
+          {
+            "path": "onBehalf",
+            "label": "On Behalf",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          }
+        ]
+      },
+      "createMarket((address loanToken,address collateralToken,address oracle,address irm,uint256 lltv) marketParams)": {
+        "intent": "Create Market",
+        "fields": [
+          {
+            "path": "marketParams.loanToken",
+            "label": "Loan Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.collateralToken",
+            "label": "Collateral Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.oracle",
+            "label": "Oracle",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.irm",
+            "label": "Irm",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.lltv",
+            "label": "Lltv",
+            "format": "raw"
+          }
+        ]
+      },
+      "enableIrm(address irm)": {
+        "intent": "Enable Irm",
+        "fields": [
+          {
+            "path": "irm",
+            "label": "Irm",
+            "format": "raw"
+          }
+        ]
+      },
+      "enableLltv(uint256 lltv)": {
+        "intent": "Enable Lltv",
+        "fields": [
+          {
+            "path": "lltv",
+            "label": "Lltv",
+            "format": "raw"
+          }
+        ]
+      },
+      "flashLoan(address token,uint256 assets,bytes data)": {
+        "intent": "Flash Loan",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          },
+          {
+            "path": "data",
+            "label": "Data",
+            "format": "raw"
+          }
+        ]
+      },
+      "liquidate((address loanToken,address collateralToken,address oracle,address irm,uint256 lltv) marketParams,address borrower,uint256 seizedAssets,uint256 repaidShares,bytes data)": {
+        "intent": "Liquidate",
+        "fields": [
+          {
+            "path": "marketParams.loanToken",
+            "label": "Loan Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.collateralToken",
+            "label": "Collateral Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.oracle",
+            "label": "Oracle",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.irm",
+            "label": "Irm",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.lltv",
+            "label": "Lltv",
+            "format": "raw"
+          },
+          {
+            "path": "borrower",
+            "label": "Borrower",
+            "format": "raw"
+          },
+          {
+            "path": "seizedAssets",
+            "label": "Seized Assets",
+            "format": "raw"
+          },
+          {
+            "path": "repaidShares",
+            "label": "Repaid Shares",
+            "format": "raw"
+          },
+          {
+            "path": "data",
+            "label": "Data",
+            "format": "raw"
+          }
+        ]
+      },
+      "repay((address loanToken,address collateralToken,address oracle,address irm,uint256 lltv) marketParams,uint256 assets,uint256 shares,address onBehalf,bytes data)": {
+        "intent": "Repay",
+        "fields": [
+          {
+            "path": "marketParams.loanToken",
+            "label": "Loan Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.collateralToken",
+            "label": "Collateral Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.oracle",
+            "label": "Oracle",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.irm",
+            "label": "Irm",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.lltv",
+            "label": "Lltv",
+            "format": "raw"
+          },
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          },
+          {
+            "path": "shares",
+            "label": "Shares",
+            "format": "raw"
+          },
+          {
+            "path": "onBehalf",
+            "label": "On Behalf",
+            "format": "raw"
+          },
+          {
+            "path": "data",
+            "label": "Data",
+            "format": "raw"
+          }
+        ]
+      },
+      "setAuthorization(address authorized,bool newIsAuthorized)": {
+        "intent": "Set Authorization",
+        "fields": [
+          {
+            "path": "authorized",
+            "label": "Authorized",
+            "format": "raw"
+          },
+          {
+            "path": "newIsAuthorized",
+            "label": "New Is Authorized",
+            "format": "raw"
+          }
+        ]
+      },
+      "setAuthorizationWithSig((address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline) authorization,(uint8 v,bytes32 r,bytes32 s) signature)": {
+        "intent": "Set Authorization With Sig",
+        "fields": [
+          {
+            "path": "authorization.authorizer",
+            "label": "Authorizer",
+            "format": "raw"
+          },
+          {
+            "path": "authorization.authorized",
+            "label": "Authorized",
+            "format": "raw"
+          },
+          {
+            "path": "authorization.isAuthorized",
+            "label": "Is Authorized",
+            "format": "raw"
+          },
+          {
+            "path": "authorization.nonce",
+            "label": "Nonce",
+            "format": "raw"
+          },
+          {
+            "path": "authorization.deadline",
+            "label": "Deadline",
+            "format": "raw"
+          },
+          {
+            "path": "signature.v",
+            "label": "V",
+            "format": "raw"
+          },
+          {
+            "path": "signature.r",
+            "label": "R",
+            "format": "raw"
+          },
+          {
+            "path": "signature.s",
+            "label": "S",
+            "format": "raw"
+          }
+        ]
+      },
+      "setFee((address loanToken,address collateralToken,address oracle,address irm,uint256 lltv) marketParams,uint256 newFee)": {
+        "intent": "Set Fee",
+        "fields": [
+          {
+            "path": "marketParams.loanToken",
+            "label": "Loan Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.collateralToken",
+            "label": "Collateral Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.oracle",
+            "label": "Oracle",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.irm",
+            "label": "Irm",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.lltv",
+            "label": "Lltv",
+            "format": "raw"
+          },
+          {
+            "path": "newFee",
+            "label": "New Fee",
+            "format": "raw"
+          }
+        ]
+      },
+      "setFeeRecipient(address newFeeRecipient)": {
+        "intent": "Set Fee Recipient",
+        "fields": [
+          {
+            "path": "newFeeRecipient",
+            "label": "New Fee Recipient",
+            "format": "raw"
+          }
+        ]
+      },
+      "setOwner(address newOwner)": {
+        "intent": "Set Owner",
+        "fields": [
+          {
+            "path": "newOwner",
+            "label": "New Owner",
+            "format": "raw"
+          }
+        ]
+      },
+      "supply((address loanToken,address collateralToken,address oracle,address irm,uint256 lltv) marketParams,uint256 assets,uint256 shares,address onBehalf,bytes data)": {
+        "intent": "Supply",
+        "fields": [
+          {
+            "path": "marketParams.loanToken",
+            "label": "Loan Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.collateralToken",
+            "label": "Collateral Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.oracle",
+            "label": "Oracle",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.irm",
+            "label": "Irm",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.lltv",
+            "label": "Lltv",
+            "format": "raw"
+          },
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          },
+          {
+            "path": "shares",
+            "label": "Shares",
+            "format": "raw"
+          },
+          {
+            "path": "onBehalf",
+            "label": "On Behalf",
+            "format": "raw"
+          },
+          {
+            "path": "data",
+            "label": "Data",
+            "format": "raw"
+          }
+        ]
+      },
+      "supplyCollateral((address loanToken,address collateralToken,address oracle,address irm,uint256 lltv) marketParams,uint256 assets,address onBehalf,bytes data)": {
+        "intent": "Supply Collateral",
+        "fields": [
+          {
+            "path": "marketParams.loanToken",
+            "label": "Loan Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.collateralToken",
+            "label": "Collateral Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.oracle",
+            "label": "Oracle",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.irm",
+            "label": "Irm",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.lltv",
+            "label": "Lltv",
+            "format": "raw"
+          },
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          },
+          {
+            "path": "onBehalf",
+            "label": "On Behalf",
+            "format": "raw"
+          },
+          {
+            "path": "data",
+            "label": "Data",
+            "format": "raw"
+          }
+        ]
+      },
+      "withdraw((address loanToken,address collateralToken,address oracle,address irm,uint256 lltv) marketParams,uint256 assets,uint256 shares,address onBehalf,address receiver)": {
+        "intent": "Withdraw",
+        "fields": [
+          {
+            "path": "marketParams.loanToken",
+            "label": "Loan Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.collateralToken",
+            "label": "Collateral Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.oracle",
+            "label": "Oracle",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.irm",
+            "label": "Irm",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.lltv",
+            "label": "Lltv",
+            "format": "raw"
+          },
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          },
+          {
+            "path": "shares",
+            "label": "Shares",
+            "format": "raw"
+          },
+          {
+            "path": "onBehalf",
+            "label": "On Behalf",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          }
+        ]
+      },
+      "withdrawCollateral((address loanToken,address collateralToken,address oracle,address irm,uint256 lltv) marketParams,uint256 assets,address onBehalf,address receiver)": {
+        "intent": "Withdraw Collateral",
+        "fields": [
+          {
+            "path": "marketParams.loanToken",
+            "label": "Loan Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.collateralToken",
+            "label": "Collateral Token",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.oracle",
+            "label": "Oracle",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.irm",
+            "label": "Irm",
+            "format": "raw"
+          },
+          {
+            "path": "marketParams.lltv",
+            "label": "Lltv",
+            "format": "raw"
+          },
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          },
+          {
+            "path": "onBehalf",
+            "label": "On Behalf",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

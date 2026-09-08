@@ -1,0 +1,967 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": []
+    }
+  },
+  "metadata": {
+    "owner": "OKX Labs",
+    "contractName": "OkxDexRouterV1.0.8-suffix-compat"
+  },
+  "display": {
+    "formats": {
+      "dagSwapByOrderId(uint256 orderId,(uint256 fromToken,address toToken,uint256 fromTokenAmount,uint256 minReturnAmount,uint256 deadLine) baseRequest,(address[] mixAdapters,address[] assetTo,uint256[] rawData,bytes[] extraData,uint256 fromToken)[] paths)": {
+        "intent": "Dag Swap By Order Id",
+        "fields": [
+          {
+            "path": "orderId",
+            "label": "Order Id",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromTokenAmount",
+            "label": "From Token Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.minReturnAmount",
+            "label": "Min Return Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.deadLine",
+            "label": "Dead Line",
+            "format": "raw"
+          },
+          {
+            "path": "paths.[]",
+            "label": "Paths",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "mixAdapters.[]",
+                "label": "Mix Adapters",
+                "format": "raw",
+                "separator": "Mix Adapters {index}"
+              },
+              {
+                "path": "assetTo.[]",
+                "label": "Asset To",
+                "format": "raw",
+                "separator": "Asset To {index}"
+              },
+              {
+                "path": "rawData.[]",
+                "label": "Raw Data",
+                "format": "raw",
+                "separator": "Raw Data {index}"
+              },
+              {
+                "path": "extraData.[]",
+                "label": "Extra Data",
+                "format": "raw",
+                "separator": "Extra Data {index}"
+              },
+              {
+                "path": "fromToken",
+                "label": "From Token",
+                "format": "raw"
+              }
+            ]
+          }
+        ]
+      },
+      "dagSwapTo(uint256 orderId,address receiver,(uint256 fromToken,address toToken,uint256 fromTokenAmount,uint256 minReturnAmount,uint256 deadLine) baseRequest,(address[] mixAdapters,address[] assetTo,uint256[] rawData,bytes[] extraData,uint256 fromToken)[] paths)": {
+        "intent": "Dag Swap To",
+        "fields": [
+          {
+            "path": "orderId",
+            "label": "Order Id",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromTokenAmount",
+            "label": "From Token Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.minReturnAmount",
+            "label": "Min Return Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.deadLine",
+            "label": "Dead Line",
+            "format": "raw"
+          },
+          {
+            "path": "paths.[]",
+            "label": "Paths",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "mixAdapters.[]",
+                "label": "Mix Adapters",
+                "format": "raw",
+                "separator": "Mix Adapters {index}"
+              },
+              {
+                "path": "assetTo.[]",
+                "label": "Asset To",
+                "format": "raw",
+                "separator": "Asset To {index}"
+              },
+              {
+                "path": "rawData.[]",
+                "label": "Raw Data",
+                "format": "raw",
+                "separator": "Raw Data {index}"
+              },
+              {
+                "path": "extraData.[]",
+                "label": "Extra Data",
+                "format": "raw",
+                "separator": "Extra Data {index}"
+              },
+              {
+                "path": "fromToken",
+                "label": "From Token",
+                "format": "raw"
+              }
+            ]
+          }
+        ]
+      },
+      "smartSwapByOrderId(uint256 orderId,(uint256 fromToken,address toToken,uint256 fromTokenAmount,uint256 minReturnAmount,uint256 deadLine) baseRequest,uint256[] batchesAmount,(address[] mixAdapters,address[] assetTo,uint256[] rawData,bytes[] extraData,uint256 fromToken)[][] batches,(uint256 pathIndex,address payer,address fromToken,address toToken,uint256 fromTokenAmountMax,uint256 toTokenAmountMax,uint256 salt,uint256 deadLine,bool isPushOrder,bytes extension)[] extraData)": {
+        "intent": "Smart Swap By Order Id",
+        "fields": [
+          {
+            "path": "orderId",
+            "label": "Order Id",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromTokenAmount",
+            "label": "From Token Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.minReturnAmount",
+            "label": "Min Return Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.deadLine",
+            "label": "Dead Line",
+            "format": "raw"
+          },
+          {
+            "path": "batchesAmount.[]",
+            "label": "Batches Amount",
+            "format": "raw",
+            "separator": "Batches Amount {index}"
+          },
+          {
+            "path": "batches.[]",
+            "label": "Batches",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "[]",
+                "label": "Batches",
+                "iteration": "sequential",
+                "fields": [
+                  {
+                    "path": "mixAdapters.[]",
+                    "label": "Mix Adapters",
+                    "format": "raw",
+                    "separator": "Mix Adapters {index}"
+                  },
+                  {
+                    "path": "assetTo.[]",
+                    "label": "Asset To",
+                    "format": "raw",
+                    "separator": "Asset To {index}"
+                  },
+                  {
+                    "path": "rawData.[]",
+                    "label": "Raw Data",
+                    "format": "raw",
+                    "separator": "Raw Data {index}"
+                  },
+                  {
+                    "path": "extraData.[]",
+                    "label": "Extra Data",
+                    "format": "raw",
+                    "separator": "Extra Data {index}"
+                  },
+                  {
+                    "path": "fromToken",
+                    "label": "From Token",
+                    "format": "raw"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "extraData.[]",
+            "label": "Extra Data",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "pathIndex",
+                "label": "Path Index",
+                "format": "raw"
+              },
+              {
+                "path": "payer",
+                "label": "Payer",
+                "format": "raw"
+              },
+              {
+                "path": "fromToken",
+                "label": "From Token",
+                "format": "raw"
+              },
+              {
+                "path": "toToken",
+                "label": "To Token",
+                "format": "raw"
+              },
+              {
+                "path": "fromTokenAmountMax",
+                "label": "From Token Amount Max",
+                "format": "raw"
+              },
+              {
+                "path": "toTokenAmountMax",
+                "label": "To Token Amount Max",
+                "format": "raw"
+              },
+              {
+                "path": "salt",
+                "label": "Salt",
+                "format": "raw"
+              },
+              {
+                "path": "deadLine",
+                "label": "Dead Line",
+                "format": "raw"
+              },
+              {
+                "path": "isPushOrder",
+                "label": "Is Push Order",
+                "format": "raw"
+              },
+              {
+                "path": "extension",
+                "label": "Extension",
+                "format": "raw"
+              }
+            ]
+          }
+        ]
+      },
+      "smartSwapTo(uint256 orderId,address receiver,(uint256 fromToken,address toToken,uint256 fromTokenAmount,uint256 minReturnAmount,uint256 deadLine) baseRequest,uint256[] batchesAmount,(address[] mixAdapters,address[] assetTo,uint256[] rawData,bytes[] extraData,uint256 fromToken)[][] batches,(uint256 pathIndex,address payer,address fromToken,address toToken,uint256 fromTokenAmountMax,uint256 toTokenAmountMax,uint256 salt,uint256 deadLine,bool isPushOrder,bytes extension)[] extraData)": {
+        "intent": "Smart Swap To",
+        "fields": [
+          {
+            "path": "orderId",
+            "label": "Order Id",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromTokenAmount",
+            "label": "From Token Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.minReturnAmount",
+            "label": "Min Return Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.deadLine",
+            "label": "Dead Line",
+            "format": "raw"
+          },
+          {
+            "path": "batchesAmount.[]",
+            "label": "Batches Amount",
+            "format": "raw",
+            "separator": "Batches Amount {index}"
+          },
+          {
+            "path": "batches.[]",
+            "label": "Batches",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "[]",
+                "label": "Batches",
+                "iteration": "sequential",
+                "fields": [
+                  {
+                    "path": "mixAdapters.[]",
+                    "label": "Mix Adapters",
+                    "format": "raw",
+                    "separator": "Mix Adapters {index}"
+                  },
+                  {
+                    "path": "assetTo.[]",
+                    "label": "Asset To",
+                    "format": "raw",
+                    "separator": "Asset To {index}"
+                  },
+                  {
+                    "path": "rawData.[]",
+                    "label": "Raw Data",
+                    "format": "raw",
+                    "separator": "Raw Data {index}"
+                  },
+                  {
+                    "path": "extraData.[]",
+                    "label": "Extra Data",
+                    "format": "raw",
+                    "separator": "Extra Data {index}"
+                  },
+                  {
+                    "path": "fromToken",
+                    "label": "From Token",
+                    "format": "raw"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "extraData.[]",
+            "label": "Extra Data",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "pathIndex",
+                "label": "Path Index",
+                "format": "raw"
+              },
+              {
+                "path": "payer",
+                "label": "Payer",
+                "format": "raw"
+              },
+              {
+                "path": "fromToken",
+                "label": "From Token",
+                "format": "raw"
+              },
+              {
+                "path": "toToken",
+                "label": "To Token",
+                "format": "raw"
+              },
+              {
+                "path": "fromTokenAmountMax",
+                "label": "From Token Amount Max",
+                "format": "raw"
+              },
+              {
+                "path": "toTokenAmountMax",
+                "label": "To Token Amount Max",
+                "format": "raw"
+              },
+              {
+                "path": "salt",
+                "label": "Salt",
+                "format": "raw"
+              },
+              {
+                "path": "deadLine",
+                "label": "Dead Line",
+                "format": "raw"
+              },
+              {
+                "path": "isPushOrder",
+                "label": "Is Push Order",
+                "format": "raw"
+              },
+              {
+                "path": "extension",
+                "label": "Extension",
+                "format": "raw"
+              }
+            ]
+          }
+        ]
+      },
+      "swapWrap(uint256 orderId,uint256 rawdata)": {
+        "intent": "Swap Wrap",
+        "fields": [
+          {
+            "path": "orderId",
+            "label": "Order Id",
+            "format": "raw"
+          },
+          {
+            "path": "rawdata",
+            "label": "Rawdata",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapWrapToWithBaseRequest(uint256 orderId,address receiver,(uint256 fromToken,address toToken,uint256 fromTokenAmount,uint256 minReturnAmount,uint256 deadLine) baseRequest)": {
+        "intent": "Swap Wrap To With Base Request",
+        "fields": [
+          {
+            "path": "orderId",
+            "label": "Order Id",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromTokenAmount",
+            "label": "From Token Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.minReturnAmount",
+            "label": "Min Return Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.deadLine",
+            "label": "Dead Line",
+            "format": "raw"
+          }
+        ]
+      },
+      "uniswapV3SwapTo(uint256 receiver,uint256 amount,uint256 minReturn,uint256[] pools)": {
+        "intent": "Uniswap V3 Swap To",
+        "fields": [
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          },
+          {
+            "path": "minReturn",
+            "label": "Min Return",
+            "format": "raw"
+          },
+          {
+            "path": "pools.[]",
+            "label": "Pools",
+            "format": "raw",
+            "separator": "Pools {index}"
+          }
+        ]
+      },
+      "uniswapV3SwapToWithBaseRequest(uint256 orderId,address receiver,(uint256 fromToken,address toToken,uint256 fromTokenAmount,uint256 minReturnAmount,uint256 deadLine) baseRequest,uint256[] pools)": {
+        "intent": "Uniswap V3 Swap To With Base Request",
+        "fields": [
+          {
+            "path": "orderId",
+            "label": "Order Id",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromTokenAmount",
+            "label": "From Token Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.minReturnAmount",
+            "label": "Min Return Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.deadLine",
+            "label": "Dead Line",
+            "format": "raw"
+          },
+          {
+            "path": "pools.[]",
+            "label": "Pools",
+            "format": "raw",
+            "separator": "Pools {index}"
+          }
+        ]
+      },
+      "unxswapByOrderId(uint256 srcToken,uint256 amount,uint256 minReturn,bytes32[] pools)": {
+        "intent": "Unxswap By Order Id",
+        "fields": [
+          {
+            "path": "srcToken",
+            "label": "Src Token",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          },
+          {
+            "path": "minReturn",
+            "label": "Min Return",
+            "format": "raw"
+          },
+          {
+            "path": "pools.[]",
+            "label": "Pools",
+            "format": "raw",
+            "separator": "Pools {index}"
+          }
+        ]
+      },
+      "unxswapTo(uint256 srcToken,uint256 amount,uint256 minReturn,address receiver,bytes32[] pools)": {
+        "intent": "Unxswap To",
+        "fields": [
+          {
+            "path": "srcToken",
+            "label": "Src Token",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          },
+          {
+            "path": "minReturn",
+            "label": "Min Return",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "pools.[]",
+            "label": "Pools",
+            "format": "raw",
+            "separator": "Pools {index}"
+          }
+        ]
+      },
+      "unxswapToWithBaseRequest(uint256 orderId,address receiver,(uint256 fromToken,address toToken,uint256 fromTokenAmount,uint256 minReturnAmount,uint256 deadLine) baseRequest,bytes32[] pools)": {
+        "intent": "Unxswap To With Base Request",
+        "fields": [
+          {
+            "path": "orderId",
+            "label": "Order Id",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromTokenAmount",
+            "label": "From Token Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.minReturnAmount",
+            "label": "Min Return Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.deadLine",
+            "label": "Dead Line",
+            "format": "raw"
+          },
+          {
+            "path": "pools.[]",
+            "label": "Pools",
+            "format": "raw",
+            "separator": "Pools {index}"
+          }
+        ]
+      },
+      "smartSwapByInvest((uint256 fromToken,address toToken,uint256 fromTokenAmount,uint256 minReturnAmount,uint256 deadLine) baseRequest,uint256[] batchesAmount,(address[] mixAdapters,address[] assetTo,uint256[] rawData,bytes[] extraData,uint256 fromToken)[][] batches,(uint256 pathIndex,address payer,address fromToken,address toToken,uint256 fromTokenAmountMax,uint256 toTokenAmountMax,uint256 salt,uint256 deadLine,bool isPushOrder,bytes extension)[] extraData,address to)": {
+        "intent": "Smart Swap By Invest",
+        "fields": [
+          {
+            "path": "baseRequest.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromTokenAmount",
+            "label": "From Token Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.minReturnAmount",
+            "label": "Min Return Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.deadLine",
+            "label": "Dead Line",
+            "format": "raw"
+          },
+          {
+            "path": "batchesAmount.[]",
+            "label": "Batches Amount",
+            "format": "raw",
+            "separator": "Batches Amount {index}"
+          },
+          {
+            "path": "batches.[]",
+            "label": "Batches",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "[]",
+                "label": "Batches",
+                "iteration": "sequential",
+                "fields": [
+                  {
+                    "path": "mixAdapters.[]",
+                    "label": "Mix Adapters",
+                    "format": "raw",
+                    "separator": "Mix Adapters {index}"
+                  },
+                  {
+                    "path": "assetTo.[]",
+                    "label": "Asset To",
+                    "format": "raw",
+                    "separator": "Asset To {index}"
+                  },
+                  {
+                    "path": "rawData.[]",
+                    "label": "Raw Data",
+                    "format": "raw",
+                    "separator": "Raw Data {index}"
+                  },
+                  {
+                    "path": "extraData.[]",
+                    "label": "Extra Data",
+                    "format": "raw",
+                    "separator": "Extra Data {index}"
+                  },
+                  {
+                    "path": "fromToken",
+                    "label": "From Token",
+                    "format": "raw"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "extraData.[]",
+            "label": "Extra Data",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "pathIndex",
+                "label": "Path Index",
+                "format": "raw"
+              },
+              {
+                "path": "payer",
+                "label": "Payer",
+                "format": "raw"
+              },
+              {
+                "path": "fromToken",
+                "label": "From Token",
+                "format": "raw"
+              },
+              {
+                "path": "toToken",
+                "label": "To Token",
+                "format": "raw"
+              },
+              {
+                "path": "fromTokenAmountMax",
+                "label": "From Token Amount Max",
+                "format": "raw"
+              },
+              {
+                "path": "toTokenAmountMax",
+                "label": "To Token Amount Max",
+                "format": "raw"
+              },
+              {
+                "path": "salt",
+                "label": "Salt",
+                "format": "raw"
+              },
+              {
+                "path": "deadLine",
+                "label": "Dead Line",
+                "format": "raw"
+              },
+              {
+                "path": "isPushOrder",
+                "label": "Is Push Order",
+                "format": "raw"
+              },
+              {
+                "path": "extension",
+                "label": "Extension",
+                "format": "raw"
+              }
+            ]
+          },
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          }
+        ]
+      },
+      "smartSwapByInvestWithRefund((uint256 fromToken,address toToken,uint256 fromTokenAmount,uint256 minReturnAmount,uint256 deadLine) baseRequest,uint256[] batchesAmount,(address[] mixAdapters,address[] assetTo,uint256[] rawData,bytes[] extraData,uint256 fromToken)[][] batches,(uint256 pathIndex,address payer,address fromToken,address toToken,uint256 fromTokenAmountMax,uint256 toTokenAmountMax,uint256 salt,uint256 deadLine,bool isPushOrder,bytes extension)[] extraData,address to,address refundTo)": {
+        "intent": "Smart Swap By Invest With Refund",
+        "fields": [
+          {
+            "path": "baseRequest.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.fromTokenAmount",
+            "label": "From Token Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.minReturnAmount",
+            "label": "Min Return Amount",
+            "format": "raw"
+          },
+          {
+            "path": "baseRequest.deadLine",
+            "label": "Dead Line",
+            "format": "raw"
+          },
+          {
+            "path": "batchesAmount.[]",
+            "label": "Batches Amount",
+            "format": "raw",
+            "separator": "Batches Amount {index}"
+          },
+          {
+            "path": "batches.[]",
+            "label": "Batches",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "[]",
+                "label": "Batches",
+                "iteration": "sequential",
+                "fields": [
+                  {
+                    "path": "mixAdapters.[]",
+                    "label": "Mix Adapters",
+                    "format": "raw",
+                    "separator": "Mix Adapters {index}"
+                  },
+                  {
+                    "path": "assetTo.[]",
+                    "label": "Asset To",
+                    "format": "raw",
+                    "separator": "Asset To {index}"
+                  },
+                  {
+                    "path": "rawData.[]",
+                    "label": "Raw Data",
+                    "format": "raw",
+                    "separator": "Raw Data {index}"
+                  },
+                  {
+                    "path": "extraData.[]",
+                    "label": "Extra Data",
+                    "format": "raw",
+                    "separator": "Extra Data {index}"
+                  },
+                  {
+                    "path": "fromToken",
+                    "label": "From Token",
+                    "format": "raw"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "extraData.[]",
+            "label": "Extra Data",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "pathIndex",
+                "label": "Path Index",
+                "format": "raw"
+              },
+              {
+                "path": "payer",
+                "label": "Payer",
+                "format": "raw"
+              },
+              {
+                "path": "fromToken",
+                "label": "From Token",
+                "format": "raw"
+              },
+              {
+                "path": "toToken",
+                "label": "To Token",
+                "format": "raw"
+              },
+              {
+                "path": "fromTokenAmountMax",
+                "label": "From Token Amount Max",
+                "format": "raw"
+              },
+              {
+                "path": "toTokenAmountMax",
+                "label": "To Token Amount Max",
+                "format": "raw"
+              },
+              {
+                "path": "salt",
+                "label": "Salt",
+                "format": "raw"
+              },
+              {
+                "path": "deadLine",
+                "label": "Dead Line",
+                "format": "raw"
+              },
+              {
+                "path": "isPushOrder",
+                "label": "Is Push Order",
+                "format": "raw"
+              },
+              {
+                "path": "extension",
+                "label": "Extension",
+                "format": "raw"
+              }
+            ]
+          },
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "refundTo",
+            "label": "Refund To",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

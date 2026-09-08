@@ -1,0 +1,168 @@
+{
+  "case": "feral-nested-arrays",
+  "device": "flex",
+  "exitCode": 1,
+  "testerStatus": "partially_clear_signed",
+  "clearSigningType": "eip7730",
+  "usedFallback": false,
+  "blindSigning": false,
+  "signatureProduced": true,
+  "contextErrorCount": 3,
+  "fields": [
+    {
+      "label": "R ",
+      "value": "0x0101010101010101010101010101010101010101010101010101010101010101",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "S ",
+      "value": "0x0101010101010101010101010101010101010101010101010101010101010101",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "V ",
+      "value": "3",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "Price",
+      "value": "1",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "Cost",
+      "value": "2",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "Expiry Time",
+      "value": "3",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "Destination",
+      "value": "0x0000000000000000000000000000000000000004",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "Token Ids",
+      "value": "101",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "Token Ids",
+      "value": "202",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "Recipient",
+      "value": "0x0000000000000000000000000000000000000011",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "Bps",
+      "value": "111",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "Recipient",
+      "value": "0x0000000000000000000000000000000000000022",
+      "foundTogether": true,
+      "foundInOrder": false
+    },
+    {
+      "label": "Bps",
+      "value": "222",
+      "foundTogether": true,
+      "foundInOrder": true
+    },
+    {
+      "label": "Pay By Vault Contract",
+      "value": "true",
+      "foundTogether": false,
+      "foundInOrder": false
+    }
+  ],
+  "capturedTexts": [
+    "Review transaction to Pay For Sale Swipe to review Reject 1 of 8",
+    "Review transaction to Pay For Sale Swipe to review Reject 1 of 8",
+    "Review transaction to Pay For Sale Swipe to review Reject 1 of 8",
+    "Review transaction to Pay For Sale Swipe to review Reject 1 of 8",
+    "Review transaction to Pay For Sale Swipe to review Reject 1 of 8",
+    "Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8",
+    "Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8",
+    "Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8",
+    "Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8",
+    "S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8",
+    "S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8",
+    "S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8",
+    "S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8",
+    "Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8",
+    "Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8",
+    "Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8",
+    "Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8",
+    "Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8",
+    "Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8",
+    "Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8",
+    "Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8",
+    "Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8",
+    "Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8",
+    "Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8",
+    "Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8",
+    "Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8",
+    "Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8",
+    "Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8",
+    "Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8",
+    "Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign",
+    "Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign",
+    "Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign",
+    "Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign",
+    "Transaction signed",
+    "Transaction signed",
+    "Transaction signed",
+    "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+  ],
+  "command": [
+    "pnpm",
+    "cs-tester",
+    "cli",
+    "raw-file",
+    "/tmp/csh-device-shape-cases/feral-nested-arrays/raw.json",
+    "--device",
+    "flex",
+    "--custom-app",
+    "/tmp/csh-app-ethereum-flex-1.22.3.elf",
+    "--docker-image-tag",
+    "csh-device-20260908",
+    "--speculos-port",
+    "19191",
+    "--speculos-vnc-port",
+    "29191",
+    "--erc7730-files",
+    "/tmp/csh-device-shape-cases/feral-nested-arrays/calldata-feral-nested-arrays.json",
+    "--screenshot-folder-path",
+    "/tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots",
+    "--log-file",
+    "/tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/tester.log",
+    "--file-log-level",
+    "debug",
+    "--log-level",
+    "info"
+  ],
+  "broadcast": false,
+  "passed": false,
+  "fieldOrderMatches": false,
+  "deviceError": null,
+  "analysis": "Rechecked saved captures with final screen checker: ordered complete pairs, no value-prefix matches, final SDK state retained even when no signature."
+}

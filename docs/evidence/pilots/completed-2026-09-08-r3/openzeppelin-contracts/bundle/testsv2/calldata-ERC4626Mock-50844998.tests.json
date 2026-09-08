@@ -1,0 +1,184 @@
+{
+  "$schema": "../../../specs/erc7730-tests-v2.schema.json",
+  "descriptor": "../calldata-ERC4626Mock-50844998.json",
+  "dataProvider": {
+    "tokens": {},
+    "addressNames": {}
+  },
+  "tests": [
+    {
+      "description": "clear-signing/fixtures/pilot-approve-095ea7b3.json",
+      "rawTx": "0x02f867827a69808080830f424094e7f1725e7734ce288f8367e1bb143e90bb3f051280b844095ea7b300000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007c0",
+      "expected": {
+        "intent": "Pilot Approve",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Spender",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Value",
+            "value": "7"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-burn-9dc29fac.json",
+      "rawTx": "0x02f867827a69808080830f424094e7f1725e7734ce288f8367e1bb143e90bb3f051280b8449dc29fac00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007c0",
+      "expected": {
+        "intent": "Pilot Burn",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Account",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Amount",
+            "value": "7"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-deposit-6e553f65.json",
+      "rawTx": "0x02f867827a69808080830f424094e7f1725e7734ce288f8367e1bb143e90bb3f051280b8446e553f6500000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000001c0",
+      "expected": {
+        "intent": "Pilot Deposit",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Assets",
+            "value": "7"
+          },
+          {
+            "label": "Receiver",
+            "value": "0x0000000000000000000000000000000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-mint-40c10f19.json",
+      "rawTx": "0x02f867827a69808080830f424094e7f1725e7734ce288f8367e1bb143e90bb3f051280b84440c10f1900000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007c0",
+      "expected": {
+        "intent": "Pilot Mint",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Account",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Amount",
+            "value": "7"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-mint-94bf804d.json",
+      "rawTx": "0x02f867827a69808080830f424094e7f1725e7734ce288f8367e1bb143e90bb3f051280b84494bf804d00000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000001c0",
+      "expected": {
+        "intent": "Pilot Mint",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Shares",
+            "value": "7"
+          },
+          {
+            "label": "Receiver",
+            "value": "0x0000000000000000000000000000000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-redeem-ba087652.json",
+      "rawTx": "0x02f887827a69808080830f424094e7f1725e7734ce288f8367e1bb143e90bb3f051280b864ba087652000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001c0",
+      "expected": {
+        "intent": "Pilot Redeem",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Shares",
+            "value": "7"
+          },
+          {
+            "label": "Receiver",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Owner",
+            "value": "0x0000000000000000000000000000000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-transfer-a9059cbb.json",
+      "rawTx": "0x02f867827a69808080830f424094e7f1725e7734ce288f8367e1bb143e90bb3f051280b844a9059cbb00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007c0",
+      "expected": {
+        "intent": "Pilot Transfer",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "To",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Value",
+            "value": "7"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-transferFrom-23b872dd.json",
+      "rawTx": "0x02f887827a69808080830f424094e7f1725e7734ce288f8367e1bb143e90bb3f051280b86423b872dd000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007c0",
+      "expected": {
+        "intent": "Pilot Transfer From",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "From",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "To",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Value",
+            "value": "7"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-withdraw-b460af94.json",
+      "rawTx": "0x02f887827a69808080830f424094e7f1725e7734ce288f8367e1bb143e90bb3f051280b864b460af94000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001c0",
+      "expected": {
+        "intent": "Pilot Withdraw",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Assets",
+            "value": "7"
+          },
+          {
+            "label": "Receiver",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Owner",
+            "value": "0x0000000000000000000000000000000000000001"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "ok": true,
+  "fixtureCount": 14,
+  "steps": [
+    {
+      "name": "init",
+      "ms": 423,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-exactInput-c04b8d59",
+      "ms": 366,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-exactInputSingle-414bf389",
+      "ms": 360,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-exactOutput-f28c0498",
+      "ms": 367,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-exactOutputSingle-db3e2198",
+      "ms": 366,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-multicall-ac9650d8",
+      "ms": 356,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-refundETH-12210e8a",
+      "ms": 359,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-selfPermit-f3995c67",
+      "ms": 359,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-selfPermitAllowed-4659a494",
+      "ms": 356,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-selfPermitAllowedIfNecessary-a4a78f0c",
+      "ms": 365,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-selfPermitIfNecessary-c2e3140a",
+      "ms": 363,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-sweepToken-df2ab5bb",
+      "ms": 357,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-sweepTokenWithFee-e0e189a0",
+      "ms": 365,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-unwrapWETH9-49404b7c",
+      "ms": 359,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-unwrapWETH9WithFee-9b2c0a37",
+      "ms": 368,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-exactInput-c04b8d59",
+      "ms": 385,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-exactInputSingle-414bf389",
+      "ms": 387,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-exactOutput-f28c0498",
+      "ms": 385,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-exactOutputSingle-db3e2198",
+      "ms": 383,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-multicall-ac9650d8",
+      "ms": 387,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-refundETH-12210e8a",
+      "ms": 376,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-selfPermit-f3995c67",
+      "ms": 385,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-selfPermitAllowed-4659a494",
+      "ms": 385,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-selfPermitAllowedIfNecessary-a4a78f0c",
+      "ms": 388,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-selfPermitIfNecessary-c2e3140a",
+      "ms": 389,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-sweepToken-df2ab5bb",
+      "ms": 393,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-sweepTokenWithFee-e0e189a0",
+      "ms": 386,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-unwrapWETH9-49404b7c",
+      "ms": 390,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-unwrapWETH9WithFee-9b2c0a37",
+      "ms": 391,
+      "exitCode": 0
+    },
+    {
+      "name": "review",
+      "ms": 372,
+      "exitCode": 0
+    },
+    {
+      "name": "test-update",
+      "ms": 457,
+      "exitCode": 0
+    },
+    {
+      "name": "test",
+      "ms": 455,
+      "exitCode": 0
+    },
+    {
+      "name": "check-strict",
+      "ms": 374,
+      "exitCode": 0
+    },
+    {
+      "name": "export-strict",
+      "ms": 484,
+      "exitCode": 0
+    }
+  ]
+}

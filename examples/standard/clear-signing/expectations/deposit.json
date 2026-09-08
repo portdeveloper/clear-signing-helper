@@ -1,0 +1,32 @@
+{
+  "engine": {
+    "tool": "0.2.0",
+    "renderer": "@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1",
+    "schema": "f1da6154187a258475139f1b871f74a7bade0af23ff45c782fb85ecd4d7e8a3f",
+    "subset": 2
+  },
+  "contract": "src/AssetVault.sol:AssetVault",
+  "signature": "deposit(uint256,address)",
+  "chainId": 31337,
+  "to": "0x0000000000000000000000000000000000000001",
+  "value": "0",
+  "localBinding": true,
+  "intent": "Deposit",
+  "fields": [
+    {
+      "label": "Amount",
+      "value": "1 USDC",
+      "fieldType": "uint",
+      "format": "tokenAmount",
+      "tokenAddress": "0x0000000000000000000000000000000000000003"
+    },
+    {
+      "label": "Receiver",
+      "value": "Alice",
+      "fieldType": "address",
+      "format": "addressName",
+      "rawAddress": "0x0000000000000000000000000000000000000002"
+    }
+  ],
+  "warnings": []
+}

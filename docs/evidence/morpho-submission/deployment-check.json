@@ -1,0 +1,31 @@
+{
+  "source": "https://sourcify.dev/server/v2/contract/1/0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb?fields=all",
+  "chainId": 1,
+  "address": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+  "compiler": "0.8.19+commit.7dd6d404",
+  "match": "exact_match",
+  "compiledFunctionAbiMatches": true,
+  "executableBytes": 15570,
+  "compiledRuntimeMatchesVerifiedRecompilation": true,
+  "constructorDomainSeparator": "0xec6ac4ec6469375712b671d38548b711c7a4a17b4db99be41e0eb9f28cafdd2d",
+  "immutableRanges": [
+    {
+      "start": 6282,
+      "length": 32
+    },
+    {
+      "start": 9401,
+      "length": 32
+    }
+  ],
+  "boundRuntimeMatchesSourcifyStoredOnchainRuntime": true,
+  "boundRuntimeKeccak256": "0x1a1be3a89d00dca7561fa7277a351dff77baf385083e80ae0cffe7d4cf21d169",
+  "deployment": {
+    "transactionHash": "0xba6a2e752ff5caee49cd4f69825ca00e47abc827ae51e7bda5c3ad56eae053b3",
+    "blockNumber": "18883124",
+    "transactionIndex": "73",
+    "deployer": "0x937Ce2d6c488b361825D2DB5e8A70e26d48afEd5"
+  },
+  "metadataExcluded": true,
+  "limitation": "Read-only comparison against Sourcify response; no independent live RPC verification, proxy discovery, or CLI deployment-verification feature."
+}

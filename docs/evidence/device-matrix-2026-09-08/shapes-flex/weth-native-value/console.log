@@ -1,0 +1,90 @@
+
+> @ledgerhq/ldmk@1.0.0 cs-tester /tmp/csh-device-sdk-ts-pinned
+> pnpm --filter @ledgerhq/clear-signing-tester cli raw-file /tmp/csh-device-shape-cases/weth-native-value/raw.json --device flex --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --docker-image-tag csh-device-20260908 --speculos-port 19191 --speculos-vnc-port 29191 --erc7730-files /tmp/csh-device-shape-cases/weth-native-value/calldata-weth-native-value.json --screenshot-folder-path /tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots --log-file /tmp/csh-ledger-shapes-flex-run2/weth-native-value/tester.log --file-log-level debug --log-level info
+
+
+> @ledgerhq/clear-signing-tester@1.0.0 cli /tmp/csh-device-sdk-ts-pinned/apps/clear-signing-tester
+> tsx src/cli/EthereumTransactionTesterCli.ts raw-file /tmp/csh-device-shape-cases/weth-native-value/raw.json --device flex --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --docker-image-tag csh-device-20260908 --speculos-port 19191 --speculos-vnc-port 29191 --erc7730-files /tmp/csh-device-shape-cases/weth-native-value/calldata-weth-native-value.json --screenshot-folder-path /tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots --log-file /tmp/csh-ledger-shapes-flex-run2/weth-native-value/tester.log --file-log-level debug --log-level info
+
+touchscreen-controller Initialized touchscreen controller for flex
+cli Setting up CAL interceptor with 1 ERC7730 file(s)
+cli Processing: /tmp/csh-device-shape-cases/weth-native-value/calldata-weth-native-value.json
+Stored new descriptors for 1:0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
+Stored 41 certificates
+CAL Interceptor started
+cli Interceptor active with 1 descriptor(s)
+main-service-controller Starting all services...
+speculos-service-controller Starting Docker container with name: cs-tester-speculos-flex-19191
+speculos-service-controller API url: http://localhost:19191
+speculos-service-controller VNC url: vnc://localhost:29191
+speculos-service-controller device=flex
+speculos-service-controller Using custom app: /custom-app/app.elf
+speculos-service-controller Custom app volume: /tmp/csh-app-ethereum-flex-1.22.3.elf:/custom-app/app.elf
+dmk-service-controller Starting DMK
+[DeviceSessionService] DeviceSession added { sessionId: 'dd21f8dc-98df-4b6c-958c-ef5c55e2a6d2' }
+dmk-service-controller DMK started successfully
+main-service-controller All services started successfully
+test-batch-transaction Processing transactions from: /tmp/csh-device-shape-cases/weth-native-value/raw.json
+test-batch-transaction Found 1 transaction to test
+test-batch-transaction Testing transaction 1/1
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots/screenshot_1.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots/screenshot_2.png
+Intercepted dapps request for 1:0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2 (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots/screenshot_3.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots/screenshot_4.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots/screenshot_5.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots/screenshot_6.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots/screenshot_7.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Deposit Swipe to review Reject 1 of 3',
+      'Review transaction to Deposit Swipe to review Reject 1 of 3',
+      'Review transaction to Deposit Swipe to review Reject 1 of 3',
+      'Review transaction to Deposit Swipe to review Reject 1 of 3',
+      'Review transaction to Deposit Swipe to review Reject 1 of 3',
+      'Interaction with WETH Native value (wei) 123456789000000000 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with WETH Native value (wei) 123456789000000000 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with WETH Native value (wei) 123456789000000000 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with WETH Native value (wei) 123456789000000000 Max fees 0 ETH Reject 2 of 3',
+      'Sign transaction to Deposit? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Deposit? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Deposit? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Deposit? Reject 3 of 3 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 4/4 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+
+📋 TRANSACTION TEST RESULTS
+┌─────────┬───────────────────────────────┬───────────────────┐
+│ (index) │ Description                   │ Status            │
+├─────────┼───────────────────────────────┼───────────────────┤
+│ 0       │ 'synthetic-weth-native-value' │ '✅ clear signed' │
+└─────────┴───────────────────────────────┴───────────────────┘
+
+📊 TRANSACTION BATCH SUMMARY
+┌─────────┬────────────────────────────┬───────┬────────────┐
+│ (index) │ Status                     │ Count │ Percentage │
+├─────────┼────────────────────────────┼───────┼────────────┤
+│ 0       │ '✅ Clear Signed'          │ 1     │ '100.0%'   │
+│ 1       │ '⚠️ Partially Clear Signed' │ 0     │ '0.0%'     │
+│ 2       │ '🙈 Blind Signed'          │ 0     │ '0.0%'     │
+│ 3       │ '❌ Errors'                │ 0     │ '0.0%'     │
+└─────────┴────────────────────────────┴───────┴────────────┘
+main-service-controller Stopping all services...
+[DeviceSessionService] DeviceSession removed { sessionId: 'dd21f8dc-98df-4b6c-958c-ef5c55e2a6d2' }
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots/screenshot_8.png
+[SpeculosTransport] Speculos server unavailable, disconnecting device SpeculosID
+main-service-controller All services stopped successfully
+CAL Interceptor stopped
+cli CAL interceptor stopped

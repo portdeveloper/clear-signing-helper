@@ -1,0 +1,1 @@
+{"ok":false,"diagnostics":[{"code":"UNSUPPORTED_ENTRYPOINT","message":"receive() needs a descriptor or an explicit exclusion reason.","file":"clear-signing/descriptors/calldata-SwapRouter-b15f6faf.json","signature":"receive()","remedy":"Edit the descriptor or record an explicit exclusion in clear-signing.toml, then run check."}]}

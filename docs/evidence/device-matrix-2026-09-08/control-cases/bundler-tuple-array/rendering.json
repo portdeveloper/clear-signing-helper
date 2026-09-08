@@ -1,0 +1,85 @@
+{
+  "engine": {
+    "tool": "0.2.0",
+    "renderer": "@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1",
+    "schema": "f1da6154187a258475139f1b871f74a7bade0af23ff45c782fb85ecd4d7e8a3f",
+    "subset": 2
+  },
+  "contract": "src/Registry.sol:Registry",
+  "signature": "multicall((address,bytes,uint256,bool,bytes32)[])",
+  "chainId": 1,
+  "to": "0x6566194141eefa99af43bb5aa71460ca2dc90245",
+  "value": "0",
+  "localBinding": false,
+  "intent": "Multicall",
+  "fields": [
+    {
+      "label": "Bundle",
+      "fields": [
+        {
+          "label": "To",
+          "value": "0x0000000000000000000000000000000000000011",
+          "fieldType": "address",
+          "format": "raw",
+          "rawAddress": "0x0000000000000000000000000000000000000011"
+        },
+        {
+          "label": "Data",
+          "value": "0xabcd",
+          "fieldType": "bytes",
+          "format": "raw"
+        },
+        {
+          "label": "Value",
+          "value": "111",
+          "fieldType": "uint",
+          "format": "raw"
+        },
+        {
+          "label": "Skip Revert",
+          "value": "false",
+          "fieldType": "bool",
+          "format": "raw"
+        },
+        {
+          "label": "Callback Hash",
+          "value": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "fieldType": "bytes",
+          "format": "raw"
+        },
+        {
+          "label": "To",
+          "value": "0x0000000000000000000000000000000000000022",
+          "fieldType": "address",
+          "format": "raw",
+          "rawAddress": "0x0000000000000000000000000000000000000022"
+        },
+        {
+          "label": "Data",
+          "value": "0x1234",
+          "fieldType": "bytes",
+          "format": "raw"
+        },
+        {
+          "label": "Value",
+          "value": "222",
+          "fieldType": "uint",
+          "format": "raw"
+        },
+        {
+          "label": "Skip Revert",
+          "value": "true",
+          "fieldType": "bool",
+          "format": "raw"
+        },
+        {
+          "label": "Callback Hash",
+          "value": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "fieldType": "bytes",
+          "format": "raw"
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,12 @@
+/home/ubuntu/repos/clear-signing-helper/scripts/complete-source-pilot.ts:28
+  if (exitCode !== 0) throw Error(`${name} failed (${exitCode}); see ${name}.log`);
+                            ^
+
+Error: check-strict failed (1); see check-strict.log
+    at run (/home/ubuntu/repos/clear-signing-helper/scripts/complete-source-pilot.ts:28:29)
+    at <anonymous> (/home/ubuntu/repos/clear-signing-helper/scripts/complete-source-pilot.ts:68:100)
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.22.3

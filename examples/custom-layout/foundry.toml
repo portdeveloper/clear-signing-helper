@@ -1,0 +1,15 @@
+[profile.default]
+src = "contracts"
+test = "specs"
+script = "automation"
+out = "artifacts"
+cache_path = "forge-cache"
+solc_version = "0.8.28"
+optimizer = true
+optimizer_runs = 500
+evm_version = "cancun"
+
+[profile.ci]
+optimizer = true
+optimizer_runs = 500
+verbosity = 2

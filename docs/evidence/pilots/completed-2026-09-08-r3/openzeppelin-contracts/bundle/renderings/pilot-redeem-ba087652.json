@@ -1,0 +1,38 @@
+{
+  "engine": {
+    "tool": "0.2.0",
+    "renderer": "@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1",
+    "schema": "f1da6154187a258475139f1b871f74a7bade0af23ff45c782fb85ecd4d7e8a3f",
+    "subset": 2
+  },
+  "contract": "contracts/mocks/token/ERC4626Mock.sol:ERC4626Mock",
+  "signature": "redeem(uint256,address,address)",
+  "chainId": 31337,
+  "to": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+  "value": "0",
+  "localBinding": false,
+  "intent": "Pilot Redeem",
+  "fields": [
+    {
+      "label": "Shares",
+      "value": "7",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Receiver",
+      "value": "0x0000000000000000000000000000000000000001",
+      "fieldType": "address",
+      "format": "raw",
+      "rawAddress": "0x0000000000000000000000000000000000000001"
+    },
+    {
+      "label": "Owner",
+      "value": "0x0000000000000000000000000000000000000001",
+      "fieldType": "address",
+      "format": "raw",
+      "rawAddress": "0x0000000000000000000000000000000000000001"
+    }
+  ],
+  "warnings": []
+}

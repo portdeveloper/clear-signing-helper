@@ -1,0 +1,104 @@
+
+> @ledgerhq/ldmk@1.0.0 cs-tester /tmp/csh-device-sdk-ts-pinned
+> pnpm --filter @ledgerhq/clear-signing-tester cli raw-file /tmp/csh-device-shape-cases/ekubo-signed-integers/raw.json --device flex --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --docker-image-tag csh-device-20260908 --speculos-port 19191 --speculos-vnc-port 29191 --erc7730-files /tmp/csh-device-shape-cases/ekubo-signed-integers/calldata-ekubo-signed-integers.json --screenshot-folder-path /tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/screenshots --log-file /tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/tester.log --file-log-level debug --log-level info
+
+
+> @ledgerhq/clear-signing-tester@1.0.0 cli /tmp/csh-device-sdk-ts-pinned/apps/clear-signing-tester
+> tsx src/cli/EthereumTransactionTesterCli.ts raw-file /tmp/csh-device-shape-cases/ekubo-signed-integers/raw.json --device flex --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --docker-image-tag csh-device-20260908 --speculos-port 19191 --speculos-vnc-port 29191 --erc7730-files /tmp/csh-device-shape-cases/ekubo-signed-integers/calldata-ekubo-signed-integers.json --screenshot-folder-path /tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/screenshots --log-file /tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/tester.log --file-log-level debug --log-level info
+
+touchscreen-controller Initialized touchscreen controller for flex
+cli Setting up CAL interceptor with 1 ERC7730 file(s)
+cli Processing: /tmp/csh-device-shape-cases/ekubo-signed-integers/calldata-ekubo-signed-integers.json
+Stored new descriptors for 1:0xd26f20001a72a18c002b00e6710000d68700ce00
+Stored 41 certificates
+CAL Interceptor started
+cli Interceptor active with 1 descriptor(s)
+main-service-controller Starting all services...
+speculos-service-controller Starting Docker container with name: cs-tester-speculos-flex-19191
+speculos-service-controller API url: http://localhost:19191
+speculos-service-controller VNC url: vnc://localhost:29191
+speculos-service-controller device=flex
+speculos-service-controller Using custom app: /custom-app/app.elf
+speculos-service-controller Custom app volume: /tmp/csh-app-ethereum-flex-1.22.3.elf:/custom-app/app.elf
+dmk-service-controller Starting DMK
+[DeviceSessionService] DeviceSession added { sessionId: '0d1f8fe4-5ba7-4948-abcd-69eabab208e5' }
+dmk-service-controller DMK started successfully
+main-service-controller All services started successfully
+test-batch-transaction Processing transactions from: /tmp/csh-device-shape-cases/ekubo-signed-integers/raw.json
+test-batch-transaction Found 1 transaction to test
+test-batch-transaction Testing transaction 1/1
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/screenshots/screenshot_1.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/screenshots/screenshot_2.png
+Intercepted dapps request for 1:0xd26f20001a72a18c002b00e6710000d68700ce00 (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+[ContextModule] [GatedSigningContextLoader] No gated descriptor found and proxy resolution failed {
+  to: '0xd26f20001a72a18C002b00e6710000d68700ce00',
+  selector: '0x1d8a7962',
+  chainId: 1,
+  directError: '[ContextModule] HttpGatedDescriptorDataSource: Invalid gated descriptors response',
+  proxyError: '[ContextModule] HttpSafeProxyDataSource: Failed to fetch safe proxy implementation'
+}
+[SignerEth] [ProvideTransactionContextsTask] [run] Failed to provide context {
+  contextType: 'ethereumTransactionFieldDescription',
+  error: {
+    _tag: 'EthAppCommandError',
+    originalError: undefined,
+    errorCode: '6a80',
+    message: 'Invalid data'
+  }
+}
+[SignerEth] [SendSignTransactionTask] [run] Failed to start transaction {
+  error: {
+    _tag: 'UnknownDeviceExchangeError',
+    originalError: { message: 'UnknownError', errorCode: '6980' },
+    message: 'Unexpected device exchange error happened.'
+  }
+}
+[SignerEth] [SendSignTransactionTask] [run] Failed to send transaction chunk {
+  chunkIndex: 0,
+  error: {
+    _tag: 'EthAppCommandError',
+    originalError: undefined,
+    errorCode: '6a80',
+    message: 'Invalid data'
+  }
+}
+signing-flow-orchestrator Device action error {
+  data: {
+    error: m {
+      _tag: 'EthAppCommandError',
+      originalError: undefined,
+      errorCode: '6a80',
+      message: 'Invalid data'
+    },
+    errorMessage: 'Invalid data'
+  }
+}
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/screenshots/screenshot_3.png
+
+📋 TRANSACTION TEST RESULTS
+┌─────────┬───────────────────────────────────┬───────────────────┐
+│ (index) │ Description                       │ Status            │
+├─────────┼───────────────────────────────────┼───────────────────┤
+│ 0       │ 'synthetic-ekubo-signed-integers' │ '🙈 blind signed' │
+└─────────┴───────────────────────────────────┴───────────────────┘
+
+📊 TRANSACTION BATCH SUMMARY
+┌─────────┬────────────────────────────┬───────┬────────────┐
+│ (index) │ Status                     │ Count │ Percentage │
+├─────────┼────────────────────────────┼───────┼────────────┤
+│ 0       │ '✅ Clear Signed'          │ 0     │ '0.0%'     │
+│ 1       │ '⚠️ Partially Clear Signed' │ 0     │ '0.0%'     │
+│ 2       │ '🙈 Blind Signed'          │ 1     │ '100.0%'   │
+│ 3       │ '❌ Errors'                │ 0     │ '0.0%'     │
+└─────────┴────────────────────────────┴───────┴────────────┘
+main-service-controller Stopping all services...
+[DeviceSessionService] DeviceSession removed { sessionId: '0d1f8fe4-5ba7-4948-abcd-69eabab208e5' }
+main-service-controller All services stopped successfully
+CAL Interceptor stopped
+cli CAL interceptor stopped
+/tmp/csh-device-sdk-ts-pinned/apps/clear-signing-tester:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @ledgerhq/clear-signing-tester@1.0.0 cli: `tsx src/cli/EthereumTransactionTesterCli.ts raw-file /tmp/csh-device-shape-cases/ekubo-signed-integers/raw.json --device flex --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --docker-image-tag csh-device-20260908 --speculos-port 19191 --speculos-vnc-port 29191 --erc7730-files /tmp/csh-device-shape-cases/ekubo-signed-integers/calldata-ekubo-signed-integers.json --screenshot-folder-path /tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/screenshots --log-file /tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/tester.log --file-log-level debug --log-level info`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.

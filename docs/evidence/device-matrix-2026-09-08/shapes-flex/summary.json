@@ -1,0 +1,475 @@
+[
+  {
+    "case": "weth-native-value",
+    "device": "flex",
+    "exitCode": 0,
+    "testerStatus": "clear_signed",
+    "clearSigningType": "eip7730",
+    "usedFallback": false,
+    "blindSigning": false,
+    "signatureProduced": true,
+    "contextErrorCount": 2,
+    "fields": [
+      {
+        "label": "Native value (wei)",
+        "value": "123456789000000000",
+        "foundTogether": true,
+        "foundInOrder": true
+      }
+    ],
+    "capturedTexts": [
+      "Review transaction to Deposit Swipe to review Reject 1 of 3",
+      "Review transaction to Deposit Swipe to review Reject 1 of 3",
+      "Review transaction to Deposit Swipe to review Reject 1 of 3",
+      "Review transaction to Deposit Swipe to review Reject 1 of 3",
+      "Review transaction to Deposit Swipe to review Reject 1 of 3",
+      "Interaction with WETH Native value (wei) 123456789000000000 Max fees 0 ETH Reject 2 of 3",
+      "Interaction with WETH Native value (wei) 123456789000000000 Max fees 0 ETH Reject 2 of 3",
+      "Interaction with WETH Native value (wei) 123456789000000000 Max fees 0 ETH Reject 2 of 3",
+      "Interaction with WETH Native value (wei) 123456789000000000 Max fees 0 ETH Reject 2 of 3",
+      "Sign transaction to Deposit? Reject 3 of 3 Hold to sign",
+      "Sign transaction to Deposit? Reject 3 of 3 Hold to sign",
+      "Sign transaction to Deposit? Reject 3 of 3 Hold to sign",
+      "Sign transaction to Deposit? Reject 3 of 3 Hold to sign",
+      "Transaction signed",
+      "Transaction signed",
+      "Transaction signed",
+      "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+    ],
+    "command": [
+      "pnpm",
+      "cs-tester",
+      "cli",
+      "raw-file",
+      "/tmp/csh-device-shape-cases/weth-native-value/raw.json",
+      "--device",
+      "flex",
+      "--custom-app",
+      "/tmp/csh-app-ethereum-flex-1.22.3.elf",
+      "--docker-image-tag",
+      "csh-device-20260908",
+      "--speculos-port",
+      "19191",
+      "--speculos-vnc-port",
+      "29191",
+      "--erc7730-files",
+      "/tmp/csh-device-shape-cases/weth-native-value/calldata-weth-native-value.json",
+      "--screenshot-folder-path",
+      "/tmp/csh-ledger-shapes-flex-run2/weth-native-value/screenshots",
+      "--log-file",
+      "/tmp/csh-ledger-shapes-flex-run2/weth-native-value/tester.log",
+      "--file-log-level",
+      "debug",
+      "--log-level",
+      "info"
+    ],
+    "broadcast": false,
+    "passed": true,
+    "fieldOrderMatches": true,
+    "deviceError": null,
+    "analysis": "Rechecked saved captures with final screen checker: ordered complete pairs, no value-prefix matches, final SDK state retained even when no signature."
+  },
+  {
+    "case": "feral-nested-arrays",
+    "device": "flex",
+    "exitCode": 1,
+    "testerStatus": "partially_clear_signed",
+    "clearSigningType": "eip7730",
+    "usedFallback": false,
+    "blindSigning": false,
+    "signatureProduced": true,
+    "contextErrorCount": 3,
+    "fields": [
+      {
+        "label": "R ",
+        "value": "0x0101010101010101010101010101010101010101010101010101010101010101",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "S ",
+        "value": "0x0101010101010101010101010101010101010101010101010101010101010101",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "V ",
+        "value": "3",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Price",
+        "value": "1",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Cost",
+        "value": "2",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Expiry Time",
+        "value": "3",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Destination",
+        "value": "0x0000000000000000000000000000000000000004",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Token Ids",
+        "value": "101",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Token Ids",
+        "value": "202",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Recipient",
+        "value": "0x0000000000000000000000000000000000000011",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Bps",
+        "value": "111",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Recipient",
+        "value": "0x0000000000000000000000000000000000000022",
+        "foundTogether": true,
+        "foundInOrder": false
+      },
+      {
+        "label": "Bps",
+        "value": "222",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Pay By Vault Contract",
+        "value": "true",
+        "foundTogether": false,
+        "foundInOrder": false
+      }
+    ],
+    "capturedTexts": [
+      "Review transaction to Pay For Sale Swipe to review Reject 1 of 8",
+      "Review transaction to Pay For Sale Swipe to review Reject 1 of 8",
+      "Review transaction to Pay For Sale Swipe to review Reject 1 of 8",
+      "Review transaction to Pay For Sale Swipe to review Reject 1 of 8",
+      "Review transaction to Pay For Sale Swipe to review Reject 1 of 8",
+      "Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8",
+      "Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8",
+      "Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8",
+      "Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8",
+      "S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8",
+      "S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8",
+      "S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8",
+      "S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8",
+      "Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8",
+      "Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8",
+      "Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8",
+      "Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8",
+      "Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8",
+      "Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8",
+      "Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8",
+      "Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8",
+      "Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8",
+      "Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8",
+      "Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8",
+      "Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8",
+      "Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8",
+      "Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8",
+      "Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8",
+      "Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8",
+      "Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign",
+      "Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign",
+      "Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign",
+      "Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign",
+      "Transaction signed",
+      "Transaction signed",
+      "Transaction signed",
+      "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+    ],
+    "command": [
+      "pnpm",
+      "cs-tester",
+      "cli",
+      "raw-file",
+      "/tmp/csh-device-shape-cases/feral-nested-arrays/raw.json",
+      "--device",
+      "flex",
+      "--custom-app",
+      "/tmp/csh-app-ethereum-flex-1.22.3.elf",
+      "--docker-image-tag",
+      "csh-device-20260908",
+      "--speculos-port",
+      "19191",
+      "--speculos-vnc-port",
+      "29191",
+      "--erc7730-files",
+      "/tmp/csh-device-shape-cases/feral-nested-arrays/calldata-feral-nested-arrays.json",
+      "--screenshot-folder-path",
+      "/tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots",
+      "--log-file",
+      "/tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/tester.log",
+      "--file-log-level",
+      "debug",
+      "--log-level",
+      "info"
+    ],
+    "broadcast": false,
+    "passed": false,
+    "fieldOrderMatches": false,
+    "deviceError": null,
+    "analysis": "Rechecked saved captures with final screen checker: ordered complete pairs, no value-prefix matches, final SDK state retained even when no signature."
+  },
+  {
+    "case": "bundler-tuple-array",
+    "device": "flex",
+    "exitCode": 0,
+    "testerStatus": "clear_signed",
+    "clearSigningType": "eip7730",
+    "usedFallback": false,
+    "blindSigning": false,
+    "signatureProduced": true,
+    "contextErrorCount": 2,
+    "fields": [
+      {
+        "label": "To",
+        "value": "0x0000000000000000000000000000000000000011",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Data",
+        "value": "0xabcd",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Value",
+        "value": "111",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Skip Revert",
+        "value": "false",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "Callback Hash",
+        "value": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "foundTogether": true,
+        "foundInOrder": true
+      },
+      {
+        "label": "To",
+        "value": "0x0000000000000000000000000000000000000022",
+        "foundTogether": true,
+        "foundInOrder": false
+      },
+      {
+        "label": "Data",
+        "value": "0x1234",
+        "foundTogether": true,
+        "foundInOrder": false
+      },
+      {
+        "label": "Value",
+        "value": "222",
+        "foundTogether": true,
+        "foundInOrder": false
+      },
+      {
+        "label": "Skip Revert",
+        "value": "true",
+        "foundTogether": true,
+        "foundInOrder": false
+      },
+      {
+        "label": "Callback Hash",
+        "value": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "foundTogether": true,
+        "foundInOrder": true
+      }
+    ],
+    "capturedTexts": [
+      "Review transaction to Multicall Swipe to review Reject 1 of 6",
+      "Review transaction to Multicall Swipe to review Reject 1 of 6",
+      "Review transaction to Multicall Swipe to review Reject 1 of 6",
+      "Review transaction to Multicall Swipe to review Reject 1 of 6",
+      "Review transaction to Multicall Swipe to review Reject 1 of 6",
+      "Interaction with Morpho DAO To 0x0000000000000000 000000000000000000 000011 To 0x0000000000000000 000000000000000000 000022 Reject 2 of 6",
+      "Interaction with Morpho DAO To 0x0000000000000000 000000000000000000 000011 To 0x0000000000000000 000000000000000000 000022 Reject 2 of 6",
+      "Interaction with Morpho DAO To 0x0000000000000000 000000000000000000 000011 To 0x0000000000000000 000000000000000000 000022 Reject 2 of 6",
+      "Interaction with Morpho DAO To 0x0000000000000000 000000000000000000 000011 To 0x0000000000000000 000000000000000000 000022 Reject 2 of 6",
+      "Data 0xabcd Data 0x1234 Value 111 Value 222 Reject 3 of 6",
+      "Data 0xabcd Data 0x1234 Value 111 Value 222 Reject 3 of 6",
+      "Data 0xabcd Data 0x1234 Value 111 Value 222 Reject 3 of 6",
+      "Data 0xabcd Data 0x1234 Value 111 Value 222 Reject 3 of 6",
+      "Skip Revert false Skip Revert true Callback Hash 0x111111111111111111111 111111111111111111111111 1111111111111111111 Reject 4 of 6",
+      "Skip Revert false Skip Revert true Callback Hash 0x111111111111111111111 111111111111111111111111 1111111111111111111 Reject 4 of 6",
+      "Skip Revert false Skip Revert true Callback Hash 0x111111111111111111111 111111111111111111111111 1111111111111111111 Reject 4 of 6",
+      "Skip Revert false Skip Revert true Callback Hash 0x111111111111111111111 111111111111111111111111 1111111111111111111 Reject 4 of 6",
+      "Callback Hash 0x2222222222222222 222222222222222222 222222222222222222 222222222222 Max fees 0 ETH Reject 5 of 6",
+      "Callback Hash 0x2222222222222222 222222222222222222 222222222222222222 222222222222 Max fees 0 ETH Reject 5 of 6",
+      "Callback Hash 0x2222222222222222 222222222222222222 222222222222222222 222222222222 Max fees 0 ETH Reject 5 of 6",
+      "Callback Hash 0x2222222222222222 222222222222222222 222222222222222222 222222222222 Max fees 0 ETH Reject 5 of 6",
+      "Sign transaction to Multicall? Reject 6 of 6 Hold to sign",
+      "Sign transaction to Multicall? Reject 6 of 6 Hold to sign",
+      "Sign transaction to Multicall? Reject 6 of 6 Hold to sign",
+      "Sign transaction to Multicall? Reject 6 of 6 Hold to sign",
+      "Transaction signed",
+      "Transaction signed",
+      "Transaction signed",
+      "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+    ],
+    "command": [
+      "pnpm",
+      "cs-tester",
+      "cli",
+      "raw-file",
+      "/tmp/csh-device-shape-cases/bundler-tuple-array/raw.json",
+      "--device",
+      "flex",
+      "--custom-app",
+      "/tmp/csh-app-ethereum-flex-1.22.3.elf",
+      "--docker-image-tag",
+      "csh-device-20260908",
+      "--speculos-port",
+      "19191",
+      "--speculos-vnc-port",
+      "29191",
+      "--erc7730-files",
+      "/tmp/csh-device-shape-cases/bundler-tuple-array/calldata-bundler-tuple-array.json",
+      "--screenshot-folder-path",
+      "/tmp/csh-ledger-shapes-flex-run2/bundler-tuple-array/screenshots",
+      "--log-file",
+      "/tmp/csh-ledger-shapes-flex-run2/bundler-tuple-array/tester.log",
+      "--file-log-level",
+      "debug",
+      "--log-level",
+      "info"
+    ],
+    "broadcast": false,
+    "passed": false,
+    "fieldOrderMatches": false,
+    "deviceError": null,
+    "analysis": "Rechecked saved captures with final screen checker: ordered complete pairs, no value-prefix matches, final SDK state retained even when no signature.",
+    "previousPresenceOnlyPassed": true
+  },
+  {
+    "case": "ekubo-signed-integers",
+    "device": "flex",
+    "exitCode": 1,
+    "testerStatus": "blind_signed",
+    "clearSigningType": "eip7730",
+    "usedFallback": true,
+    "blindSigning": true,
+    "signatureProduced": false,
+    "contextErrorCount": 3,
+    "fields": [
+      {
+        "label": "Token0",
+        "value": "0x0000000000000000000000000000000000000001",
+        "foundTogether": false,
+        "foundInOrder": false
+      },
+      {
+        "label": "Token1",
+        "value": "0x0000000000000000000000000000000000000002",
+        "foundTogether": false,
+        "foundInOrder": false
+      },
+      {
+        "label": "Config",
+        "value": "0x0101010101010101010101010101010101010101010101010101010101010101",
+        "foundTogether": false,
+        "foundInOrder": false
+      },
+      {
+        "label": "Is Token1",
+        "value": "false",
+        "foundTogether": false,
+        "foundInOrder": false
+      },
+      {
+        "label": "Amount",
+        "value": "-3",
+        "foundTogether": false,
+        "foundInOrder": false
+      },
+      {
+        "label": "Sqrt Ratio Limit",
+        "value": "4",
+        "foundTogether": false,
+        "foundInOrder": false
+      },
+      {
+        "label": "Skip Ahead",
+        "value": "5",
+        "foundTogether": false,
+        "foundInOrder": false
+      },
+      {
+        "label": "Calculated Amount Threshold",
+        "value": "-6",
+        "foundTogether": false,
+        "foundInOrder": false
+      }
+    ],
+    "capturedTexts": [],
+    "command": [
+      "pnpm",
+      "cs-tester",
+      "cli",
+      "raw-file",
+      "/tmp/csh-device-shape-cases/ekubo-signed-integers/raw.json",
+      "--device",
+      "flex",
+      "--custom-app",
+      "/tmp/csh-app-ethereum-flex-1.22.3.elf",
+      "--docker-image-tag",
+      "csh-device-20260908",
+      "--speculos-port",
+      "19191",
+      "--speculos-vnc-port",
+      "29191",
+      "--erc7730-files",
+      "/tmp/csh-device-shape-cases/ekubo-signed-integers/calldata-ekubo-signed-integers.json",
+      "--screenshot-folder-path",
+      "/tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/screenshots",
+      "--log-file",
+      "/tmp/csh-ledger-shapes-flex-run2/ekubo-signed-integers/tester.log",
+      "--file-log-level",
+      "debug",
+      "--log-level",
+      "info"
+    ],
+    "broadcast": false,
+    "passed": false,
+    "fieldOrderMatches": false,
+    "deviceError": {
+      "_tag": "EthAppCommandError",
+      "errorCode": "6a80",
+      "message": "Invalid data"
+    },
+    "analysis": "Rechecked saved captures with final screen checker: ordered complete pairs, no value-prefix matches, final SDK state retained even when no signature."
+  }
+]

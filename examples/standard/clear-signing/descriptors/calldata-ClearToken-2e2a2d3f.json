@@ -1,0 +1,101 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": []
+    }
+  },
+  "metadata": {
+    "owner": "Example Protocol",
+    "contractName": "ClearToken"
+  },
+  "display": {
+    "formats": {
+      "approve(address spender,uint256 amount)": {
+        "intent": "Approve",
+        "fields": [
+          {
+            "path": "spender",
+            "label": "Spender",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          }
+        ]
+      },
+      "burn(uint256 amount)": {
+        "intent": "Burn",
+        "fields": [
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          }
+        ]
+      },
+      "mint(address to,uint256 amount)": {
+        "intent": "Mint",
+        "fields": [
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          }
+        ]
+      },
+      "transfer(address to,uint256 amount)": {
+        "intent": "Transfer",
+        "fields": [
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          }
+        ]
+      },
+      "transferAdmin(address newAdmin)": {
+        "intent": "Transfer Admin",
+        "fields": [
+          {
+            "path": "newAdmin",
+            "label": "New Admin",
+            "format": "raw"
+          }
+        ]
+      },
+      "transferFrom(address from,address to,uint256 amount)": {
+        "intent": "Transfer From",
+        "fields": [
+          {
+            "path": "from",
+            "label": "From",
+            "format": "raw"
+          },
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

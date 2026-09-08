@@ -1,0 +1,24 @@
+{
+  "engine": {
+    "tool": "0.2.0",
+    "renderer": "@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1",
+    "schema": "f1da6154187a258475139f1b871f74a7bade0af23ff45c782fb85ecd4d7e8a3f",
+    "subset": 2
+  },
+  "contract": "src/Registry.sol:Registry",
+  "signature": "deposit()",
+  "chainId": 1,
+  "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  "value": "123456789000000000",
+  "localBinding": false,
+  "intent": "Deposit",
+  "fields": [
+    {
+      "label": "Native value (wei)",
+      "value": "123456789000000000",
+      "fieldType": "uint",
+      "format": "raw"
+    }
+  ],
+  "warnings": []
+}

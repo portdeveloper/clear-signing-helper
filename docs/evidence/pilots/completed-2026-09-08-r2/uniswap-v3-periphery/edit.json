@@ -1,0 +1,11 @@
+{
+  "descriptor": "clear-signing/descriptors/calldata-SwapRouter-b15f6faf.json",
+  "intentPrefix": "Pilot ",
+  "deployment": {
+    "chainId": 31337,
+    "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+  },
+  "exclusions": {
+    "receive()": "Unsupported entrypoint excluded by independent pilot; no fixture or signing claim."
+  }
+}

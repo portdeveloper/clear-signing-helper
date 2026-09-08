@@ -1,0 +1,536 @@
+{
+  "prepared": "/tmp/csh-source-pilots-20260908.EwRfw5",
+  "sourcePlans": [
+    {
+      "name": "openzeppelin-contracts",
+      "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+      "contract": "contracts/mocks/token/ERC4626Mock.sol:ERC4626Mock",
+      "project": "/tmp/csh-complete-pilots-rYpBZK/openzeppelin-contracts"
+    },
+    {
+      "name": "uniswap-v3-periphery",
+      "commit": "80f26c86c57b8a5e4b913f42844d4c8bd274d058",
+      "contract": "contracts/SwapRouter.sol:SwapRouter",
+      "dependencies": [
+        {
+          "dependency": "base64-sol",
+          "commit": "4d85607b18d981acff392d2e99ba654305552a97",
+          "remote": "https://github.com/Brechtpd/base64.git"
+        },
+        {
+          "dependency": "openzeppelin-contracts",
+          "commit": "8e0296096449d9b1cd7c5631e917330635244c37",
+          "remote": "https://github.com/OpenZeppelin/openzeppelin-contracts.git"
+        },
+        {
+          "dependency": "uniswap-lib",
+          "commit": "c01640b0f0f1d8a85cba8de378cc48469fcfd9a6",
+          "remote": "https://github.com/Uniswap/solidity-lib.git"
+        },
+        {
+          "dependency": "uniswap-solidity-lib",
+          "commit": "4cdccd31c5c721d761a11eeacc595b3f8310ce5d",
+          "remote": "https://github.com/Uniswap/solidity-lib.git"
+        },
+        {
+          "dependency": "v2-core",
+          "commit": "816075049f811f1b061bca81d5d040b96f4c07eb",
+          "remote": "https://github.com/Uniswap/v2-core.git"
+        },
+        {
+          "dependency": "v3-core",
+          "commit": "e3589b192d0be27e100cd0daaf6c97204fdb1899",
+          "remote": "https://github.com/Uniswap/v3-core.git"
+        }
+      ],
+      "project": "/tmp/csh-complete-pilots-rYpBZK/uniswap-v3-periphery"
+    }
+  ],
+  "steps": [
+    {
+      "name": "helper-build",
+      "command": "npm",
+      "args": [
+        "run",
+        "build"
+      ],
+      "ms": 1373,
+      "exitCode": 0
+    },
+    {
+      "name": "package",
+      "command": "npm",
+      "args": [
+        "pack",
+        "--ignore-scripts",
+        "--json",
+        "--pack-destination",
+        "/tmp/csh-complete-pilots-rYpBZK"
+      ],
+      "ms": 461,
+      "exitCode": 0
+    },
+    {
+      "name": "install",
+      "command": "npm",
+      "args": [
+        "install",
+        "--prefix",
+        "/tmp/csh-complete-pilots-rYpBZK/consumer",
+        "--ignore-scripts",
+        "--no-package-lock",
+        "/tmp/csh-complete-pilots-rYpBZK/clear-signing-helper-0.2.0.tgz"
+      ],
+      "ms": 1386,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "/tmp/csh-source-pilots-20260908.EwRfw5/openzeppelin-contracts",
+        "/tmp/csh-complete-pilots-rYpBZK/openzeppelin-contracts"
+      ],
+      "ms": 150,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-checkout",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--quiet",
+        "--detach",
+        "dbb6104ce834628e473d2173bbc9d47f81a9eec3"
+      ],
+      "ms": 31,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-commit",
+      "command": "git",
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-initial-status",
+      "command": "git",
+      "args": [
+        "status",
+        "--porcelain"
+      ],
+      "ms": 31,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-submodules",
+      "command": "git",
+      "args": [
+        "submodule",
+        "update",
+        "--init",
+        "--recursive"
+      ],
+      "ms": 1892,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-build",
+      "command": "forge",
+      "args": [
+        "build",
+        "--offline",
+        "--extra-output",
+        "metadata",
+        "devdoc",
+        "userdoc"
+      ],
+      "ms": 2217,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "/tmp/csh-source-pilots-20260908.EwRfw5/uniswap-v3-periphery",
+        "/tmp/csh-complete-pilots-rYpBZK/uniswap-v3-periphery"
+      ],
+      "ms": 59,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-checkout",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--quiet",
+        "--detach",
+        "80f26c86c57b8a5e4b913f42844d4c8bd274d058"
+      ],
+      "ms": 12,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-commit",
+      "command": "git",
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "ms": 4,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-initial-status",
+      "command": "git",
+      "args": [
+        "status",
+        "--porcelain"
+      ],
+      "ms": 10,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-base64-sol-pin",
+      "command": "git",
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-base64-sol-remote",
+      "command": "git",
+      "args": [
+        "remote",
+        "get-url",
+        "origin"
+      ],
+      "ms": 4,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-base64-sol-clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "/tmp/csh-source-pilots-20260908.EwRfw5/uniswap-v3-periphery/lib/base64-sol",
+        "/tmp/csh-complete-pilots-rYpBZK/uniswap-v3-periphery/lib/base64-sol"
+      ],
+      "ms": 27,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-base64-sol-checkout",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--quiet",
+        "--detach",
+        "4d85607b18d981acff392d2e99ba654305552a97"
+      ],
+      "ms": 5,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-openzeppelin-contracts-pin",
+      "command": "git",
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-openzeppelin-contracts-remote",
+      "command": "git",
+      "args": [
+        "remote",
+        "get-url",
+        "origin"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-openzeppelin-contracts-clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "/tmp/csh-source-pilots-20260908.EwRfw5/uniswap-v3-periphery/lib/openzeppelin-contracts",
+        "/tmp/csh-complete-pilots-rYpBZK/uniswap-v3-periphery/lib/openzeppelin-contracts"
+      ],
+      "ms": 138,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-openzeppelin-contracts-checkout",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--quiet",
+        "--detach",
+        "8e0296096449d9b1cd7c5631e917330635244c37"
+      ],
+      "ms": 15,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-uniswap-lib-pin",
+      "command": "git",
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-uniswap-lib-remote",
+      "command": "git",
+      "args": [
+        "remote",
+        "get-url",
+        "origin"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-uniswap-lib-clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "/tmp/csh-source-pilots-20260908.EwRfw5/uniswap-v3-periphery/lib/uniswap-lib",
+        "/tmp/csh-complete-pilots-rYpBZK/uniswap-v3-periphery/lib/uniswap-lib"
+      ],
+      "ms": 41,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-uniswap-lib-checkout",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--quiet",
+        "--detach",
+        "c01640b0f0f1d8a85cba8de378cc48469fcfd9a6"
+      ],
+      "ms": 6,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-uniswap-solidity-lib-pin",
+      "command": "git",
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-uniswap-solidity-lib-remote",
+      "command": "git",
+      "args": [
+        "remote",
+        "get-url",
+        "origin"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-uniswap-solidity-lib-clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "/tmp/csh-source-pilots-20260908.EwRfw5/uniswap-v3-periphery/lib/uniswap-solidity-lib",
+        "/tmp/csh-complete-pilots-rYpBZK/uniswap-v3-periphery/lib/uniswap-solidity-lib"
+      ],
+      "ms": 34,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-uniswap-solidity-lib-checkout",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--quiet",
+        "--detach",
+        "4cdccd31c5c721d761a11eeacc595b3f8310ce5d"
+      ],
+      "ms": 6,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-v2-core-pin",
+      "command": "git",
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-v2-core-remote",
+      "command": "git",
+      "args": [
+        "remote",
+        "get-url",
+        "origin"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-v2-core-clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "/tmp/csh-source-pilots-20260908.EwRfw5/uniswap-v3-periphery/lib/v2-core",
+        "/tmp/csh-complete-pilots-rYpBZK/uniswap-v3-periphery/lib/v2-core"
+      ],
+      "ms": 32,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-v2-core-checkout",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--quiet",
+        "--detach",
+        "816075049f811f1b061bca81d5d040b96f4c07eb"
+      ],
+      "ms": 5,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-v3-core-pin",
+      "command": "git",
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-v3-core-remote",
+      "command": "git",
+      "args": [
+        "remote",
+        "get-url",
+        "origin"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-v3-core-clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "/tmp/csh-source-pilots-20260908.EwRfw5/uniswap-v3-periphery/lib/v3-core",
+        "/tmp/csh-complete-pilots-rYpBZK/uniswap-v3-periphery/lib/v3-core"
+      ],
+      "ms": 69,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-v3-core-checkout",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--quiet",
+        "--detach",
+        "e3589b192d0be27e100cd0daaf6c97204fdb1899"
+      ],
+      "ms": 15,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-build",
+      "command": "forge",
+      "args": [
+        "build",
+        "--offline",
+        "--extra-output",
+        "metadata",
+        "devdoc",
+        "userdoc"
+      ],
+      "ms": 3151,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-workflow",
+      "command": "/home/ubuntu/.local/share/mise/installs/node/22.22.3/bin/node",
+      "args": [
+        "/home/ubuntu/repos/clear-signing-helper/node_modules/tsx/dist/cli.mjs",
+        "/home/ubuntu/repos/clear-signing-helper/scripts/complete-source-pilot.ts",
+        "/tmp/csh-complete-pilots-rYpBZK/openzeppelin-contracts",
+        "contracts/mocks/token/ERC4626Mock.sol:ERC4626Mock",
+        "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "31337",
+        "/tmp/csh-complete-pilots-rYpBZK/consumer/node_modules/clear-signing-helper/dist/cli.js",
+        "/home/ubuntu/repos/clear-signing-helper/docs/evidence/pilots/completed-2026-09-08-r2/openzeppelin-contracts"
+      ],
+      "ms": 11508,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-workflow",
+      "command": "/home/ubuntu/.local/share/mise/installs/node/22.22.3/bin/node",
+      "args": [
+        "/home/ubuntu/repos/clear-signing-helper/node_modules/tsx/dist/cli.mjs",
+        "/home/ubuntu/repos/clear-signing-helper/scripts/complete-source-pilot.ts",
+        "/tmp/csh-complete-pilots-rYpBZK/uniswap-v3-periphery",
+        "contracts/SwapRouter.sol:SwapRouter",
+        "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+        "31337",
+        "/tmp/csh-complete-pilots-rYpBZK/consumer/node_modules/clear-signing-helper/dist/cli.js",
+        "/home/ubuntu/repos/clear-signing-helper/docs/evidence/pilots/completed-2026-09-08-r2/uniswap-v3-periphery"
+      ],
+      "ms": 13766,
+      "exitCode": 1
+    }
+  ],
+  "transactionsBroadcast": "local disposable Anvil only",
+  "pilots": [
+    {
+      "name": "openzeppelin-contracts",
+      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "contract": "contracts/mocks/token/ERC4626Mock.sol:ERC4626Mock",
+      "result": "strict check/test/export passed"
+    }
+  ],
+  "packageSha256": "a5c474c1b7ee33a35d9517c8b2d84aab5cb4cea0622597edca60b40854ed13f5"
+}

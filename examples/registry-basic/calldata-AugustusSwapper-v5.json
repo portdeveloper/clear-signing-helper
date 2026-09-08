@@ -1,0 +1,869 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": []
+    }
+  },
+  "metadata": {
+    "owner": "Velora",
+    "contractName": "AugustusSwapper-v5"
+  },
+  "display": {
+    "formats": {
+      "simpleBuy((address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,uint256 expectedAmount,address[] callees,bytes exchangeData,uint256[] startIndexes,uint256[] values,address beneficiary,address partner,uint256 feePercent,bytes permit,uint256 deadline,bytes16 uuid) data)": {
+        "intent": "Simple Buy",
+        "fields": [
+          {
+            "path": "data.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "data.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "data.fromAmount",
+            "label": "From Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.toAmount",
+            "label": "To Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.expectedAmount",
+            "label": "Expected Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.callees.[]",
+            "label": "Callees",
+            "format": "raw",
+            "separator": "Callees {index}"
+          },
+          {
+            "path": "data.exchangeData",
+            "label": "Exchange Data",
+            "format": "raw"
+          },
+          {
+            "path": "data.startIndexes.[]",
+            "label": "Start Indexes",
+            "format": "raw",
+            "separator": "Start Indexes {index}"
+          },
+          {
+            "path": "data.values.[]",
+            "label": "Values",
+            "format": "raw",
+            "separator": "Values {index}"
+          },
+          {
+            "path": "data.beneficiary",
+            "label": "Beneficiary",
+            "format": "raw"
+          },
+          {
+            "path": "data.partner",
+            "label": "Partner",
+            "format": "raw"
+          },
+          {
+            "path": "data.feePercent",
+            "label": "Fee Percent",
+            "format": "raw"
+          },
+          {
+            "path": "data.permit",
+            "label": "Permit",
+            "format": "raw"
+          },
+          {
+            "path": "data.deadline",
+            "label": "Deadline",
+            "format": "raw"
+          },
+          {
+            "path": "data.uuid",
+            "label": "Uuid",
+            "format": "raw"
+          }
+        ]
+      },
+      "megaSwap((address fromToken,uint256 fromAmount,uint256 toAmount,uint256 expectedAmount,address beneficiary,(uint256 fromAmountPercent,(address to,uint256 totalNetworkFee,(address adapter,uint256 percent,uint256 networkFee,(uint256 index,address targetExchange,uint256 percent,bytes payload,uint256 networkFee)[] route)[] adapters)[] path)[] path,address partner,uint256 feePercent,bytes permit,uint256 deadline,bytes16 uuid) data)": {
+        "intent": "Mega Swap",
+        "fields": [
+          {
+            "path": "data.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "data.fromAmount",
+            "label": "From Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.toAmount",
+            "label": "To Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.expectedAmount",
+            "label": "Expected Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.beneficiary",
+            "label": "Beneficiary",
+            "format": "raw"
+          },
+          {
+            "path": "data.path.[]",
+            "label": "Path",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "fromAmountPercent",
+                "label": "From Amount Percent",
+                "format": "raw"
+              },
+              {
+                "path": "path.[]",
+                "label": "Path",
+                "iteration": "sequential",
+                "fields": [
+                  {
+                    "path": "to",
+                    "label": "To",
+                    "format": "raw"
+                  },
+                  {
+                    "path": "totalNetworkFee",
+                    "label": "Total Network Fee",
+                    "format": "raw"
+                  },
+                  {
+                    "path": "adapters.[]",
+                    "label": "Adapters",
+                    "iteration": "sequential",
+                    "fields": [
+                      {
+                        "path": "adapter",
+                        "label": "Adapter",
+                        "format": "raw"
+                      },
+                      {
+                        "path": "percent",
+                        "label": "Percent",
+                        "format": "raw"
+                      },
+                      {
+                        "path": "networkFee",
+                        "label": "Network Fee",
+                        "format": "raw"
+                      },
+                      {
+                        "path": "route.[]",
+                        "label": "Route",
+                        "iteration": "sequential",
+                        "fields": [
+                          {
+                            "path": "index",
+                            "label": "Index",
+                            "format": "raw"
+                          },
+                          {
+                            "path": "targetExchange",
+                            "label": "Target Exchange",
+                            "format": "raw"
+                          },
+                          {
+                            "path": "percent",
+                            "label": "Percent",
+                            "format": "raw"
+                          },
+                          {
+                            "path": "payload",
+                            "label": "Payload",
+                            "format": "raw"
+                          },
+                          {
+                            "path": "networkFee",
+                            "label": "Network Fee",
+                            "format": "raw"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "data.partner",
+            "label": "Partner",
+            "format": "raw"
+          },
+          {
+            "path": "data.feePercent",
+            "label": "Fee Percent",
+            "format": "raw"
+          },
+          {
+            "path": "data.permit",
+            "label": "Permit",
+            "format": "raw"
+          },
+          {
+            "path": "data.deadline",
+            "label": "Deadline",
+            "format": "raw"
+          },
+          {
+            "path": "data.uuid",
+            "label": "Uuid",
+            "format": "raw"
+          }
+        ]
+      },
+      "directUniV3Swap((address fromToken,address toToken,address exchange,uint256 fromAmount,uint256 toAmount,uint256 expectedAmount,uint256 feePercent,uint256 deadline,address partner,bool isApproved,address beneficiary,bytes path,bytes permit,bytes16 uuid) data)": {
+        "intent": "Direct Uni V3 Swap",
+        "fields": [
+          {
+            "path": "data.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "data.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "data.exchange",
+            "label": "Exchange",
+            "format": "raw"
+          },
+          {
+            "path": "data.fromAmount",
+            "label": "From Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.toAmount",
+            "label": "To Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.expectedAmount",
+            "label": "Expected Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.feePercent",
+            "label": "Fee Percent",
+            "format": "raw"
+          },
+          {
+            "path": "data.deadline",
+            "label": "Deadline",
+            "format": "raw"
+          },
+          {
+            "path": "data.partner",
+            "label": "Partner",
+            "format": "raw"
+          },
+          {
+            "path": "data.isApproved",
+            "label": "Is Approved",
+            "format": "raw"
+          },
+          {
+            "path": "data.beneficiary",
+            "label": "Beneficiary",
+            "format": "raw"
+          },
+          {
+            "path": "data.path",
+            "label": "Path",
+            "format": "raw"
+          },
+          {
+            "path": "data.permit",
+            "label": "Permit",
+            "format": "raw"
+          },
+          {
+            "path": "data.uuid",
+            "label": "Uuid",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapOnUniswap(uint256 amountIn,uint256 amountOutMin,address[] path)": {
+        "intent": "Swap On Uniswap",
+        "fields": [
+          {
+            "path": "amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "path.[]",
+            "label": "Path",
+            "format": "raw",
+            "separator": "Path {index}"
+          }
+        ]
+      },
+      "swapOnUniswapFork(address factory,bytes32 initCode,uint256 amountIn,uint256 amountOutMin,address[] path)": {
+        "intent": "Swap On Uniswap Fork",
+        "fields": [
+          {
+            "path": "factory",
+            "label": "Factory",
+            "format": "raw"
+          },
+          {
+            "path": "initCode",
+            "label": "Init Code",
+            "format": "raw"
+          },
+          {
+            "path": "amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "path.[]",
+            "label": "Path",
+            "format": "raw",
+            "separator": "Path {index}"
+          }
+        ]
+      },
+      "swapOnUniswapV2Fork(address tokenIn,uint256 amountIn,uint256 amountOutMin,address weth,uint256[] pools)": {
+        "intent": "Swap On Uniswap V2 Fork",
+        "fields": [
+          {
+            "path": "tokenIn",
+            "label": "Token In",
+            "format": "raw"
+          },
+          {
+            "path": "amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "weth",
+            "label": "Weth",
+            "format": "raw"
+          },
+          {
+            "path": "pools.[]",
+            "label": "Pools",
+            "format": "raw",
+            "separator": "Pools {index}"
+          }
+        ]
+      },
+      "simpleSwap((address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,uint256 expectedAmount,address[] callees,bytes exchangeData,uint256[] startIndexes,uint256[] values,address beneficiary,address partner,uint256 feePercent,bytes permit,uint256 deadline,bytes16 uuid) data)": {
+        "intent": "Simple Swap",
+        "fields": [
+          {
+            "path": "data.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "data.toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "data.fromAmount",
+            "label": "From Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.toAmount",
+            "label": "To Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.expectedAmount",
+            "label": "Expected Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.callees.[]",
+            "label": "Callees",
+            "format": "raw",
+            "separator": "Callees {index}"
+          },
+          {
+            "path": "data.exchangeData",
+            "label": "Exchange Data",
+            "format": "raw"
+          },
+          {
+            "path": "data.startIndexes.[]",
+            "label": "Start Indexes",
+            "format": "raw",
+            "separator": "Start Indexes {index}"
+          },
+          {
+            "path": "data.values.[]",
+            "label": "Values",
+            "format": "raw",
+            "separator": "Values {index}"
+          },
+          {
+            "path": "data.beneficiary",
+            "label": "Beneficiary",
+            "format": "raw"
+          },
+          {
+            "path": "data.partner",
+            "label": "Partner",
+            "format": "raw"
+          },
+          {
+            "path": "data.feePercent",
+            "label": "Fee Percent",
+            "format": "raw"
+          },
+          {
+            "path": "data.permit",
+            "label": "Permit",
+            "format": "raw"
+          },
+          {
+            "path": "data.deadline",
+            "label": "Deadline",
+            "format": "raw"
+          },
+          {
+            "path": "data.uuid",
+            "label": "Uuid",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapOnZeroXv4(address fromToken,address toToken,uint256 fromAmount,uint256 amountOutMin,address exchange,bytes payload)": {
+        "intent": "Swap On Zero Xv4",
+        "fields": [
+          {
+            "path": "fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "fromAmount",
+            "label": "From Amount",
+            "format": "raw"
+          },
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "exchange",
+            "label": "Exchange",
+            "format": "raw"
+          },
+          {
+            "path": "payload",
+            "label": "Payload",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapOnZeroXv2(address fromToken,address toToken,uint256 fromAmount,uint256 amountOutMin,address exchange,bytes payload)": {
+        "intent": "Swap On Zero Xv2",
+        "fields": [
+          {
+            "path": "fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "fromAmount",
+            "label": "From Amount",
+            "format": "raw"
+          },
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "exchange",
+            "label": "Exchange",
+            "format": "raw"
+          },
+          {
+            "path": "payload",
+            "label": "Payload",
+            "format": "raw"
+          }
+        ]
+      },
+      "buyOnUniswap(uint256 amountInMax,uint256 amountOut,address[] path)": {
+        "intent": "Buy On Uniswap",
+        "fields": [
+          {
+            "path": "amountInMax",
+            "label": "Amount In Max",
+            "format": "raw"
+          },
+          {
+            "path": "amountOut",
+            "label": "Amount Out",
+            "format": "raw"
+          },
+          {
+            "path": "path.[]",
+            "label": "Path",
+            "format": "raw",
+            "separator": "Path {index}"
+          }
+        ]
+      },
+      "buyOnUniswapFork(address factory,bytes32 initCode,uint256 amountInMax,uint256 amountOut,address[] path)": {
+        "intent": "Buy On Uniswap Fork",
+        "fields": [
+          {
+            "path": "factory",
+            "label": "Factory",
+            "format": "raw"
+          },
+          {
+            "path": "initCode",
+            "label": "Init Code",
+            "format": "raw"
+          },
+          {
+            "path": "amountInMax",
+            "label": "Amount In Max",
+            "format": "raw"
+          },
+          {
+            "path": "amountOut",
+            "label": "Amount Out",
+            "format": "raw"
+          },
+          {
+            "path": "path.[]",
+            "label": "Path",
+            "format": "raw",
+            "separator": "Path {index}"
+          }
+        ]
+      },
+      "buyOnUniswapV2Fork(address tokenIn,uint256 amountInMax,uint256 amountOut,address weth,uint256[] pools)": {
+        "intent": "Buy On Uniswap V2 Fork",
+        "fields": [
+          {
+            "path": "tokenIn",
+            "label": "Token In",
+            "format": "raw"
+          },
+          {
+            "path": "amountInMax",
+            "label": "Amount In Max",
+            "format": "raw"
+          },
+          {
+            "path": "amountOut",
+            "label": "Amount Out",
+            "format": "raw"
+          },
+          {
+            "path": "weth",
+            "label": "Weth",
+            "format": "raw"
+          },
+          {
+            "path": "pools.[]",
+            "label": "Pools",
+            "format": "raw",
+            "separator": "Pools {index}"
+          }
+        ]
+      },
+      "buyOnUniswapV2ForkWithPermit(address tokenIn,uint256 amountInMax,uint256 amountOut,address weth,uint256[] pools,bytes permit)": {
+        "intent": "Buy On Uniswap V2 Fork With Permit",
+        "fields": [
+          {
+            "path": "tokenIn",
+            "label": "Token In",
+            "format": "raw"
+          },
+          {
+            "path": "amountInMax",
+            "label": "Amount In Max",
+            "format": "raw"
+          },
+          {
+            "path": "amountOut",
+            "label": "Amount Out",
+            "format": "raw"
+          },
+          {
+            "path": "weth",
+            "label": "Weth",
+            "format": "raw"
+          },
+          {
+            "path": "pools.[]",
+            "label": "Pools",
+            "format": "raw",
+            "separator": "Pools {index}"
+          },
+          {
+            "path": "permit",
+            "label": "Permit",
+            "format": "raw"
+          }
+        ]
+      },
+      "multiSwap((address fromToken,uint256 fromAmount,uint256 toAmount,uint256 expectedAmount,address beneficiary,(address to,uint256 totalNetworkFee,(address adapter,uint256 percent,uint256 networkFee,(uint256 index,address targetExchange,uint256 percent,bytes payload,uint256 networkFee)[] route)[] adapters)[] path,address partner,uint256 feePercent,bytes permit,uint256 deadline,bytes16 uuid) data)": {
+        "intent": "Multi Swap",
+        "fields": [
+          {
+            "path": "data.fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "data.fromAmount",
+            "label": "From Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.toAmount",
+            "label": "To Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.expectedAmount",
+            "label": "Expected Amount",
+            "format": "raw"
+          },
+          {
+            "path": "data.beneficiary",
+            "label": "Beneficiary",
+            "format": "raw"
+          },
+          {
+            "path": "data.path.[]",
+            "label": "Path",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "to",
+                "label": "To",
+                "format": "raw"
+              },
+              {
+                "path": "totalNetworkFee",
+                "label": "Total Network Fee",
+                "format": "raw"
+              },
+              {
+                "path": "adapters.[]",
+                "label": "Adapters",
+                "iteration": "sequential",
+                "fields": [
+                  {
+                    "path": "adapter",
+                    "label": "Adapter",
+                    "format": "raw"
+                  },
+                  {
+                    "path": "percent",
+                    "label": "Percent",
+                    "format": "raw"
+                  },
+                  {
+                    "path": "networkFee",
+                    "label": "Network Fee",
+                    "format": "raw"
+                  },
+                  {
+                    "path": "route.[]",
+                    "label": "Route",
+                    "iteration": "sequential",
+                    "fields": [
+                      {
+                        "path": "index",
+                        "label": "Index",
+                        "format": "raw"
+                      },
+                      {
+                        "path": "targetExchange",
+                        "label": "Target Exchange",
+                        "format": "raw"
+                      },
+                      {
+                        "path": "percent",
+                        "label": "Percent",
+                        "format": "raw"
+                      },
+                      {
+                        "path": "payload",
+                        "label": "Payload",
+                        "format": "raw"
+                      },
+                      {
+                        "path": "networkFee",
+                        "label": "Network Fee",
+                        "format": "raw"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "data.partner",
+            "label": "Partner",
+            "format": "raw"
+          },
+          {
+            "path": "data.feePercent",
+            "label": "Fee Percent",
+            "format": "raw"
+          },
+          {
+            "path": "data.permit",
+            "label": "Permit",
+            "format": "raw"
+          },
+          {
+            "path": "data.deadline",
+            "label": "Deadline",
+            "format": "raw"
+          },
+          {
+            "path": "data.uuid",
+            "label": "Uuid",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapOnZeroXv4WithPermit(address fromToken,address toToken,uint256 fromAmount,uint256 amountOutMin,address exchange,bytes payload,bytes permit)": {
+        "intent": "Swap On Zero Xv4 With Permit",
+        "fields": [
+          {
+            "path": "fromToken",
+            "label": "From Token",
+            "format": "raw"
+          },
+          {
+            "path": "toToken",
+            "label": "To Token",
+            "format": "raw"
+          },
+          {
+            "path": "fromAmount",
+            "label": "From Amount",
+            "format": "raw"
+          },
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "exchange",
+            "label": "Exchange",
+            "format": "raw"
+          },
+          {
+            "path": "payload",
+            "label": "Payload",
+            "format": "raw"
+          },
+          {
+            "path": "permit",
+            "label": "Permit",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapOnUniswapV2ForkWithPermit(address tokenIn,uint256 amountIn,uint256 amountOutMin,address weth,uint256[] pools,bytes permit)": {
+        "intent": "Swap On Uniswap V2 Fork With Permit",
+        "fields": [
+          {
+            "path": "tokenIn",
+            "label": "Token In",
+            "format": "raw"
+          },
+          {
+            "path": "amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "weth",
+            "label": "Weth",
+            "format": "raw"
+          },
+          {
+            "path": "pools.[]",
+            "label": "Pools",
+            "format": "raw",
+            "separator": "Pools {index}"
+          },
+          {
+            "path": "permit",
+            "label": "Permit",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

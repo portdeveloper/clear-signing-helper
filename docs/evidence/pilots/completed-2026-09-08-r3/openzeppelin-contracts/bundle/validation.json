@@ -1,0 +1,18 @@
+{
+  "engine": {
+    "tool": "0.2.0",
+    "renderer": "@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1",
+    "schema": "f1da6154187a258475139f1b871f74a7bade0af23ff45c782fb85ecd4d7e8a3f",
+    "subset": 2
+  },
+  "contracts": [
+    {
+      "id": "contracts/mocks/token/ERC4626Mock.sol:ERC4626Mock",
+      "descriptor": "calldata-ERC4626Mock-50844998.json",
+      "exclusions": {}
+    }
+  ],
+  "fixtures": 9,
+  "deploymentVerification": "not performed",
+  "publication": "not submitted"
+}

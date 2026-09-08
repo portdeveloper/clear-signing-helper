@@ -1,0 +1,10 @@
+{
+  "intent": "Deposit",
+  "owner": "WETH",
+  "fields": [
+    {
+      "label": "Native value (wei)",
+      "value": "123456789000000000"
+    }
+  ]
+}

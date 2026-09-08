@@ -1,0 +1,9 @@
+{
+  "descriptor": "clear-signing/descriptors/calldata-ERC4626Mock-50844998.json",
+  "intentPrefix": "Pilot ",
+  "deployment": {
+    "chainId": 31337,
+    "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+  },
+  "exclusions": {}
+}

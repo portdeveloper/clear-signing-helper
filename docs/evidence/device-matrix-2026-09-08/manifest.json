@@ -1,0 +1,133 @@
+{
+  "date": "2026-09-08",
+  "sdk": {
+    "repository": "https://github.com/LedgerHQ/device-sdk-ts",
+    "commit": "2e35ed527c1a9aee852809a39ed2eaf76a415af1"
+  },
+  "ethereumApp": "1.22.3",
+  "speculosDigest": "sha256:6ed9eefd51cddd862b746719af4cd7a3265fe43d0588c388359753cab8d46d11",
+  "imagesSelectedByPinnedLocalTags": [
+    "csh-device-20260908",
+    "csh-pinned-6ed9eefd"
+  ],
+  "apps": {
+    "flex": {
+      "url": "https://github.com/LedgerHQ/app-ethereum/releases/download/1.22.3/app-1.22.3-flex.elf",
+      "sha256": "88ce93fe2b982c05f37aef108c1ea40f251ae394c25bb8232eb6a8adb3feaa5d"
+    },
+    "stax": {
+      "url": "https://github.com/LedgerHQ/app-ethereum/releases/download/1.22.3/app-1.22.3-stax.elf",
+      "sha256": "80703bf391b6e0ee9fca7e042b8f04b9b61068330111030c8458639e94e774fd"
+    }
+  },
+  "morpho": {
+    "cases": 23,
+    "strictFieldOrderPasses": 23,
+    "source": "morpho-flex/result.json"
+  },
+  "shapeCases": {
+    "shapes-flex": [
+      {
+        "case": "weth-native-value",
+        "testerStatus": "clear_signed",
+        "passed": true,
+        "fieldOrderMatches": true,
+        "signatureProduced": true,
+        "usedFallback": false,
+        "blindSigning": false
+      },
+      {
+        "case": "feral-nested-arrays",
+        "testerStatus": "partially_clear_signed",
+        "passed": false,
+        "fieldOrderMatches": false,
+        "signatureProduced": true,
+        "usedFallback": false,
+        "blindSigning": false
+      },
+      {
+        "case": "bundler-tuple-array",
+        "testerStatus": "clear_signed",
+        "passed": false,
+        "fieldOrderMatches": false,
+        "signatureProduced": true,
+        "usedFallback": false,
+        "blindSigning": false
+      },
+      {
+        "case": "ekubo-signed-integers",
+        "testerStatus": "blind_signed",
+        "passed": false,
+        "fieldOrderMatches": false,
+        "signatureProduced": false,
+        "usedFallback": true,
+        "blindSigning": true
+      }
+    ],
+    "shapes-stax": [
+      {
+        "case": "weth-native-value",
+        "testerStatus": "clear_signed",
+        "passed": true,
+        "fieldOrderMatches": true,
+        "signatureProduced": true,
+        "usedFallback": false,
+        "blindSigning": false
+      },
+      {
+        "case": "feral-nested-arrays",
+        "testerStatus": "partially_clear_signed",
+        "passed": false,
+        "fieldOrderMatches": false,
+        "signatureProduced": true,
+        "usedFallback": false,
+        "blindSigning": false
+      },
+      {
+        "case": "bundler-tuple-array",
+        "testerStatus": "clear_signed",
+        "passed": false,
+        "fieldOrderMatches": false,
+        "signatureProduced": true,
+        "usedFallback": false,
+        "blindSigning": false
+      }
+    ],
+    "controls-flex": [
+      {
+        "case": "ekubo-positive-control",
+        "testerStatus": "blind_signed",
+        "passed": false,
+        "fieldOrderMatches": false,
+        "signatureProduced": false,
+        "usedFallback": true,
+        "blindSigning": true
+      },
+      {
+        "case": "ekubo-negative-short-labels",
+        "testerStatus": "blind_signed",
+        "passed": false,
+        "fieldOrderMatches": false,
+        "signatureProduced": false,
+        "usedFallback": true,
+        "blindSigning": true
+      },
+      {
+        "case": "ekubo-positive-short-labels",
+        "testerStatus": "blind_signed",
+        "passed": false,
+        "fieldOrderMatches": false,
+        "signatureProduced": false,
+        "usedFallback": true,
+        "blindSigning": true
+      }
+    ]
+  },
+  "broadcast": false,
+  "notes": [
+    "Only public local emulators and dummy accounts were used.",
+    "Controls show int128 field-description rejection for both signs and label lengths; no signature produced.",
+    "Results were reanalysed with final ordered exact-pair checker. Prior presence-only Bundler pass is retained as previousPresenceOnlyPassed."
+  ],
+  "cleanup": "All emulator containers started for this validation were removed; unrelated containers left untouched."
+}

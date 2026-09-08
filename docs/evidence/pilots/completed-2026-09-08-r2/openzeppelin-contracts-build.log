@@ -1,0 +1,9 @@
+Compiling 240 files with Solc 0.8.33
+Solc 0.8.33 finished in 2.07s
+Compiler run successful with warnings:
+Warning (9170): Comparison of variables of contract type is deprecated and scheduled for removal. Use an explicit cast to address type and compare the addresses instead.
+  --> contracts/token/ERC20/extensions/ERC20Wrapper.sol:25:13:
+   |
+25 |         if (underlyingToken == this) {
+   |             ^^^^^^^^^^^^^^^^^^^^^^^
+

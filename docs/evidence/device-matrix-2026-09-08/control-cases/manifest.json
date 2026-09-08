@@ -1,0 +1,183 @@
+[
+  {
+    "name": "feral-nested-arrays",
+    "file": "registry/feral-file/calldata-feralfile-vault-0.json",
+    "index": 0,
+    "registryCommit": "0318f9a51ec4fc7ba4aed6de5e315c8884d1fe38",
+    "descriptor": "calldata-feral-nested-arrays.json",
+    "signature": "payForSale(bytes32,bytes32,uint8,(uint256,uint256,uint256,address,uint256[],(address,uint256)[][],bool))",
+    "args": [
+      "0x0101010101010101010101010101010101010101010101010101010101010101",
+      "0x0101010101010101010101010101010101010101010101010101010101010101",
+      "3",
+      [
+        "1",
+        "2",
+        "3",
+        "0x0000000000000000000000000000000000000004",
+        [
+          "101",
+          "202"
+        ],
+        [
+          [
+            [
+              "0x0000000000000000000000000000000000000011",
+              "111"
+            ]
+          ],
+          [
+            [
+              "0x0000000000000000000000000000000000000022",
+              "222"
+            ]
+          ]
+        ],
+        true
+      ]
+    ],
+    "value": "0",
+    "fieldCount": 14,
+    "kind": "Synthetic ABI-shape fixture; not executed against protocol",
+    "mutability": "Registry signatures omit mutability; zero value used"
+  },
+  {
+    "name": "bundler-tuple-array",
+    "file": "registry/morpho/calldata-MorphoBundlerV3.json",
+    "index": 0,
+    "registryCommit": "0318f9a51ec4fc7ba4aed6de5e315c8884d1fe38",
+    "descriptor": "calldata-bundler-tuple-array.json",
+    "signature": "multicall((address,bytes,uint256,bool,bytes32)[])",
+    "args": [
+      [
+        [
+          "0x0000000000000000000000000000000000000011",
+          "0xabcd",
+          "111",
+          false,
+          "0x1111111111111111111111111111111111111111111111111111111111111111"
+        ],
+        [
+          "0x0000000000000000000000000000000000000022",
+          "0x1234",
+          "222",
+          true,
+          "0x2222222222222222222222222222222222222222222222222222222222222222"
+        ]
+      ]
+    ],
+    "value": "0",
+    "fieldCount": 10,
+    "kind": "Synthetic ABI-shape fixture; not executed against protocol",
+    "mutability": "Registry signatures omit mutability; zero value used"
+  },
+  {
+    "name": "ekubo-signed-integers",
+    "file": "registry/ekubo/calldata-MEVCaptureRouter.json",
+    "index": 0,
+    "registryCommit": "0318f9a51ec4fc7ba4aed6de5e315c8884d1fe38",
+    "descriptor": "calldata-ekubo-signed-integers.json",
+    "signature": "swap((address,address,bytes32),bool,int128,uint96,uint256,int256)",
+    "args": [
+      [
+        "0x0000000000000000000000000000000000000001",
+        "0x0000000000000000000000000000000000000002",
+        "0x0101010101010101010101010101010101010101010101010101010101010101"
+      ],
+      false,
+      "-3",
+      "4",
+      "5",
+      "-6"
+    ],
+    "value": "0",
+    "fieldCount": 8,
+    "kind": "Synthetic ABI-shape fixture; not executed against protocol",
+    "mutability": "Registry signatures omit mutability; zero value used"
+  },
+  {
+    "name": "weth-native-value",
+    "file": "registry/weth/calldata-weth.json",
+    "index": 0,
+    "registryCommit": "0318f9a51ec4fc7ba4aed6de5e315c8884d1fe38",
+    "descriptor": "calldata-weth-native-value.json",
+    "signature": "deposit()",
+    "args": [],
+    "value": "123456789000000000",
+    "fieldCount": 1,
+    "kind": "Synthetic ABI-shape fixture; not executed against protocol",
+    "mutability": "Known deposit() payable"
+  },
+  {
+    "name": "ekubo-positive-control",
+    "file": "registry/ekubo/calldata-MEVCaptureRouter.json",
+    "index": 0,
+    "registryCommit": "0318f9a51ec4fc7ba4aed6de5e315c8884d1fe38",
+    "descriptor": "calldata-ekubo-positive-control.json",
+    "signature": "swap((address,address,bytes32),bool,int128,uint96,uint256,int256)",
+    "args": [
+      [
+        "0x0000000000000000000000000000000000000001",
+        "0x0000000000000000000000000000000000000002",
+        "0x0101010101010101010101010101010101010101010101010101010101010101"
+      ],
+      false,
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "value": "0",
+    "fieldCount": 8,
+    "kind": "Synthetic ABI-shape fixture; not executed against protocol",
+    "mutability": "Registry signatures omit mutability; zero value used"
+  },
+  {
+    "name": "ekubo-negative-short-labels",
+    "file": "registry/ekubo/calldata-MEVCaptureRouter.json",
+    "index": 0,
+    "registryCommit": "0318f9a51ec4fc7ba4aed6de5e315c8884d1fe38",
+    "descriptor": "calldata-ekubo-negative-short-labels.json",
+    "signature": "swap((address,address,bytes32),bool,int128,uint96,uint256,int256)",
+    "args": [
+      [
+        "0x0000000000000000000000000000000000000001",
+        "0x0000000000000000000000000000000000000002",
+        "0x0101010101010101010101010101010101010101010101010101010101010101"
+      ],
+      false,
+      "-3",
+      "4",
+      "5",
+      "-6"
+    ],
+    "value": "0",
+    "fieldCount": 8,
+    "kind": "Synthetic ABI-shape fixture; not executed against protocol",
+    "mutability": "Registry signatures omit mutability; zero value used"
+  },
+  {
+    "name": "ekubo-positive-short-labels",
+    "file": "registry/ekubo/calldata-MEVCaptureRouter.json",
+    "index": 0,
+    "registryCommit": "0318f9a51ec4fc7ba4aed6de5e315c8884d1fe38",
+    "descriptor": "calldata-ekubo-positive-short-labels.json",
+    "signature": "swap((address,address,bytes32),bool,int128,uint96,uint256,int256)",
+    "args": [
+      [
+        "0x0000000000000000000000000000000000000001",
+        "0x0000000000000000000000000000000000000002",
+        "0x0101010101010101010101010101010101010101010101010101010101010101"
+      ],
+      false,
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "value": "0",
+    "fieldCount": 8,
+    "kind": "Synthetic ABI-shape fixture; not executed against protocol",
+    "mutability": "Registry signatures omit mutability; zero value used"
+  }
+]

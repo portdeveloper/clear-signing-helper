@@ -1,0 +1,52 @@
+{
+  "$schema": "../../../specs/erc7730-tests-v2.schema.json",
+  "descriptor": "../calldata-ekubo-negative-short-labels.json",
+  "dataProvider": {
+    "tokens": {},
+    "addressNames": {}
+  },
+  "tests": [
+    {
+      "description": "synthetic-ekubo-negative-short-labels",
+      "rawTx": "0x02f9012601808080830f424094d26f20001a72a18c002b00e6710000d68700ce0080b901041d8a79620000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000201010101010101010101010101010101010101010101010101010101010101010000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000005fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffac0",
+      "expected": {
+        "intent": "Swap",
+        "owner": "Ekubo Protocol",
+        "fields": [
+          {
+            "label": "Token0",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Token1",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Config",
+            "value": "0x0101010101010101010101010101010101010101010101010101010101010101"
+          },
+          {
+            "label": "Is Token1",
+            "value": "false"
+          },
+          {
+            "label": "Amount",
+            "value": "-3"
+          },
+          {
+            "label": "Sqrt Ratio Limit",
+            "value": "4"
+          },
+          {
+            "label": "Skip Ahead",
+            "value": "5"
+          },
+          {
+            "label": "Amount limit",
+            "value": "-6"
+          }
+        ]
+      }
+    }
+  ]
+}

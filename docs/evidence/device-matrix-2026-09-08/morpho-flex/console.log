@@ -1,0 +1,1234 @@
+
+> @ledgerhq/ldmk@1.0.0 cs-tester /tmp/csh-device-sdk-ts-pinned
+> pnpm --filter @ledgerhq/clear-signing-tester cli raw-file /tmp/csh-ledger-morpho-matrix/run-20260908/raw-matrix.json --device flex --speculos-port 19123 --speculos-vnc-port 29123 --docker-image-tag csh-pinned-6ed9eefd --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --erc7730-files /tmp/csh-production-morpho-blue/submission-bundle/calldata-Morpho-ed3204cc.json --screenshot-folder-path /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots --log-file /tmp/csh-ledger-morpho-matrix/run-20260908/tester.log --file-log-level debug --log-level info
+
+
+> @ledgerhq/clear-signing-tester@1.0.0 cli /tmp/csh-device-sdk-ts-pinned/apps/clear-signing-tester
+> tsx src/cli/EthereumTransactionTesterCli.ts raw-file /tmp/csh-ledger-morpho-matrix/run-20260908/raw-matrix.json --device flex --speculos-port 19123 --speculos-vnc-port 29123 --docker-image-tag csh-pinned-6ed9eefd --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --erc7730-files /tmp/csh-production-morpho-blue/submission-bundle/calldata-Morpho-ed3204cc.json --screenshot-folder-path /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots --log-file /tmp/csh-ledger-morpho-matrix/run-20260908/tester.log --file-log-level debug --log-level info
+
+touchscreen-controller Initialized touchscreen controller for flex
+cli Setting up CAL interceptor with 1 ERC7730 file(s)
+cli Processing: /tmp/csh-production-morpho-blue/submission-bundle/calldata-Morpho-ed3204cc.json
+Stored new descriptors for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb
+Stored 41 certificates
+CAL Interceptor started
+cli Interceptor active with 1 descriptor(s)
+main-service-controller Starting all services...
+speculos-service-controller Starting Docker container with name: cs-tester-speculos-flex-19123
+speculos-service-controller API url: http://localhost:19123
+speculos-service-controller VNC url: vnc://localhost:29123
+speculos-service-controller device=flex
+speculos-service-controller Using custom app: /custom-app/app.elf
+speculos-service-controller Custom app volume: /tmp/csh-app-ethereum-flex-1.22.3.elf:/custom-app/app.elf
+dmk-service-controller Starting DMK
+[DeviceSessionService] DeviceSession added { sessionId: '4a8e50f0-2f8e-4e26-ba8d-0c44eff3e944' }
+dmk-service-controller DMK started successfully
+main-service-controller All services started successfully
+test-batch-transaction Processing transactions from: /tmp/csh-ledger-morpho-matrix/run-20260908/raw-matrix.json
+test-batch-transaction Found 23 transactions to test
+test-batch-transaction Testing transaction 1/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_1.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_2.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_3.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_4.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_5.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_6.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_7.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_8.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_9.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_10.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Borrow Swipe to review Reject 1 of 6',
+      'Review transaction to Borrow Swipe to review Reject 1 of 6',
+      'Review transaction to Borrow Swipe to review Reject 1 of 6',
+      'Review transaction to Borrow Swipe to review Reject 1 of 6',
+      'Review transaction to Borrow Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0xCAcd6fd266aF91b8 AeD52aCCc382b4e165 586E29 Collateral Token 0x3B855AA8CC56a3cB d5dBb5456F5A13Ce86 AA0fe8 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xCAcd6fd266aF91b8 AeD52aCCc382b4e165 586E29 Collateral Token 0x3B855AA8CC56a3cB d5dBb5456F5A13Ce86 AA0fe8 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xCAcd6fd266aF91b8 AeD52aCCc382b4e165 586E29 Collateral Token 0x3B855AA8CC56a3cB d5dBb5456F5A13Ce86 AA0fe8 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xCAcd6fd266aF91b8 AeD52aCCc382b4e165 586E29 Collateral Token 0x3B855AA8CC56a3cB d5dBb5456F5A13Ce86 AA0fe8 Reject 2 of 6',
+      'Oracle 0xC5860e9e6b6F6E9D 79DCe5c5AB0F7A4b87 8Bd431 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 945000000000000000 Reject 3 of 6',
+      'Oracle 0xC5860e9e6b6F6E9D 79DCe5c5AB0F7A4b87 8Bd431 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 945000000000000000 Reject 3 of 6',
+      'Oracle 0xC5860e9e6b6F6E9D 79DCe5c5AB0F7A4b87 8Bd431 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 945000000000000000 Reject 3 of 6',
+      'Oracle 0xC5860e9e6b6F6E9D 79DCe5c5AB0F7A4b87 8Bd431 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 945000000000000000 Reject 3 of 6',
+      'Assets 590000000000000000 00000 Shares 0 On Behalf 0x8449f934dbFbFA05 0f5E7738bf2E73a81102 2904 Reject 4 of 6',
+      'Assets 590000000000000000 00000 Shares 0 On Behalf 0x8449f934dbFbFA05 0f5E7738bf2E73a81102 2904 Reject 4 of 6',
+      'Assets 590000000000000000 00000 Shares 0 On Behalf 0x8449f934dbFbFA05 0f5E7738bf2E73a81102 2904 Reject 4 of 6',
+      'Assets 590000000000000000 00000 Shares 0 On Behalf 0x8449f934dbFbFA05 0f5E7738bf2E73a81102 2904 Reject 4 of 6',
+      'Receiver 0x8449f934dbFbFA05 0f5E7738bf2E73a81102 2904 Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0x8449f934dbFbFA05 0f5E7738bf2E73a81102 2904 Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0x8449f934dbFbFA05 0f5E7738bf2E73a81102 2904 Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0x8449f934dbFbFA05 0f5E7738bf2E73a81102 2904 Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Borrow? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Borrow? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Borrow? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Borrow? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 11/11 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 2/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_11.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_12.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_13.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_14.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_15.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_16.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_17.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_18.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_19.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_20.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Repay Swipe to review Reject 1 of 6',
+      'Review transaction to Repay Swipe to review Reject 1 of 6',
+      'Review transaction to Repay Swipe to review Reject 1 of 6',
+      'Review transaction to Repay Swipe to review Reject 1 of 6',
+      'Review transaction to Repay Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0x6c3ea90364068520 06290770BEdFcAbA0e 23A0e8 Collateral Token 0x2260FAC5E5542a77 3Aa44fBCfeDf7C193bc 2C599 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x6c3ea90364068520 06290770BEdFcAbA0e 23A0e8 Collateral Token 0x2260FAC5E5542a77 3Aa44fBCfeDf7C193bc 2C599 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x6c3ea90364068520 06290770BEdFcAbA0e 23A0e8 Collateral Token 0x2260FAC5E5542a77 3Aa44fBCfeDf7C193bc 2C599 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x6c3ea90364068520 06290770BEdFcAbA0e 23A0e8 Collateral Token 0x2260FAC5E5542a77 3Aa44fBCfeDf7C193bc 2C599 Reject 2 of 6',
+      'Oracle 0xc53c90d6E9A5B69E 4ABf3d5Ae4c79225C7 FeF3d2 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Oracle 0xc53c90d6E9A5B69E 4ABf3d5Ae4c79225C7 FeF3d2 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Oracle 0xc53c90d6E9A5B69E 4ABf3d5Ae4c79225C7 FeF3d2 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Oracle 0xc53c90d6E9A5B69E 4ABf3d5Ae4c79225C7 FeF3d2 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Assets 3526000000 Shares 0 On Behalf 0xE4916bF722d5B2d3 97fd2F3A925029d2c4e 83B51 Reject 4 of 6',
+      'Assets 3526000000 Shares 0 On Behalf 0xE4916bF722d5B2d3 97fd2F3A925029d2c4e 83B51 Reject 4 of 6',
+      'Assets 3526000000 Shares 0 On Behalf 0xE4916bF722d5B2d3 97fd2F3A925029d2c4e 83B51 Reject 4 of 6',
+      'Assets 3526000000 Shares 0 On Behalf 0xE4916bF722d5B2d3 97fd2F3A925029d2c4e 83B51 Reject 4 of 6',
+      'Data 0x Max fees 0 ETH Reject 5 of 6',
+      'Data 0x Max fees 0 ETH Reject 5 of 6',
+      'Data 0x Max fees 0 ETH Reject 5 of 6',
+      'Data 0x Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Repay? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Repay? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Repay? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Repay? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 11/11 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 3/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_21.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_22.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_23.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_24.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_25.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_26.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_27.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_28.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_29.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_30.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Supply Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0xA0b86991c6218b36 c1d19D4a2e9Eb0cE360 6eB48 Collateral Token 0x38EEb52F0771140d1 0c4E9A9a72349A329F e8a6A Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xA0b86991c6218b36 c1d19D4a2e9Eb0cE360 6eB48 Collateral Token 0x38EEb52F0771140d1 0c4E9A9a72349A329F e8a6A Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xA0b86991c6218b36 c1d19D4a2e9Eb0cE360 6eB48 Collateral Token 0x38EEb52F0771140d1 0c4E9A9a72349A329F e8a6A Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xA0b86991c6218b36 c1d19D4a2e9Eb0cE360 6eB48 Collateral Token 0x38EEb52F0771140d1 0c4E9A9a72349A329F e8a6A Reject 2 of 6',
+      'Oracle 0xff1487BDa8049a536 F912e41E27B82a8A38 45862 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Oracle 0xff1487BDa8049a536 F912e41E27B82a8A38 45862 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Oracle 0xff1487BDa8049a536 F912e41E27B82a8A38 45862 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Oracle 0xff1487BDa8049a536 F912e41E27B82a8A38 45862 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Assets 90000000 Shares 0 On Behalf 0xe689F793882A9FbF 80B26EE16f530076E01 30311 Reject 4 of 6',
+      'Assets 90000000 Shares 0 On Behalf 0xe689F793882A9FbF 80B26EE16f530076E01 30311 Reject 4 of 6',
+      'Assets 90000000 Shares 0 On Behalf 0xe689F793882A9FbF 80B26EE16f530076E01 30311 Reject 4 of 6',
+      'Assets 90000000 Shares 0 On Behalf 0xe689F793882A9FbF 80B26EE16f530076E01 30311 Reject 4 of 6',
+      'Data 0x Max fees 0 ETH Reject 5 of 6',
+      'Data 0x Max fees 0 ETH Reject 5 of 6',
+      'Data 0x Max fees 0 ETH Reject 5 of 6',
+      'Data 0x Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Supply? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 11/11 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 4/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_31.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_32.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_33.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_34.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_35.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_36.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_37.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_38.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_39.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_40.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Supply Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Collateral Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0xdC035D45d973E3EC 169d2276DDab16f1e40 7384F Collateral Token 0xE0f63A424a4439cB E457D80E4f4b51aD25 b2c56C Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xdC035D45d973E3EC 169d2276DDab16f1e40 7384F Collateral Token 0xE0f63A424a4439cB E457D80E4f4b51aD25 b2c56C Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xdC035D45d973E3EC 169d2276DDab16f1e40 7384F Collateral Token 0xE0f63A424a4439cB E457D80E4f4b51aD25 b2c56C Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xdC035D45d973E3EC 169d2276DDab16f1e40 7384F Collateral Token 0xE0f63A424a4439cB E457D80E4f4b51aD25 b2c56C Reject 2 of 6',
+      'Oracle 0xdA63266b5184D08D bFBace96267837c45D 7D34dA Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 625000000000000000 Reject 3 of 6',
+      'Oracle 0xdA63266b5184D08D bFBace96267837c45D 7D34dA Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 625000000000000000 Reject 3 of 6',
+      'Oracle 0xdA63266b5184D08D bFBace96267837c45D 7D34dA Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 625000000000000000 Reject 3 of 6',
+      'Oracle 0xdA63266b5184D08D bFBace96267837c45D 7D34dA Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 625000000000000000 Reject 3 of 6',
+      'Assets 88163383478 On Behalf 0xf11Cc888d8Da84D3 bF735b7b357814fD071 e8B1A Data 0x Reject 4 of 6',
+      'Assets 88163383478 On Behalf 0xf11Cc888d8Da84D3 bF735b7b357814fD071 e8B1A Data 0x Reject 4 of 6',
+      'Assets 88163383478 On Behalf 0xf11Cc888d8Da84D3 bF735b7b357814fD071 e8B1A Data 0x Reject 4 of 6',
+      'Assets 88163383478 On Behalf 0xf11Cc888d8Da84D3 bF735b7b357814fD071 e8B1A Data 0x Reject 4 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Supply Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply Collateral? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 10/10 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 5/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_41.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_42.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_43.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_44.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_45.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_46.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_47.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_48.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_49.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_50.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Withdraw Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0xA0b86991c6218b36 c1d19D4a2e9Eb0cE360 6eB48 Collateral Token 0x3EAA0F0f0A5d3D59 5ae4e4b0D27f439d01c 3E7b2 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xA0b86991c6218b36 c1d19D4a2e9Eb0cE360 6eB48 Collateral Token 0x3EAA0F0f0A5d3D59 5ae4e4b0D27f439d01c 3E7b2 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xA0b86991c6218b36 c1d19D4a2e9Eb0cE360 6eB48 Collateral Token 0x3EAA0F0f0A5d3D59 5ae4e4b0D27f439d01c 3E7b2 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xA0b86991c6218b36 c1d19D4a2e9Eb0cE360 6eB48 Collateral Token 0x3EAA0F0f0A5d3D59 5ae4e4b0D27f439d01c 3E7b2 Reject 2 of 6',
+      'Oracle 0x12d66602C691Aa93 E90415aB22FB076069 5AC768 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 915000000000000000 Reject 3 of 6',
+      'Oracle 0x12d66602C691Aa93 E90415aB22FB076069 5AC768 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 915000000000000000 Reject 3 of 6',
+      'Oracle 0x12d66602C691Aa93 E90415aB22FB076069 5AC768 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 915000000000000000 Reject 3 of 6',
+      'Oracle 0x12d66602C691Aa93 E90415aB22FB076069 5AC768 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 915000000000000000 Reject 3 of 6',
+      'Assets 0 Shares 490064251891825428 On Behalf 0xd7583E3CF08bbcaB 66F1242195227bBf9F8 65Fda Reject 4 of 6',
+      'Assets 0 Shares 490064251891825428 On Behalf 0xd7583E3CF08bbcaB 66F1242195227bBf9F8 65Fda Reject 4 of 6',
+      'Assets 0 Shares 490064251891825428 On Behalf 0xd7583E3CF08bbcaB 66F1242195227bBf9F8 65Fda Reject 4 of 6',
+      'Assets 0 Shares 490064251891825428 On Behalf 0xd7583E3CF08bbcaB 66F1242195227bBf9F8 65Fda Reject 4 of 6',
+      'Receiver 0xd7583E3CF08bbcaB 66F1242195227bBf9F8 65Fda Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0xd7583E3CF08bbcaB 66F1242195227bBf9F8 65Fda Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0xd7583E3CF08bbcaB 66F1242195227bBf9F8 65Fda Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0xd7583E3CF08bbcaB 66F1242195227bBf9F8 65Fda Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Withdraw? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 11/11 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 6/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_51.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_52.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_53.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_54.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_55.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_56.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_57.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_58.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_59.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_60.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0xC02aaA39b223FE8D 0A0e5C4F27eAD9083 C756Cc2 Collateral Token 0xDcEe70654261AF21 C44c093C300eD3Bb9 7b78192 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xC02aaA39b223FE8D 0A0e5C4F27eAD9083 C756Cc2 Collateral Token 0xDcEe70654261AF21 C44c093C300eD3Bb9 7b78192 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xC02aaA39b223FE8D 0A0e5C4F27eAD9083 C756Cc2 Collateral Token 0xDcEe70654261AF21 C44c093C300eD3Bb9 7b78192 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0xC02aaA39b223FE8D 0A0e5C4F27eAD9083 C756Cc2 Collateral Token 0xDcEe70654261AF21 C44c093C300eD3Bb9 7b78192 Reject 2 of 6',
+      'Oracle 0xb7948b5bEEe825E6 09990484A99340D87 67B420e Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Oracle 0xb7948b5bEEe825E6 09990484A99340D87 67B420e Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Oracle 0xb7948b5bEEe825E6 09990484A99340D87 67B420e Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Oracle 0xb7948b5bEEe825E6 09990484A99340D87 67B420e Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6',
+      'Assets 40000000000000000 On Behalf 0xB1bAf4287894eB272 258651e7C581d16da88 3DdA Receiver 0xB1bAf4287894eB272 258651e7C581d16da88 3DdA Reject 4 of 6',
+      'Assets 40000000000000000 On Behalf 0xB1bAf4287894eB272 258651e7C581d16da88 3DdA Receiver 0xB1bAf4287894eB272 258651e7C581d16da88 3DdA Reject 4 of 6',
+      'Assets 40000000000000000 On Behalf 0xB1bAf4287894eB272 258651e7C581d16da88 3DdA Receiver 0xB1bAf4287894eB272 258651e7C581d16da88 3DdA Reject 4 of 6',
+      'Assets 40000000000000000 On Behalf 0xB1bAf4287894eB272 258651e7C581d16da88 3DdA Receiver 0xB1bAf4287894eB272 258651e7C581d16da88 3DdA Reject 4 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Withdraw Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw Collateral? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 10/10 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 7/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_61.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+[ContextModule] [GatedSigningContextLoader] No gated descriptor found and proxy resolution failed {
+  to: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+  selector: '0x151c1ade',
+  chainId: 1,
+  directError: '[ContextModule] HttpGatedDescriptorDataSource: No gated descriptor for contract 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb and selector 0x151c1ade',
+  proxyError: '[ContextModule] HttpSafeProxyDataSource: Failed to fetch safe proxy implementation'
+}
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_62.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_63.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_64.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_65.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_66.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_67.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_68.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_69.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Accrue Interest Swipe to review Reject 1 of 5',
+      'Review transaction to Accrue Interest Swipe to review Reject 1 of 5',
+      'Review transaction to Accrue Interest Swipe to review Reject 1 of 5',
+      'Review transaction to Accrue Interest Swipe to review Reject 1 of 5',
+      'Review transaction to Accrue Interest Swipe to review Reject 1 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Max fees 0 ETH Reject 4 of 5',
+      'Max fees 0 ETH Reject 4 of 5',
+      'Max fees 0 ETH Reject 4 of 5',
+      'Max fees 0 ETH Reject 4 of 5',
+      'Sign transaction to Accrue Interest? Reject 5 of 5 Hold to sign',
+      'Sign transaction to Accrue Interest? Reject 5 of 5 Hold to sign',
+      'Sign transaction to Accrue Interest? Reject 5 of 5 Hold to sign',
+      'Sign transaction to Accrue Interest? Reject 5 of 5 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 7/7 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 8/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_70.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_71.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_72.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_73.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_74.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_75.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_76.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_77.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_78.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_79.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Borrow Swipe to review Reject 1 of 6',
+      'Review transaction to Borrow Swipe to review Reject 1 of 6',
+      'Review transaction to Borrow Swipe to review Reject 1 of 6',
+      'Review transaction to Borrow Swipe to review Reject 1 of 6',
+      'Review transaction to Borrow Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Receiver 0x0000000000000000 000000000000000000 000005 Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0x0000000000000000 000000000000000000 000005 Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0x0000000000000000 000000000000000000 000005 Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0x0000000000000000 000000000000000000 000005 Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Borrow? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Borrow? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Borrow? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Borrow? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 11/11 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 9/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_80.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_81.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_82.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_83.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_84.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_85.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_86.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_87.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_88.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Create Market Swipe to review Reject 1 of 5',
+      'Review transaction to Create Market Swipe to review Reject 1 of 5',
+      'Review transaction to Create Market Swipe to review Reject 1 of 5',
+      'Review transaction to Create Market Swipe to review Reject 1 of 5',
+      'Review transaction to Create Market Swipe to review Reject 1 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Max fees 0 ETH Reject 4 of 5',
+      'Max fees 0 ETH Reject 4 of 5',
+      'Max fees 0 ETH Reject 4 of 5',
+      'Max fees 0 ETH Reject 4 of 5',
+      'Sign transaction to Create Market? Reject 5 of 5 Hold to sign',
+      'Sign transaction to Create Market? Reject 5 of 5 Hold to sign',
+      'Sign transaction to Create Market? Reject 5 of 5 Hold to sign',
+      'Sign transaction to Create Market? Reject 5 of 5 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 7/7 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 10/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_89.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+[ContextModule] [GatedSigningContextLoader] No gated descriptor found and proxy resolution failed {
+  to: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+  selector: '0x5a64f51e',
+  chainId: 1,
+  directError: '[ContextModule] HttpGatedDescriptorDataSource: No gated descriptor for contract 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb and selector 0x5a64f51e',
+  proxyError: '[ContextModule] HttpSafeProxyDataSource: Failed to fetch safe proxy implementation'
+}
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_90.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_91.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_92.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_93.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_94.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_95.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Enable Irm Swipe to review Reject 1 of 3',
+      'Review transaction to Enable Irm Swipe to review Reject 1 of 3',
+      'Review transaction to Enable Irm Swipe to review Reject 1 of 3',
+      'Review transaction to Enable Irm Swipe to review Reject 1 of 3',
+      'Review transaction to Enable Irm Swipe to review Reject 1 of 3',
+      'Interaction with Morpho Irm 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho Irm 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho Irm 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho Irm 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Sign transaction to Enable Irm? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Enable Irm? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Enable Irm? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Enable Irm? Reject 3 of 3 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 3/3 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 11/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_96.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+[ContextModule] [GatedSigningContextLoader] No gated descriptor found and proxy resolution failed {
+  to: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+  selector: '0x4d98a93b',
+  chainId: 1,
+  directError: '[ContextModule] HttpGatedDescriptorDataSource: No gated descriptor for contract 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb and selector 0x4d98a93b',
+  proxyError: '[ContextModule] HttpSafeProxyDataSource: Failed to fetch safe proxy implementation'
+}
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_97.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_98.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_99.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_100.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_101.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_102.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Enable Lltv Swipe to review Reject 1 of 3',
+      'Review transaction to Enable Lltv Swipe to review Reject 1 of 3',
+      'Review transaction to Enable Lltv Swipe to review Reject 1 of 3',
+      'Review transaction to Enable Lltv Swipe to review Reject 1 of 3',
+      'Review transaction to Enable Lltv Swipe to review Reject 1 of 3',
+      'Interaction with Morpho Lltv 1 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho Lltv 1 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho Lltv 1 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho Lltv 1 Max fees 0 ETH Reject 2 of 3',
+      'Sign transaction to Enable Lltv? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Enable Lltv? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Enable Lltv? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Enable Lltv? Reject 3 of 3 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 3/3 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 12/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_103.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_104.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_105.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_106.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_107.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_108.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_109.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_110.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Flash Loan Swipe to review Reject 1 of 4',
+      'Review transaction to Flash Loan Swipe to review Reject 1 of 4',
+      'Review transaction to Flash Loan Swipe to review Reject 1 of 4',
+      'Review transaction to Flash Loan Swipe to review Reject 1 of 4',
+      'Review transaction to Flash Loan Swipe to review Reject 1 of 4',
+      'Interaction with Morpho Token 0x0000000000000000 000000000000000000 000001 Assets 2 Reject 2 of 4',
+      'Interaction with Morpho Token 0x0000000000000000 000000000000000000 000001 Assets 2 Reject 2 of 4',
+      'Interaction with Morpho Token 0x0000000000000000 000000000000000000 000001 Assets 2 Reject 2 of 4',
+      'Interaction with Morpho Token 0x0000000000000000 000000000000000000 000001 Assets 2 Reject 2 of 4',
+      'Data 0x1234 Max fees 0 ETH Reject 3 of 4',
+      'Data 0x1234 Max fees 0 ETH Reject 3 of 4',
+      'Data 0x1234 Max fees 0 ETH Reject 3 of 4',
+      'Data 0x1234 Max fees 0 ETH Reject 3 of 4',
+      'Sign transaction to Flash Loan? Reject 4 of 4 Hold to sign',
+      'Sign transaction to Flash Loan? Reject 4 of 4 Hold to sign',
+      'Sign transaction to Flash Loan? Reject 4 of 4 Hold to sign',
+      'Sign transaction to Flash Loan? Reject 4 of 4 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 5/5 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 13/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_111.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_112.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_113.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_114.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_115.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_116.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_117.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_118.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_119.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_120.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Liquidate Swipe to review Reject 1 of 6',
+      'Review transaction to Liquidate Swipe to review Reject 1 of 6',
+      'Review transaction to Liquidate Swipe to review Reject 1 of 6',
+      'Review transaction to Liquidate Swipe to review Reject 1 of 6',
+      'Review transaction to Liquidate Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Borrower 0x0000000000000000 000000000000000000 000002 Seized Assets 3 Repaid Shares 4 Reject 4 of 6',
+      'Borrower 0x0000000000000000 000000000000000000 000002 Seized Assets 3 Repaid Shares 4 Reject 4 of 6',
+      'Borrower 0x0000000000000000 000000000000000000 000002 Seized Assets 3 Repaid Shares 4 Reject 4 of 6',
+      'Borrower 0x0000000000000000 000000000000000000 000002 Seized Assets 3 Repaid Shares 4 Reject 4 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Liquidate? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Liquidate? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Liquidate? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Liquidate? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 11/11 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 14/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_121.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_122.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_123.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_124.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_125.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_126.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_127.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_128.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_129.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_130.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Repay Swipe to review Reject 1 of 6',
+      'Review transaction to Repay Swipe to review Reject 1 of 6',
+      'Review transaction to Repay Swipe to review Reject 1 of 6',
+      'Review transaction to Repay Swipe to review Reject 1 of 6',
+      'Review transaction to Repay Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Repay? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Repay? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Repay? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Repay? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 11/11 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 15/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_131.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+Intercepted certificate request for stax:cal_network:network
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_132.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_133.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_134.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_135.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_136.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_137.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_138.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Set Authorization Swipe to review Reject 1 of 4',
+      'Review transaction to Set Authorization Swipe to review Reject 1 of 4',
+      'Review transaction to Set Authorization Swipe to review Reject 1 of 4',
+      'Review transaction to Set Authorization Swipe to review Reject 1 of 4',
+      'Review transaction to Set Authorization Swipe to review Reject 1 of 4',
+      'Interaction with Morpho Authorized 0x0000000000000000 000000000000000000 000001 New Is Authorized false Reject 2 of 4',
+      'Interaction with Morpho Authorized 0x0000000000000000 000000000000000000 000001 New Is Authorized false Reject 2 of 4',
+      'Interaction with Morpho Authorized 0x0000000000000000 000000000000000000 000001 New Is Authorized false Reject 2 of 4',
+      'Interaction with Morpho Authorized 0x0000000000000000 000000000000000000 000001 New Is Authorized false Reject 2 of 4',
+      'Max fees 0 ETH Reject 3 of 4',
+      'Max fees 0 ETH Reject 3 of 4',
+      'Max fees 0 ETH Reject 3 of 4',
+      'Max fees 0 ETH Reject 3 of 4',
+      'Sign transaction to Set Authorization? Reject 4 of 4 Hold to sign',
+      'Sign transaction to Set Authorization? Reject 4 of 4 Hold to sign',
+      'Sign transaction to Set Authorization? Reject 4 of 4 Hold to sign',
+      'Sign transaction to Set Authorization? Reject 4 of 4 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 4/4 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 16/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_139.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_140.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_141.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_142.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_143.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_144.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_145.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_146.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_147.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_148.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Set Authorization With Sig Swipe to review Reject 1 of 6',
+      'Review transaction to Set Authorization With Sig Swipe to review Reject 1 of 6',
+      'Review transaction to Set Authorization With Sig Swipe to review Reject 1 of 6',
+      'Review transaction to Set Authorization With Sig Swipe to review Reject 1 of 6',
+      'Review transaction to Set Authorization With Sig Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Authorizer 0x0000000000000000 000000000000000000 000001 Authorized 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Authorizer 0x0000000000000000 000000000000000000 000001 Authorized 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Authorizer 0x0000000000000000 000000000000000000 000001 Authorized 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Authorizer 0x0000000000000000 000000000000000000 000001 Authorized 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Is Authorized true Nonce 4 Deadline 5 V 1 Reject 3 of 6',
+      'Is Authorized true Nonce 4 Deadline 5 V 1 Reject 3 of 6',
+      'Is Authorized true Nonce 4 Deadline 5 V 1 Reject 3 of 6',
+      'Is Authorized true Nonce 4 Deadline 5 V 1 Reject 3 of 6',
+      'R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 4 of 6',
+      'R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 4 of 6',
+      'R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 4 of 6',
+      'R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 4 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Set Authorization With Sig? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Set Authorization With Sig? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Set Authorization With Sig? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Set Authorization With Sig? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 10/10 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 17/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_149.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+[ContextModule] [GatedSigningContextLoader] No gated descriptor found and proxy resolution failed {
+  to: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+  selector: '0x2b4f013c',
+  chainId: 1,
+  directError: '[ContextModule] HttpGatedDescriptorDataSource: No gated descriptor for contract 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb and selector 0x2b4f013c',
+  proxyError: '[ContextModule] HttpSafeProxyDataSource: Failed to fetch safe proxy implementation'
+}
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_150.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_151.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_152.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_153.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_154.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_155.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_156.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_157.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Set Fee Swipe to review Reject 1 of 5',
+      'Review transaction to Set Fee Swipe to review Reject 1 of 5',
+      'Review transaction to Set Fee Swipe to review Reject 1 of 5',
+      'Review transaction to Set Fee Swipe to review Reject 1 of 5',
+      'Review transaction to Set Fee Swipe to review Reject 1 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5',
+      'New Fee 2 Max fees 0 ETH Reject 4 of 5',
+      'New Fee 2 Max fees 0 ETH Reject 4 of 5',
+      'New Fee 2 Max fees 0 ETH Reject 4 of 5',
+      'New Fee 2 Max fees 0 ETH Reject 4 of 5',
+      'Sign transaction to Set Fee? Reject 5 of 5 Hold to sign',
+      'Sign transaction to Set Fee? Reject 5 of 5 Hold to sign',
+      'Sign transaction to Set Fee? Reject 5 of 5 Hold to sign',
+      'Sign transaction to Set Fee? Reject 5 of 5 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 8/8 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 18/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_158.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+[ContextModule] [GatedSigningContextLoader] No gated descriptor found and proxy resolution failed {
+  to: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+  selector: '0xe74b981b',
+  chainId: 1,
+  directError: '[ContextModule] HttpGatedDescriptorDataSource: No gated descriptor for contract 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb and selector 0xe74b981b',
+  proxyError: '[ContextModule] HttpSafeProxyDataSource: Failed to fetch safe proxy implementation'
+}
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_159.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_160.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_161.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_162.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_163.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_164.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Set Fee Recipient Swipe to review Reject 1 of 3',
+      'Review transaction to Set Fee Recipient Swipe to review Reject 1 of 3',
+      'Review transaction to Set Fee Recipient Swipe to review Reject 1 of 3',
+      'Review transaction to Set Fee Recipient Swipe to review Reject 1 of 3',
+      'Review transaction to Set Fee Recipient Swipe to review Reject 1 of 3',
+      'Interaction with Morpho New Fee Recipient 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho New Fee Recipient 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho New Fee Recipient 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho New Fee Recipient 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Sign transaction to Set Fee Recipient? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Set Fee Recipient? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Set Fee Recipient? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Set Fee Recipient? Reject 3 of 3 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 3/3 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 19/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_165.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+[ContextModule] [GatedSigningContextLoader] No gated descriptor found and proxy resolution failed {
+  to: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+  selector: '0x13af4035',
+  chainId: 1,
+  directError: '[ContextModule] HttpGatedDescriptorDataSource: No gated descriptor for contract 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb and selector 0x13af4035',
+  proxyError: '[ContextModule] HttpSafeProxyDataSource: Failed to fetch safe proxy implementation'
+}
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_166.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_167.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_168.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_169.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_170.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_171.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Set Owner Swipe to review Reject 1 of 3',
+      'Review transaction to Set Owner Swipe to review Reject 1 of 3',
+      'Review transaction to Set Owner Swipe to review Reject 1 of 3',
+      'Review transaction to Set Owner Swipe to review Reject 1 of 3',
+      'Review transaction to Set Owner Swipe to review Reject 1 of 3',
+      'Interaction with Morpho New Owner 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho New Owner 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho New Owner 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Interaction with Morpho New Owner 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3',
+      'Sign transaction to Set Owner? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Set Owner? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Set Owner? Reject 3 of 3 Hold to sign',
+      'Sign transaction to Set Owner? Reject 3 of 3 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 3/3 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 20/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_172.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_173.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_174.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_175.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_176.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_177.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_178.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_179.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_180.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_181.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Supply Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Data 0x1234 Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Supply? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 11/11 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 21/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_182.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+Intercepted certificate request for stax:cal_network:network
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_183.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_184.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_185.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_186.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_187.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_188.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_189.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_190.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_191.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Supply Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Supply Collateral Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Assets 2 On Behalf 0x0000000000000000 000000000000000000 000003 Data 0x1234 Reject 4 of 6',
+      'Assets 2 On Behalf 0x0000000000000000 000000000000000000 000003 Data 0x1234 Reject 4 of 6',
+      'Assets 2 On Behalf 0x0000000000000000 000000000000000000 000003 Data 0x1234 Reject 4 of 6',
+      'Assets 2 On Behalf 0x0000000000000000 000000000000000000 000003 Data 0x1234 Reject 4 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Supply Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Supply Collateral? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 10/10 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 22/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_192.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_193.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_194.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_195.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_196.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_197.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_198.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_199.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_200.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_201.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Withdraw Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Receiver 0x0000000000000000 000000000000000000 000005 Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0x0000000000000000 000000000000000000 000005 Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0x0000000000000000 000000000000000000 000005 Max fees 0 ETH Reject 5 of 6',
+      'Receiver 0x0000000000000000 000000000000000000 000005 Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Withdraw? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 11/11 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+test-batch-transaction Testing transaction 23/23
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_202.png
+Intercepted dapps request for 1:0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+Intercepted certificate request for stax:cal_gated_signing:gated_signing
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_203.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_204.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_205.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_206.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_207.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_208.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_209.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_210.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_211.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6',
+      'Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6',
+      'Assets 2 On Behalf 0x0000000000000000 000000000000000000 000003 Receiver 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 On Behalf 0x0000000000000000 000000000000000000 000003 Receiver 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 On Behalf 0x0000000000000000 000000000000000000 000003 Receiver 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Assets 2 On Behalf 0x0000000000000000 000000000000000000 000003 Receiver 0x0000000000000000 000000000000000000 000004 Reject 4 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Max fees 0 ETH Reject 5 of 6',
+      'Sign transaction to Withdraw Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw Collateral? Reject 6 of 6 Hold to sign',
+      'Sign transaction to Withdraw Collateral? Reject 6 of 6 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 10/10 expected texts found
+screen-analyzer Result: All expected texts found (clear signed)
+
+📋 TRANSACTION TEST RESULTS
+┌─────────┬──────────────────────────────────────────────────────────────────────────┬───────────────────┐
+│ (index) │ Description                                                              │ Status            │
+├─────────┼──────────────────────────────────────────────────────────────────────────┼───────────────────┤
+│ 0       │ 'clear-signing/fixtures/registry-1.json'                                 │ '✅ clear signed' │
+│ 1       │ 'clear-signing/fixtures/registry-2.json'                                 │ '✅ clear signed' │
+│ 2       │ 'clear-signing/fixtures/registry-3.json'                                 │ '✅ clear signed' │
+│ 3       │ 'clear-signing/fixtures/registry-4.json'                                 │ '✅ clear signed' │
+│ 4       │ 'clear-signing/fixtures/registry-5.json'                                 │ '✅ clear signed' │
+│ 5       │ 'clear-signing/fixtures/registry-6.json'                                 │ '✅ clear signed' │
+│ 6       │ 'clear-signing/fixtures/synthetic-accrueInterest-151c1ade.json'          │ '✅ clear signed' │
+│ 7       │ 'clear-signing/fixtures/synthetic-borrow-50d8cd4b.json'                  │ '✅ clear signed' │
+│ 8       │ 'clear-signing/fixtures/synthetic-createMarket-8c1358a2.json'            │ '✅ clear signed' │
+│ 9       │ 'clear-signing/fixtures/synthetic-enableIrm-5a64f51e.json'               │ '✅ clear signed' │
+│ 10      │ 'clear-signing/fixtures/synthetic-enableLltv-4d98a93b.json'              │ '✅ clear signed' │
+│ 11      │ 'clear-signing/fixtures/synthetic-flashLoan-e0232b42.json'               │ '✅ clear signed' │
+│ 12      │ 'clear-signing/fixtures/synthetic-liquidate-d8eabcb8.json'               │ '✅ clear signed' │
+│ 13      │ 'clear-signing/fixtures/synthetic-repay-20b76e81.json'                   │ '✅ clear signed' │
+│ 14      │ 'clear-signing/fixtures/synthetic-setAuthorization-eecea000.json'        │ '✅ clear signed' │
+│ 15      │ 'clear-signing/fixtures/synthetic-setAuthorizationWithSig-8069218f.json' │ '✅ clear signed' │
+│ 16      │ 'clear-signing/fixtures/synthetic-setFee-2b4f013c.json'                  │ '✅ clear signed' │
+│ 17      │ 'clear-signing/fixtures/synthetic-setFeeRecipient-e74b981b.json'         │ '✅ clear signed' │
+│ 18      │ 'clear-signing/fixtures/synthetic-setOwner-13af4035.json'                │ '✅ clear signed' │
+│ 19      │ 'clear-signing/fixtures/synthetic-supply-a99aad89.json'                  │ '✅ clear signed' │
+│ 20      │ 'clear-signing/fixtures/synthetic-supplyCollateral-238d6579.json'        │ '✅ clear signed' │
+│ 21      │ 'clear-signing/fixtures/synthetic-withdraw-5c2bea49.json'                │ '✅ clear signed' │
+│ 22      │ 'clear-signing/fixtures/synthetic-withdrawCollateral-8720316d.json'      │ '✅ clear signed' │
+└─────────┴──────────────────────────────────────────────────────────────────────────┴───────────────────┘
+
+📊 TRANSACTION BATCH SUMMARY
+┌─────────┬────────────────────────────┬───────┬────────────┐
+│ (index) │ Status                     │ Count │ Percentage │
+├─────────┼────────────────────────────┼───────┼────────────┤
+│ 0       │ '✅ Clear Signed'          │ 23    │ '100.0%'   │
+│ 1       │ '⚠️ Partially Clear Signed' │ 0     │ '0.0%'     │
+│ 2       │ '🙈 Blind Signed'          │ 0     │ '0.0%'     │
+│ 3       │ '❌ Errors'                │ 0     │ '0.0%'     │
+└─────────┴────────────────────────────┴───────┴────────────┘
+main-service-controller Stopping all services...
+[DeviceSessionService] DeviceSession removed { sessionId: '4a8e50f0-2f8e-4e26-ba8d-0c44eff3e944' }
+screenshot-saver Saved screenshot: /tmp/csh-ledger-morpho-matrix/run-20260908/screenshots/screenshot_212.png
+main-service-controller All services stopped successfully
+CAL Interceptor stopped
+cli CAL interceptor stopped
+[SpeculosTransport] Speculos server unavailable, disconnecting device SpeculosID

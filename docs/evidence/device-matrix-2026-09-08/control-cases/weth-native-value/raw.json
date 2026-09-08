@@ -1,0 +1,12 @@
+[
+  {
+    "description": "synthetic-weth-native-value",
+    "rawTx": "0x02ec01808080830f424094c02aaa39b223fe8d0a0e5c4f27ead9083c756cc28801b69b4ba574920084d0e30db0c0",
+    "expectedTexts": [
+      "Deposit",
+      "WETH",
+      "Native value (wei)",
+      "123456789000000000"
+    ]
+  }
+]

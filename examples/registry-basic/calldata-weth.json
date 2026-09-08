@@ -1,0 +1,91 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": [
+        {
+          "chainId": 1,
+          "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "owner": "WETH",
+    "contractName": "weth"
+  },
+  "display": {
+    "formats": {
+      "approve(address guy,uint256 wad)": {
+        "intent": "Approve",
+        "fields": [
+          {
+            "path": "guy",
+            "label": "Guy",
+            "format": "raw"
+          },
+          {
+            "path": "wad",
+            "label": "Wad",
+            "format": "raw"
+          }
+        ]
+      },
+      "transferFrom(address src,address dst,uint256 wad)": {
+        "intent": "Transfer From",
+        "fields": [
+          {
+            "path": "src",
+            "label": "Src",
+            "format": "raw"
+          },
+          {
+            "path": "dst",
+            "label": "Dst",
+            "format": "raw"
+          },
+          {
+            "path": "wad",
+            "label": "Wad",
+            "format": "raw"
+          }
+        ]
+      },
+      "withdraw(uint256 wad)": {
+        "intent": "Withdraw",
+        "fields": [
+          {
+            "path": "wad",
+            "label": "Wad",
+            "format": "raw"
+          }
+        ]
+      },
+      "transfer(address dst,uint256 wad)": {
+        "intent": "Transfer",
+        "fields": [
+          {
+            "path": "dst",
+            "label": "Dst",
+            "format": "raw"
+          },
+          {
+            "path": "wad",
+            "label": "Wad",
+            "format": "raw"
+          }
+        ]
+      },
+      "deposit()": {
+        "intent": "Deposit",
+        "fields": [
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

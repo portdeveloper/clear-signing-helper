@@ -1,0 +1,18 @@
+version = 1
+profile = "default"
+engine = "94693ed48fdb22b6903c468054689615c97131f324ddf9b031eb208958e1655a"
+
+[[contracts]]
+id = "src/AssetVault.sol:AssetVault"
+descriptor = "clear-signing/descriptors/calldata-AssetVault-c3c36c1b.json"
+exclusions = { }
+
+[[contracts]]
+id = "src/ClearToken.sol:ClearToken"
+descriptor = "clear-signing/descriptors/calldata-ClearToken-2e2a2d3f.json"
+exclusions = { }
+
+[[contracts]]
+id = "src/SwapRouter.sol:SwapRouter"
+descriptor = "clear-signing/descriptors/calldata-SwapRouter-34f9445f.json"
+exclusions = { }
