@@ -27,7 +27,7 @@ For an incompatible function, remove its descriptor format and add a reason in t
 
 ## Distribution and trust
 
-The initial supported environment is the Linux/Node 22 environment with executed evidence. Additional platform/version jobs are configured in CI; a configured job is not a successful platform test. See [distribution evidence](DISTRIBUTION.md) for executed versions and remaining runner requirements.
+The tested environments are Linux ARM64 locally, plus Ubuntu 24.04 x64 and macOS 15 ARM64 in GitHub CI, on Node 22.22.3 and 24.20.0. All four remote jobs passed the 31-test suite and package verification. See [executed CI evidence](GITHUB-CI.md). Intel macOS and Windows are not verified.
 
 The owner selected the [MIT license](../LICENSE) for this project. The renderer and other bundled dependencies retain their own notices. No npm package or registry submission is published by the release scripts.
 

@@ -36,7 +36,7 @@ Updated: 2026-09-08. This records executed checks, rather than planned acceptanc
 
 The syscall trace used `strace -f -e trace=network` after prerequisites were installed. It verifies the exercised local workflow made no internet connections. It is not a claim that package installation or an initial compiler download is offline. A network namespace test was unavailable on this host, so no network-isolation claim is made.
 
-The final [distribution record](DISTRIBUTION.md) and [release verifier JSON](../release/release-verification.json) describe current packaging. [Source pilot evidence](PILOT-VALIDATION.md) includes deployment receipts and a mined OpenZeppelin ERC4626 deposit with exact asset/share balance assertions. Ledger emulator tests used injected descriptors under test CAL trust; physical/retail acceptance remains open. macOS and GitHub Linux runner jobs are configured but have not executed here.
+The final [distribution record](DISTRIBUTION.md) and [release verifier JSON](../release/release-verification.json) describe current packaging. [Source pilot evidence](PILOT-VALIDATION.md) includes deployment receipts and a mined OpenZeppelin ERC4626 deposit with exact asset/share balance assertions. Ledger emulator tests used injected descriptors under test CAL trust; physical/retail acceptance remains open. All four [GitHub CI jobs](GITHUB-CI.md) passed on Linux x64 and macOS ARM64 with Node 22/24; their downloaded package hashes matched the local candidate.
 
 ## Actual transaction validation
 

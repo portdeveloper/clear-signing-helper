@@ -13,7 +13,7 @@ Prepared 2026-09-08. Local implementation, automated hardening, source pilots, e
 
 No testnet funds or private keys are needed for the remaining display/review gates. If a maintainer later requests transaction execution on a specific testnet, that is a separate test with an explicit deployment and fixture.
 
-The owner supplied [portdeveloper/clear-signing-helper](https://github.com/portdeveloper/clear-signing-helper) and GitHub CLI access. Its existing agent skill is preserved; the Foundry CLI is being added through a review branch. Remote CI execution is handled by the prepared workflow rather than requiring further access from the owner.
+The owner supplied [portdeveloper/clear-signing-helper](https://github.com/portdeveloper/clear-signing-helper) and GitHub CLI access. Its existing agent skill is preserved in [PR #1](https://github.com/portdeveloper/clear-signing-helper/pull/1). All four remote Linux/macOS jobs passed tests and package verification; [execution evidence](GITHUB-CI.md) closes that access/platform gate.
 
 ## Candidate and evidence
 
@@ -30,6 +30,6 @@ The version is unpublished `0.2.0`; identify this candidate by the package/sourc
 
 ## After the owner supplies those inputs
 
-The owner's MIT license choice and repository destination are applied. Complete the remote matrix, collect reviewer/device result records, fix any new findings, and regenerate the candidate hashes. Review that concrete result before publication. Owner choices and external findings can change release inputs; the current verification does not pre-approve a changed artifact.
+The owner's MIT license choice, repository destination and remote matrix are complete. Collect reviewer/device result records, fix any new findings, and regenerate the candidate hashes. Review that concrete result before merging and publication. Owner choices and external findings can change release inputs; the current verification does not pre-approve a changed artifact.
 
 The [tracker](PRODUCTION-READINESS.md) keeps the remaining external boxes open. Ordinary draft export remains available; a draft's existence does not bypass the launch gates.

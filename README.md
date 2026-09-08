@@ -8,7 +8,7 @@ This repository also includes the existing [agent skill](docs/AGENT-SKILL.md) fo
 
 The CLI discovers compiled contracts, scaffolds their write functions, renders example transactions through Sourcify's reference library, and checks signing output in CI. Descriptors stay ordinary JSON in your repository.
 
-**Status:** unpublished v0.2 release candidate. The 31-test suite passes on Linux ARM64 with Node 22.22.3 and 24.20.0, using Forge/Anvil/Cast 1.7.1. Independent clean builds and packaged installation pass. macOS and Linux x64 CI jobs are configured but await execution. Nothing has been published to npm or a descriptor registry.
+**Status:** unpublished v0.2 release candidate. The 31-test suite passes on Linux ARM64 locally and on Linux x64/macOS ARM64 in [GitHub CI](docs/GITHUB-CI.md), using Node 22.22.3 and 24.20.0 with Forge/Anvil/Cast 1.7.1. Independent clean builds and packaged installation pass; all four CI jobs produced identical candidate packages. Nothing has been published to npm or a descriptor registry.
 
 Track release gates and current work in the [production readiness checklist](docs/PRODUCTION-READINESS.md).
 

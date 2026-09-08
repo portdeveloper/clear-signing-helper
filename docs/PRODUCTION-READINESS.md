@@ -9,7 +9,7 @@ Use this file to track release gates. Check a box only when its evidence is link
 | 1 | Complete submission path | Local path complete; physical/production trust acceptance external | [Device matrix](DEVICE-COMPATIBILITY.md), [hardware handoff](HARDWARE-ACCEPTANCE.md) |
 | 2 | Protocol maintainer pilots | Three real-source exercises complete; maintainer assessment external | [Pilot evidence and limitations](PILOT-VALIDATION.md) |
 | 3 | Rendering correctness and review | Automated hardening complete; human review external | [Adversarial record](ADVERSARIAL-REVIEW.md), [review packet](EXTERNAL-REVIEW.md) |
-| 4 | Distribution and releases | MIT-licensed local candidate ready; remote runners/publication external | [Distribution](DISTRIBUTION.md) |
+| 4 | Distribution and releases | MIT candidate and Linux/macOS CI verified; publication external | [Distribution](DISTRIBUTION.md), [executed CI](GITHUB-CI.md) |
 | 5 | First-release scope | Candidate policy prepared and enforced in strict CI; owner approval pending | [Calldata-only scope and exclusions](RELEASE-SCOPE.md) |
 
 ## 1. Complete submission path
@@ -51,7 +51,7 @@ Found and fixed during the exercise: the two-minute Forge build timeout was too 
 
 - [x] Replace the temporary dependency patch with a hash-verified, explicitly maintained vendored renderer; preserve its MIT notice and bundled dependency notices.
 - [x] Test Linux ARM64 on Node 22.22.3 and 24.20.0; exercise clean package installation, independent build/package equality and upgrade/rollback between distinct local candidates.
-- [ ] Execute configured macOS/Linux GitHub runner jobs — requires a remote repository/runner; no macOS execution claimed locally.
+- [x] Execute all four configured macOS/Linux GitHub jobs — Node 22/24 on Ubuntu x64 and macOS ARM64 passed tests and package verification. Downloaded tarballs match each other and the local build; [run evidence](GITHUB-CI.md).
 - [x] Owner selected MIT; [LICENSE](../LICENSE) and package metadata updated, with the license included in both candidate archives.
 - [x] Establish pinned release inputs, package verification, release notes and update/rollback procedures — [candidate artifacts](../release/) and [distribution](DISTRIBUTION.md).
 - [x] Exercise the release verification commands locally; configure pinned CI actions and Node versions, with manual dispatch and no automatic publication.
