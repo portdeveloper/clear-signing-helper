@@ -1,0 +1,171 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": [
+        {
+          "chainId": 31337,
+          "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "owner": "Independent pilot",
+    "contractName": "ERC4626Mock"
+  },
+  "display": {
+    "formats": {
+      "approve(address spender,uint256 value)": {
+        "intent": "Pilot Approve",
+        "fields": [
+          {
+            "path": "spender",
+            "label": "Spender",
+            "format": "raw"
+          },
+          {
+            "path": "value",
+            "label": "Value",
+            "format": "raw"
+          }
+        ]
+      },
+      "burn(address account,uint256 amount)": {
+        "intent": "Pilot Burn",
+        "fields": [
+          {
+            "path": "account",
+            "label": "Account",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          }
+        ]
+      },
+      "deposit(uint256 assets,address receiver)": {
+        "intent": "Pilot Deposit",
+        "fields": [
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          }
+        ]
+      },
+      "mint(address account,uint256 amount)": {
+        "intent": "Pilot Mint",
+        "fields": [
+          {
+            "path": "account",
+            "label": "Account",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          }
+        ]
+      },
+      "mint(uint256 shares,address receiver)": {
+        "intent": "Pilot Mint",
+        "fields": [
+          {
+            "path": "shares",
+            "label": "Shares",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          }
+        ]
+      },
+      "redeem(uint256 shares,address receiver,address owner)": {
+        "intent": "Pilot Redeem",
+        "fields": [
+          {
+            "path": "shares",
+            "label": "Shares",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "owner",
+            "label": "Owner",
+            "format": "raw"
+          }
+        ]
+      },
+      "transfer(address to,uint256 value)": {
+        "intent": "Pilot Transfer",
+        "fields": [
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "value",
+            "label": "Value",
+            "format": "raw"
+          }
+        ]
+      },
+      "transferFrom(address from,address to,uint256 value)": {
+        "intent": "Pilot Transfer From",
+        "fields": [
+          {
+            "path": "from",
+            "label": "From",
+            "format": "raw"
+          },
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "value",
+            "label": "Value",
+            "format": "raw"
+          }
+        ]
+      },
+      "withdraw(uint256 assets,address receiver,address owner)": {
+        "intent": "Pilot Withdraw",
+        "fields": [
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "owner",
+            "label": "Owner",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

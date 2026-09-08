@@ -1,0 +1,1955 @@
+{
+  "run": "2026-09-08",
+  "cases": [
+    {
+      "index": 1,
+      "description": "clear-signing/fixtures/registry-1.json",
+      "intent": "Borrow",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Borrow Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0xCAcd6fd266aF91b8 AeD52aCCc382b4e165 586E29 Collateral Token 0x3B855AA8CC56a3cB d5dBb5456F5A13Ce86 AA0fe8 Reject 2 of 6",
+        "Oracle 0xC5860e9e6b6F6E9D 79DCe5c5AB0F7A4b87 8Bd431 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 945000000000000000 Reject 3 of 6",
+        "Assets 590000000000000000 00000 Shares 0 On Behalf 0x8449f934dbFbFA05 0f5E7738bf2E73a81102 2904 Reject 4 of 6",
+        "Receiver 0x8449f934dbFbFA05 0f5E7738bf2E73a81102 2904 Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Borrow? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0xCAcd6fd266aF91b8AeD52aCCc382b4e165586E29",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xcacd6fd266af91b8aed52accc382b4e165586e29",
+          "labelPos": 69
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x3B855AA8CC56a3cBd5dBb5456F5A13Ce86AA0fe8",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x3b855aa8cc56a3cbd5dbb5456f5a13ce86aa0fe8reject2of6",
+          "labelPos": 120
+        },
+        {
+          "label": "Oracle",
+          "expected": "0xC5860e9e6b6F6E9D79DCe5c5AB0F7A4b878Bd431",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xc5860e9e6b6f6e9d79dce5c5ab0f7a4b878bd431",
+          "labelPos": 187
+        },
+        {
+          "label": "Irm",
+          "expected": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+          "labelPos": 235
+        },
+        {
+          "label": "Lltv",
+          "expected": "945000000000000000",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "945000000000000000reject3of6",
+          "labelPos": 280
+        },
+        {
+          "label": "Assets",
+          "expected": "59000000000000000000000",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "59000000000000000000000",
+          "labelPos": 312
+        },
+        {
+          "label": "Shares",
+          "expected": "0",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0",
+          "labelPos": 341
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0x8449f934dbFbFA050f5E7738bf2E73a811022904",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x8449f934dbfbfa050f5e7738bf2e73a811022904reject4of6",
+          "labelPos": 348
+        },
+        {
+          "label": "Receiver",
+          "expected": "0x8449f934dbFbFA050f5E7738bf2E73a811022904",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x8449f934dbfbfa050f5e7738bf2e73a811022904maxfees0ethreject5of6signtransactiontoborrow?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 408
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 11,
+        "expected": 11
+      }
+    },
+    {
+      "index": 2,
+      "description": "clear-signing/fixtures/registry-2.json",
+      "intent": "Repay",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Repay Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0x6c3ea90364068520 06290770BEdFcAbA0e 23A0e8 Collateral Token 0x2260FAC5E5542a77 3Aa44fBCfeDf7C193bc 2C599 Reject 2 of 6",
+        "Oracle 0xc53c90d6E9A5B69E 4ABf3d5Ae4c79225C7 FeF3d2 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6",
+        "Assets 3526000000 Shares 0 On Behalf 0xE4916bF722d5B2d3 97fd2F3A925029d2c4e 83B51 Reject 4 of 6",
+        "Data 0x Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Repay? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x6c3ea9036406852006290770bedfcaba0e23a0e8",
+          "labelPos": 68
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599reject2of6",
+          "labelPos": 119
+        },
+        {
+          "label": "Oracle",
+          "expected": "0xc53c90d6E9A5B69E4ABf3d5Ae4c79225C7FeF3d2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xc53c90d6e9a5b69e4abf3d5ae4c79225c7fef3d2",
+          "labelPos": 186
+        },
+        {
+          "label": "Irm",
+          "expected": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+          "labelPos": 234
+        },
+        {
+          "label": "Lltv",
+          "expected": "860000000000000000",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "860000000000000000reject3of6",
+          "labelPos": 279
+        },
+        {
+          "label": "Assets",
+          "expected": "3526000000",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "3526000000",
+          "labelPos": 311
+        },
+        {
+          "label": "Shares",
+          "expected": "0",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0",
+          "labelPos": 327
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0xE4916bF722d5B2d397fd2F3A925029d2c4e83B51",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xe4916bf722d5b2d397fd2f3a925029d2c4e83b51reject4of6",
+          "labelPos": 334
+        },
+        {
+          "label": "Data",
+          "expected": "0x",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xmaxfees0ethreject5of6signtransactiontorepay?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 394
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 11,
+        "expected": 11
+      }
+    },
+    {
+      "index": 3,
+      "description": "clear-signing/fixtures/registry-3.json",
+      "intent": "Supply",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Supply Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0xA0b86991c6218b36 c1d19D4a2e9Eb0cE360 6eB48 Collateral Token 0x38EEb52F0771140d1 0c4E9A9a72349A329F e8a6A Reject 2 of 6",
+        "Oracle 0xff1487BDa8049a536 F912e41E27B82a8A38 45862 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6",
+        "Assets 90000000 Shares 0 On Behalf 0xe689F793882A9FbF 80B26EE16f530076E01 30311 Reject 4 of 6",
+        "Data 0x Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Supply? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+          "labelPos": 69
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x38EEb52F0771140d10c4E9A9a72349A329Fe8a6A",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x38eeb52f0771140d10c4e9a9a72349a329fe8a6areject2of6",
+          "labelPos": 120
+        },
+        {
+          "label": "Oracle",
+          "expected": "0xff1487BDa8049a536F912e41E27B82a8A3845862",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xff1487bda8049a536f912e41e27b82a8a3845862",
+          "labelPos": 187
+        },
+        {
+          "label": "Irm",
+          "expected": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+          "labelPos": 235
+        },
+        {
+          "label": "Lltv",
+          "expected": "860000000000000000",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "860000000000000000reject3of6",
+          "labelPos": 280
+        },
+        {
+          "label": "Assets",
+          "expected": "90000000",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "90000000",
+          "labelPos": 312
+        },
+        {
+          "label": "Shares",
+          "expected": "0",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0",
+          "labelPos": 326
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0xe689F793882A9FbF80B26EE16f530076E0130311",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xe689f793882a9fbf80b26ee16f530076e0130311reject4of6",
+          "labelPos": 333
+        },
+        {
+          "label": "Data",
+          "expected": "0x",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xmaxfees0ethreject5of6signtransactiontosupply?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 393
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 11,
+        "expected": 11
+      }
+    },
+    {
+      "index": 4,
+      "description": "clear-signing/fixtures/registry-4.json",
+      "intent": "Supply Collateral",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Supply Collateral Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0xdC035D45d973E3EC 169d2276DDab16f1e40 7384F Collateral Token 0xE0f63A424a4439cB E457D80E4f4b51aD25 b2c56C Reject 2 of 6",
+        "Oracle 0xdA63266b5184D08D bFBace96267837c45D 7D34dA Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 625000000000000000 Reject 3 of 6",
+        "Assets 88163383478 On Behalf 0xf11Cc888d8Da84D3 bF735b7b357814fD071 e8B1A Data 0x Reject 4 of 6",
+        "Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Supply Collateral? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xdc035d45d973e3ec169d2276ddab16f1e407384f",
+          "labelPos": 79
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0xE0f63A424a4439cBE457D80E4f4b51aD25b2c56C",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xe0f63a424a4439cbe457d80e4f4b51ad25b2c56creject2of6",
+          "labelPos": 130
+        },
+        {
+          "label": "Oracle",
+          "expected": "0xdA63266b5184D08DbFBace96267837c45D7D34dA",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xda63266b5184d08dbfbace96267837c45d7d34da",
+          "labelPos": 197
+        },
+        {
+          "label": "Irm",
+          "expected": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+          "labelPos": 245
+        },
+        {
+          "label": "Lltv",
+          "expected": "625000000000000000",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "625000000000000000reject3of6",
+          "labelPos": 290
+        },
+        {
+          "label": "Assets",
+          "expected": "88163383478",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "88163383478",
+          "labelPos": 322
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0xf11Cc888d8Da84D3bF735b7b357814fD071e8B1A",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xf11cc888d8da84d3bf735b7b357814fd071e8b1a",
+          "labelPos": 339
+        },
+        {
+          "label": "Data",
+          "expected": "0x",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xreject4of6maxfees0ethreject5of6signtransactiontosupplycollateral?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 389
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 10,
+        "expected": 10
+      }
+    },
+    {
+      "index": 5,
+      "description": "clear-signing/fixtures/registry-5.json",
+      "intent": "Withdraw",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Withdraw Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0xA0b86991c6218b36 c1d19D4a2e9Eb0cE360 6eB48 Collateral Token 0x3EAA0F0f0A5d3D59 5ae4e4b0D27f439d01c 3E7b2 Reject 2 of 6",
+        "Oracle 0x12d66602C691Aa93 E90415aB22FB076069 5AC768 Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 915000000000000000 Reject 3 of 6",
+        "Assets 0 Shares 490064251891825428 On Behalf 0xd7583E3CF08bbcaB 66F1242195227bBf9F8 65Fda Reject 4 of 6",
+        "Receiver 0xd7583E3CF08bbcaB 66F1242195227bBf9F8 65Fda Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Withdraw? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+          "labelPos": 71
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x3EAA0F0f0A5d3D595ae4e4b0D27f439d01c3E7b2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x3eaa0f0f0a5d3d595ae4e4b0d27f439d01c3e7b2reject2of6",
+          "labelPos": 122
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x12d66602C691Aa93E90415aB22FB0760695AC768",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x12d66602c691aa93e90415ab22fb0760695ac768",
+          "labelPos": 189
+        },
+        {
+          "label": "Irm",
+          "expected": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+          "labelPos": 237
+        },
+        {
+          "label": "Lltv",
+          "expected": "915000000000000000",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "915000000000000000reject3of6",
+          "labelPos": 282
+        },
+        {
+          "label": "Assets",
+          "expected": "0",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0",
+          "labelPos": 314
+        },
+        {
+          "label": "Shares",
+          "expected": "490064251891825428",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "490064251891825428",
+          "labelPos": 321
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0xd7583E3CF08bbcaB66F1242195227bBf9F865Fda",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xd7583e3cf08bbcab66f1242195227bbf9f865fdareject4of6",
+          "labelPos": 345
+        },
+        {
+          "label": "Receiver",
+          "expected": "0xd7583E3CF08bbcaB66F1242195227bBf9F865Fda",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xd7583e3cf08bbcab66f1242195227bbf9f865fdamaxfees0ethreject5of6signtransactiontowithdraw?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 405
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 11,
+        "expected": 11
+      }
+    },
+    {
+      "index": 6,
+      "description": "clear-signing/fixtures/registry-6.json",
+      "intent": "Withdraw Collateral",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0xC02aaA39b223FE8D 0A0e5C4F27eAD9083 C756Cc2 Collateral Token 0xDcEe70654261AF21 C44c093C300eD3Bb9 7b78192 Reject 2 of 6",
+        "Oracle 0xb7948b5bEEe825E6 09990484A99340D87 67B420e Irm 0x870aC11D48B15DB9 a138Cf899d20F13F79B a00BC Lltv 860000000000000000 Reject 3 of 6",
+        "Assets 40000000000000000 On Behalf 0xB1bAf4287894eB272 258651e7C581d16da88 3DdA Receiver 0xB1bAf4287894eB272 258651e7C581d16da88 3DdA Reject 4 of 6",
+        "Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Withdraw Collateral? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+          "labelPos": 81
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0xDcEe70654261AF21C44c093C300eD3Bb97b78192",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xdcee70654261af21c44c093c300ed3bb97b78192reject2of6",
+          "labelPos": 132
+        },
+        {
+          "label": "Oracle",
+          "expected": "0xb7948b5bEEe825E609990484A99340D8767B420e",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xb7948b5beee825e609990484a99340d8767b420e",
+          "labelPos": 199
+        },
+        {
+          "label": "Irm",
+          "expected": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+          "labelPos": 247
+        },
+        {
+          "label": "Lltv",
+          "expected": "860000000000000000",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "860000000000000000reject3of6",
+          "labelPos": 292
+        },
+        {
+          "label": "Assets",
+          "expected": "40000000000000000",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "40000000000000000",
+          "labelPos": 324
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0xB1bAf4287894eB272258651e7C581d16da883DdA",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xb1baf4287894eb272258651e7c581d16da883dda",
+          "labelPos": 347
+        },
+        {
+          "label": "Receiver",
+          "expected": "0xB1bAf4287894eB272258651e7C581d16da883DdA",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0xb1baf4287894eb272258651e7c581d16da883ddareject4of6maxfees0ethreject5of6signtransactiontowithdrawcollateral?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 397
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 10,
+        "expected": 10
+      }
+    },
+    {
+      "index": 7,
+      "description": "clear-signing/fixtures/synthetic-accrueInterest-151c1ade.json",
+      "intent": "Accrue Interest",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 25,
+      "uniqueScreenTexts": [
+        "Review transaction to Accrue Interest Swipe to review Reject 1 of 5",
+        "Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5",
+        "Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5",
+        "Max fees 0 ETH Reject 4 of 5",
+        "Sign transaction to Accrue Interest? Reject 5 of 5 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 77
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of5",
+          "labelPos": 128
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 195
+        },
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004",
+          "labelPos": 243
+        },
+        {
+          "label": "Lltv",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5reject3of5maxfees0ethreject4of5signtransactiontoaccrueinterest?reject5of5holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 288
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        3
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 7,
+        "expected": 7
+      }
+    },
+    {
+      "index": 8,
+      "description": "clear-signing/fixtures/synthetic-borrow-50d8cd4b.json",
+      "intent": "Borrow",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Borrow Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6",
+        "Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6",
+        "Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6",
+        "Receiver 0x0000000000000000 000000000000000000 000005 Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Borrow? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 69
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of6",
+          "labelPos": 120
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 187
+        },
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004",
+          "labelPos": 235
+        },
+        {
+          "label": "Lltv",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5reject3of6",
+          "labelPos": 280
+        },
+        {
+          "label": "Assets",
+          "expected": "2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "2",
+          "labelPos": 295
+        },
+        {
+          "label": "Shares",
+          "expected": "3",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "3",
+          "labelPos": 302
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004reject4of6",
+          "labelPos": 309
+        },
+        {
+          "label": "Receiver",
+          "expected": "0x0000000000000000000000000000000000000005",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000005maxfees0ethreject5of6signtransactiontoborrow?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 369
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 11,
+        "expected": 11
+      }
+    },
+    {
+      "index": 9,
+      "description": "clear-signing/fixtures/synthetic-createMarket-8c1358a2.json",
+      "intent": "Create Market",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 25,
+      "uniqueScreenTexts": [
+        "Review transaction to Create Market Swipe to review Reject 1 of 5",
+        "Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5",
+        "Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5",
+        "Max fees 0 ETH Reject 4 of 5",
+        "Sign transaction to Create Market? Reject 5 of 5 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 75
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of5",
+          "labelPos": 126
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 193
+        },
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004",
+          "labelPos": 241
+        },
+        {
+          "label": "Lltv",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5reject3of5maxfees0ethreject4of5signtransactiontocreatemarket?reject5of5holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 286
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 7,
+        "expected": 7
+      }
+    },
+    {
+      "index": 10,
+      "description": "clear-signing/fixtures/synthetic-enableIrm-5a64f51e.json",
+      "intent": "Enable Irm",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 17,
+      "uniqueScreenTexts": [
+        "Review transaction to Enable Irm Swipe to review Reject 1 of 3",
+        "Interaction with Morpho Irm 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3",
+        "Sign transaction to Enable Irm? Reject 3 of 3 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "swipetoreviewreject1of3interactionwithmorphoirm0x0000000000000000000000000000000000000001maxfees0ethreject2of3signtransactiontoenableirm?reject3of3holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 25
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        3
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 3,
+        "expected": 3
+      }
+    },
+    {
+      "index": 11,
+      "description": "clear-signing/fixtures/synthetic-enableLltv-4d98a93b.json",
+      "intent": "Enable Lltv",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 17,
+      "uniqueScreenTexts": [
+        "Review transaction to Enable Lltv Swipe to review Reject 1 of 3",
+        "Interaction with Morpho Lltv 1 Max fees 0 ETH Reject 2 of 3",
+        "Sign transaction to Enable Lltv? Reject 3 of 3 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Lltv",
+          "expected": "1",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "swipetoreviewreject1of3interactionwithmorpholltv1maxfees0ethreject2of3signtransactiontoenablelltv?reject3of3holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 25
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        3
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 3,
+        "expected": 3
+      }
+    },
+    {
+      "index": 12,
+      "description": "clear-signing/fixtures/synthetic-flashLoan-e0232b42.json",
+      "intent": "Flash Loan",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 21,
+      "uniqueScreenTexts": [
+        "Review transaction to Flash Loan Swipe to review Reject 1 of 4",
+        "Interaction with Morpho Token 0x0000000000000000 000000000000000000 000001 Assets 2 Reject 2 of 4",
+        "Data 0x1234 Max fees 0 ETH Reject 3 of 4",
+        "Sign transaction to Flash Loan? Reject 4 of 4 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 72
+        },
+        {
+          "label": "Assets",
+          "expected": "2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "2reject2of4",
+          "labelPos": 119
+        },
+        {
+          "label": "Data",
+          "expected": "0x1234",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x1234maxfees0ethreject3of4signtransactiontoflashloan?reject4of4holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 136
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 5,
+        "expected": 5
+      }
+    },
+    {
+      "index": 13,
+      "description": "clear-signing/fixtures/synthetic-liquidate-d8eabcb8.json",
+      "intent": "Liquidate",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Liquidate Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6",
+        "Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6",
+        "Borrower 0x0000000000000000 000000000000000000 000002 Seized Assets 3 Repaid Shares 4 Reject 4 of 6",
+        "Data 0x1234 Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Liquidate? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 72
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of6",
+          "labelPos": 123
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 190
+        },
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004",
+          "labelPos": 238
+        },
+        {
+          "label": "Lltv",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5reject3of6",
+          "labelPos": 283
+        },
+        {
+          "label": "Borrower",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002",
+          "labelPos": 298
+        },
+        {
+          "label": "Seized Assets",
+          "expected": "3",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "3",
+          "labelPos": 348
+        },
+        {
+          "label": "Repaid Shares",
+          "expected": "4",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "4reject4of6",
+          "labelPos": 361
+        },
+        {
+          "label": "Data",
+          "expected": "0x1234",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x1234maxfees0ethreject5of6signtransactiontoliquidate?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 384
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 11,
+        "expected": 11
+      }
+    },
+    {
+      "index": 14,
+      "description": "clear-signing/fixtures/synthetic-repay-20b76e81.json",
+      "intent": "Repay",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Repay Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6",
+        "Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6",
+        "Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6",
+        "Data 0x1234 Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Repay? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 68
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of6",
+          "labelPos": 119
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 186
+        },
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004",
+          "labelPos": 234
+        },
+        {
+          "label": "Lltv",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5reject3of6",
+          "labelPos": 279
+        },
+        {
+          "label": "Assets",
+          "expected": "2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "2",
+          "labelPos": 294
+        },
+        {
+          "label": "Shares",
+          "expected": "3",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "3",
+          "labelPos": 301
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004reject4of6",
+          "labelPos": 308
+        },
+        {
+          "label": "Data",
+          "expected": "0x1234",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x1234maxfees0ethreject5of6signtransactiontorepay?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 368
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 11,
+        "expected": 11
+      }
+    },
+    {
+      "index": 15,
+      "description": "clear-signing/fixtures/synthetic-setAuthorization-eecea000.json",
+      "intent": "Set Authorization",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 21,
+      "uniqueScreenTexts": [
+        "Review transaction to Set Authorization Swipe to review Reject 1 of 4",
+        "Interaction with Morpho Authorized 0x0000000000000000 000000000000000000 000001 New Is Authorized false Reject 2 of 4",
+        "Max fees 0 ETH Reject 3 of 4",
+        "Sign transaction to Set Authorization? Reject 4 of 4 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Authorized",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 79
+        },
+        {
+          "label": "New Is Authorized",
+          "expected": "false",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "falsereject2of4maxfees0ethreject3of4signtransactiontosetauthorization?reject4of4holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 131
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 4,
+        "expected": 4
+      }
+    },
+    {
+      "index": 16,
+      "description": "clear-signing/fixtures/synthetic-setAuthorizationWithSig-8069218f.json",
+      "intent": "Set Authorization With Sig",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Set Authorization With Sig Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Authorizer 0x0000000000000000 000000000000000000 000001 Authorized 0x0000000000000000 000000000000000000 000002 Reject 2 of 6",
+        "Is Authorized true Nonce 4 Deadline 5 V 1 Reject 3 of 6",
+        "R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 4 of 6",
+        "Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Set Authorization With Sig? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Authorizer",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 86
+        },
+        {
+          "label": "Authorized",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of6",
+          "labelPos": 138
+        },
+        {
+          "label": "Is Authorized",
+          "expected": "true",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "true",
+          "labelPos": 200
+        },
+        {
+          "label": "Nonce",
+          "expected": "4",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "4",
+          "labelPos": 216
+        },
+        {
+          "label": "Deadline",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5",
+          "labelPos": 222
+        },
+        {
+          "label": "V",
+          "expected": "1",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "1",
+          "labelPos": 231
+        },
+        {
+          "label": "R",
+          "expected": "0x0101010101010101010101010101010101010101010101010101010101010101",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "eject3of6r0x0101010101010101010101010101010101010101010101010101010101010101",
+          "labelPos": 233
+        },
+        {
+          "label": "S",
+          "expected": "0x0101010101010101010101010101010101010101010101010101010101010101",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0101010101010101010101010101010101010101010101010101010101010101reject4of6maxfees0ethreject5of6signtransactiontosetauthorizationwithsig?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 310
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 10,
+        "expected": 10
+      }
+    },
+    {
+      "index": 17,
+      "description": "clear-signing/fixtures/synthetic-setFee-2b4f013c.json",
+      "intent": "Set Fee",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 25,
+      "uniqueScreenTexts": [
+        "Review transaction to Set Fee Swipe to review Reject 1 of 5",
+        "Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 5",
+        "Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 5",
+        "New Fee 2 Max fees 0 ETH Reject 4 of 5",
+        "Sign transaction to Set Fee? Reject 5 of 5 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 69
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of5",
+          "labelPos": 120
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 187
+        },
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004",
+          "labelPos": 235
+        },
+        {
+          "label": "Lltv",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5reject3of5",
+          "labelPos": 280
+        },
+        {
+          "label": "New Fee",
+          "expected": "2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "2maxfees0ethreject4of5signtransactiontosetfee?reject5of5holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 295
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        3
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 8,
+        "expected": 8
+      }
+    },
+    {
+      "index": 18,
+      "description": "clear-signing/fixtures/synthetic-setFeeRecipient-e74b981b.json",
+      "intent": "Set Fee Recipient",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 17,
+      "uniqueScreenTexts": [
+        "Review transaction to Set Fee Recipient Swipe to review Reject 1 of 3",
+        "Interaction with Morpho New Fee Recipient 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3",
+        "Sign transaction to Set Fee Recipient? Reject 3 of 3 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "New Fee Recipient",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001maxfees0ethreject2of3signtransactiontosetfeerecipient?reject3of3holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 78
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        3
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 3,
+        "expected": 3
+      }
+    },
+    {
+      "index": 19,
+      "description": "clear-signing/fixtures/synthetic-setOwner-13af4035.json",
+      "intent": "Set Owner",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 17,
+      "uniqueScreenTexts": [
+        "Review transaction to Set Owner Swipe to review Reject 1 of 3",
+        "Interaction with Morpho New Owner 0x0000000000000000 000000000000000000 000001 Max fees 0 ETH Reject 2 of 3",
+        "Sign transaction to Set Owner? Reject 3 of 3 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "New Owner",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001maxfees0ethreject2of3signtransactiontosetowner?reject3of3holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 71
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        3
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 3,
+        "expected": 3
+      }
+    },
+    {
+      "index": 20,
+      "description": "clear-signing/fixtures/synthetic-supply-a99aad89.json",
+      "intent": "Supply",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Supply Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6",
+        "Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6",
+        "Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6",
+        "Data 0x1234 Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Supply? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 69
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of6",
+          "labelPos": 120
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 187
+        },
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004",
+          "labelPos": 235
+        },
+        {
+          "label": "Lltv",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5reject3of6",
+          "labelPos": 280
+        },
+        {
+          "label": "Assets",
+          "expected": "2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "2",
+          "labelPos": 295
+        },
+        {
+          "label": "Shares",
+          "expected": "3",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "3",
+          "labelPos": 302
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004reject4of6",
+          "labelPos": 309
+        },
+        {
+          "label": "Data",
+          "expected": "0x1234",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x1234maxfees0ethreject5of6signtransactiontosupply?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 369
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 11,
+        "expected": 11
+      }
+    },
+    {
+      "index": 21,
+      "description": "clear-signing/fixtures/synthetic-supplyCollateral-238d6579.json",
+      "intent": "Supply Collateral",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Supply Collateral Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6",
+        "Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6",
+        "Assets 2 On Behalf 0x0000000000000000 000000000000000000 000003 Data 0x1234 Reject 4 of 6",
+        "Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Supply Collateral? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 79
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of6",
+          "labelPos": 130
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 197
+        },
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004",
+          "labelPos": 245
+        },
+        {
+          "label": "Lltv",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5reject3of6",
+          "labelPos": 290
+        },
+        {
+          "label": "Assets",
+          "expected": "2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "2",
+          "labelPos": 305
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 312
+        },
+        {
+          "label": "Data",
+          "expected": "0x1234",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x1234reject4of6maxfees0ethreject5of6signtransactiontosupplycollateral?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 362
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 10,
+        "expected": 10
+      }
+    },
+    {
+      "index": 22,
+      "description": "clear-signing/fixtures/synthetic-withdraw-5c2bea49.json",
+      "intent": "Withdraw",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Withdraw Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6",
+        "Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6",
+        "Assets 2 Shares 3 On Behalf 0x0000000000000000 000000000000000000 000004 Reject 4 of 6",
+        "Receiver 0x0000000000000000 000000000000000000 000005 Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Withdraw? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 71
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of6",
+          "labelPos": 122
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 189
+        },
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004",
+          "labelPos": 237
+        },
+        {
+          "label": "Lltv",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5reject3of6",
+          "labelPos": 282
+        },
+        {
+          "label": "Assets",
+          "expected": "2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "2",
+          "labelPos": 297
+        },
+        {
+          "label": "Shares",
+          "expected": "3",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "3",
+          "labelPos": 304
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004reject4of6",
+          "labelPos": 311
+        },
+        {
+          "label": "Receiver",
+          "expected": "0x0000000000000000000000000000000000000005",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000005maxfees0ethreject5of6signtransactiontowithdraw?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 371
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 11,
+        "expected": 11
+      }
+    },
+    {
+      "index": 23,
+      "description": "clear-signing/fixtures/synthetic-withdrawCollateral-8720316d.json",
+      "intent": "Withdraw Collateral",
+      "owner": "Morpho",
+      "status": "clear_signed",
+      "screenTextCount": 29,
+      "uniqueScreenTexts": [
+        "Review transaction to Withdraw Collateral Swipe to review Reject 1 of 6",
+        "Interaction with Morpho Loan Token 0x0000000000000000 000000000000000000 000001 Collateral Token 0x0000000000000000 000000000000000000 000002 Reject 2 of 6",
+        "Oracle 0x0000000000000000 000000000000000000 000003 Irm 0x0000000000000000 000000000000000000 000004 Lltv 5 Reject 3 of 6",
+        "Assets 2 On Behalf 0x0000000000000000 000000000000000000 000003 Receiver 0x0000000000000000 000000000000000000 000004 Reject 4 of 6",
+        "Max fees 0 ETH Reject 5 of 6",
+        "Sign transaction to Withdraw Collateral? Reject 6 of 6 Hold to sign",
+        "Transaction signed",
+        "Ethereum This app enables signing transactions on the Ethereum network. Quit app"
+      ],
+      "fields": [
+        {
+          "label": "Loan Token",
+          "expected": "0x0000000000000000000000000000000000000001",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000001",
+          "labelPos": 81
+        },
+        {
+          "label": "Collateral Token",
+          "expected": "0x0000000000000000000000000000000000000002",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000002reject2of6",
+          "labelPos": 132
+        },
+        {
+          "label": "Oracle",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 199
+        },
+        {
+          "label": "Irm",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004",
+          "labelPos": 247
+        },
+        {
+          "label": "Lltv",
+          "expected": "5",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "5reject3of6",
+          "labelPos": 292
+        },
+        {
+          "label": "Assets",
+          "expected": "2",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "2",
+          "labelPos": 307
+        },
+        {
+          "label": "On Behalf",
+          "expected": "0x0000000000000000000000000000000000000003",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000003",
+          "labelPos": 314
+        },
+        {
+          "label": "Receiver",
+          "expected": "0x0000000000000000000000000000000000000004",
+          "labelFound": true,
+          "matched": true,
+          "observedSegment": "0x0000000000000000000000000000000000000004reject4of6maxfees0ethreject5of6signtransactiontowithdrawcollateral?reject6of6holdtosigntransactionsignedethereumthisappenablessigningtransactionsontheethereumnetwork.quitapp",
+          "labelPos": 364
+        }
+      ],
+      "orderedFieldPairs": true,
+      "fallback": false,
+      "eip7730": true,
+      "contextErrorCounts": [
+        2
+      ],
+      "stateSuccessCount": 1,
+      "intentFound": true,
+      "ownerFound": true,
+      "screenAnalyzerSummary": {
+        "found": 10,
+        "expected": 10
+      }
+    }
+  ],
+  "counts": {
+    "total": 23,
+    "clearSigned": 23,
+    "fallback": 0,
+    "eip7730": 23,
+    "orderedFieldPairs": 23,
+    "screenAnalyzerAllExpected": 23,
+    "intentFound": 23,
+    "ownerFound": 23
+  },
+  "accumulatedCount": 23,
+  "blockCount": 23,
+  "screenshotCount": 212,
+  "metadata": {
+    "command": "M=/tmp/csh-ledger-morpho-matrix/run-20260908; COIN_APPS_PATH=\"$M/coin-apps\" pnpm cs-tester cli raw-file \"$M/raw-matrix.json\" --device flex --speculos-port 19123 --speculos-vnc-port 29123 --docker-image-tag csh-pinned-6ed9eefd --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --erc7730-files /tmp/csh-production-morpho-blue/submission-bundle/calldata-Morpho-ed3204cc.json --screenshot-folder-path \"$M/screenshots\" --log-file \"$M/tester.log\" --file-log-level debug --log-level info",
+    "sdkCommit": "2e35ed527c1a9aee852809a39ed2eaf76a415af1",
+    "ethereumApp": "1.22.3 Flex",
+    "ethereumAppElfSha256": "88ce93fe2b982c05f37aef108c1ea40f251ae394c25bb8232eb6a8adb3feaa5d",
+    "ethereumAppUrl": "https://github.com/LedgerHQ/app-ethereum/releases/download/1.22.3/app-1.22.3-flex.elf",
+    "speculosImage": "ghcr.io/ledgerhq/speculos:csh-pinned-6ed9eefd",
+    "speculosDigest": "sha256:6ed9eefd51cddd862b746719af4cd7a3265fe43d0588c388359753cab8d46d11",
+    "apiPort": 19123,
+    "vncPort": 29123,
+    "rawMatrixSha256": "56adc94e4b44ccc738708213a3ecf2fde5751f8c959da73afc70890dd6566290",
+    "expectedMatrixSha256": "8e1cb0c7137a64ec6bd1c60b880d48dc2fe4f17b0be2f99ff15a469ca867f0a4",
+    "screenshotCount": 212,
+    "cleanup": "cs-tester-speculos-flex-19123 stopped and removed automatically; parent containers untouched",
+    "screenCheck": "normalized whitespace-insensitive ordered label/value pair comparison from accumulated device screen text; all pairs matched",
+    "contextErrorDiagnosis": {
+      "observed": "ExternalPluginContextLoader emitted {\"result\":[{\"type\":\"error\",\"error\":{}}]} for every fixture; contextErrorCount was 2 on 17 cases and 3 on 6 cases.",
+      "source": "Pinned SDK DefaultContextModule installs ExternalPluginContextLoader as a default Ethereum loader. Its HttpExternalPluginDataSource requests https://crypto-assets-service.api.ledger.com/v1/dapps; an Either Left is converted by ExternalPluginContextLoader into an ERROR context. BuildBaseContexts counts ERROR contexts and removes them before providing contexts.",
+      "impact": "CalldataContextLoader supplied the injected ERC-7730 descriptor contexts; all cases still used clearSigningType eip7730, usedFallback false, and signed. The error is optional external-plugin context enrichment, not proof of a production plugin or descriptor failure.",
+      "files": "/tmp/csh-device-sdk-ts-pinned/packages/signer/context-module/src/DefaultContextModule.ts; /tmp/csh-device-sdk-ts-pinned/packages/signer/context-module/src/modules/ethereum/external-plugin/data/HttpExternalPluginDataSource.ts; /tmp/csh-device-sdk-ts-pinned/packages/signer/signer-eth/src/internal/app-binder/task/BuildBaseContexts.ts"
+    },
+    "externalPluginHTTPProbe": {
+      "url": "https://crypto-assets-service.api.ledger.com/v1/dapps?output=b2c%2Cb2c_signatures%2Cabis&chain_id=1&contracts=0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+      "header": "X-Ledger-Client-Origin: test-origin-token",
+      "observedStatus": 403,
+      "body": "Not Authorized",
+      "interpretation": "Matches the SDK ExternalPluginContextLoader error; descriptor CAL injection is independent and still provided all contexts."
+    }
+  }
+}

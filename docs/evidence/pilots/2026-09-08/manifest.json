@@ -1,0 +1,11 @@
+{
+  "date": "2026-09-08",
+  "protocol": "Independent Luna validation; internal only",
+  "repositories": {
+    "openzeppelin-contracts": {"tag": "v5.0.2", "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3", "target": "contracts/mocks/token/ERC4626Mock.sol:ERC4626Mock"},
+    "uniswap-v3-periphery": {"tag": "v1.3.0", "commit": "80f26c86c57b8a5e4b913f42844d4c8bd274d058", "target": "contracts/SwapRouter.sol:SwapRouter"}
+  },
+  "scope": "forge build plus install/init/edit/fixture/preview/review/check/export",
+  "publication": "not submitted",
+  "maintainerFeedback": "user handoff"
+}

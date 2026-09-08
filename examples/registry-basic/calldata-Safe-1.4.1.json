@@ -1,0 +1,312 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": [
+        {
+          "chainId": 1,
+          "address": "0x41675C099F32341bf84BFc5382aF534df5C7461a"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "owner": "Safe{Wallet}",
+    "contractName": "Safe-1.4.1"
+  },
+  "display": {
+    "formats": {
+      "addOwnerWithThreshold(address owner,uint256 _threshold)": {
+        "intent": "Add Owner With Threshold",
+        "fields": [
+          {
+            "path": "owner",
+            "label": "Owner",
+            "format": "raw"
+          },
+          {
+            "path": "_threshold",
+            "label": " threshold",
+            "format": "raw"
+          }
+        ]
+      },
+      "approveHash(bytes32 hashToApprove)": {
+        "intent": "Approve Hash",
+        "fields": [
+          {
+            "path": "hashToApprove",
+            "label": "Hash To Approve",
+            "format": "raw"
+          }
+        ]
+      },
+      "changeThreshold(uint256 _threshold)": {
+        "intent": "Change Threshold",
+        "fields": [
+          {
+            "path": "_threshold",
+            "label": " threshold",
+            "format": "raw"
+          }
+        ]
+      },
+      "disableModule(address prevModule,address module)": {
+        "intent": "Disable Module",
+        "fields": [
+          {
+            "path": "prevModule",
+            "label": "Prev Module",
+            "format": "raw"
+          },
+          {
+            "path": "module",
+            "label": "Module",
+            "format": "raw"
+          }
+        ]
+      },
+      "enableModule(address module)": {
+        "intent": "Enable Module",
+        "fields": [
+          {
+            "path": "module",
+            "label": "Module",
+            "format": "raw"
+          }
+        ]
+      },
+      "execTransaction(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,bytes signatures)": {
+        "intent": "Exec Transaction",
+        "fields": [
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "value",
+            "label": "Value",
+            "format": "raw"
+          },
+          {
+            "path": "data",
+            "label": "Data",
+            "format": "raw"
+          },
+          {
+            "path": "operation",
+            "label": "Operation",
+            "format": "raw"
+          },
+          {
+            "path": "safeTxGas",
+            "label": "Safe Tx Gas",
+            "format": "raw"
+          },
+          {
+            "path": "baseGas",
+            "label": "Base Gas",
+            "format": "raw"
+          },
+          {
+            "path": "gasPrice",
+            "label": "Gas Price",
+            "format": "raw"
+          },
+          {
+            "path": "gasToken",
+            "label": "Gas Token",
+            "format": "raw"
+          },
+          {
+            "path": "refundReceiver",
+            "label": "Refund Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "signatures",
+            "label": "Signatures",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "execTransactionFromModule(address to,uint256 value,bytes data,uint8 operation)": {
+        "intent": "Exec Transaction From Module",
+        "fields": [
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "value",
+            "label": "Value",
+            "format": "raw"
+          },
+          {
+            "path": "data",
+            "label": "Data",
+            "format": "raw"
+          },
+          {
+            "path": "operation",
+            "label": "Operation",
+            "format": "raw"
+          }
+        ]
+      },
+      "execTransactionFromModuleReturnData(address to,uint256 value,bytes data,uint8 operation)": {
+        "intent": "Exec Transaction From Module Return Data",
+        "fields": [
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "value",
+            "label": "Value",
+            "format": "raw"
+          },
+          {
+            "path": "data",
+            "label": "Data",
+            "format": "raw"
+          },
+          {
+            "path": "operation",
+            "label": "Operation",
+            "format": "raw"
+          }
+        ]
+      },
+      "removeOwner(address prevOwner,address owner,uint256 _threshold)": {
+        "intent": "Remove Owner",
+        "fields": [
+          {
+            "path": "prevOwner",
+            "label": "Prev Owner",
+            "format": "raw"
+          },
+          {
+            "path": "owner",
+            "label": "Owner",
+            "format": "raw"
+          },
+          {
+            "path": "_threshold",
+            "label": " threshold",
+            "format": "raw"
+          }
+        ]
+      },
+      "setFallbackHandler(address handler)": {
+        "intent": "Set Fallback Handler",
+        "fields": [
+          {
+            "path": "handler",
+            "label": "Handler",
+            "format": "raw"
+          }
+        ]
+      },
+      "setGuard(address guard)": {
+        "intent": "Set Guard",
+        "fields": [
+          {
+            "path": "guard",
+            "label": "Guard",
+            "format": "raw"
+          }
+        ]
+      },
+      "setup(address[] _owners,uint256 _threshold,address to,bytes data,address fallbackHandler,address paymentToken,uint256 payment,address paymentReceiver)": {
+        "intent": "Setup",
+        "fields": [
+          {
+            "path": "_owners.[]",
+            "label": " owners",
+            "format": "raw",
+            "separator": " owners {index}"
+          },
+          {
+            "path": "_threshold",
+            "label": " threshold",
+            "format": "raw"
+          },
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "data",
+            "label": "Data",
+            "format": "raw"
+          },
+          {
+            "path": "fallbackHandler",
+            "label": "Fallback Handler",
+            "format": "raw"
+          },
+          {
+            "path": "paymentToken",
+            "label": "Payment Token",
+            "format": "raw"
+          },
+          {
+            "path": "payment",
+            "label": "Payment",
+            "format": "raw"
+          },
+          {
+            "path": "paymentReceiver",
+            "label": "Payment Receiver",
+            "format": "raw"
+          }
+        ]
+      },
+      "simulateAndRevert(address targetContract,bytes calldataPayload)": {
+        "intent": "Simulate And Revert",
+        "fields": [
+          {
+            "path": "targetContract",
+            "label": "Target Contract",
+            "format": "raw"
+          },
+          {
+            "path": "calldataPayload",
+            "label": "Calldata Payload",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapOwner(address prevOwner,address oldOwner,address newOwner)": {
+        "intent": "Swap Owner",
+        "fields": [
+          {
+            "path": "prevOwner",
+            "label": "Prev Owner",
+            "format": "raw"
+          },
+          {
+            "path": "oldOwner",
+            "label": "Old Owner",
+            "format": "raw"
+          },
+          {
+            "path": "newOwner",
+            "label": "New Owner",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

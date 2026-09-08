@@ -1,0 +1,125 @@
+
+> @ledgerhq/ldmk@1.0.0 cs-tester /tmp/csh-device-sdk-ts-pinned
+> pnpm --filter @ledgerhq/clear-signing-tester cli raw-file /tmp/csh-device-shape-cases/feral-nested-arrays/raw.json --device flex --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --docker-image-tag csh-device-20260908 --speculos-port 19191 --speculos-vnc-port 29191 --erc7730-files /tmp/csh-device-shape-cases/feral-nested-arrays/calldata-feral-nested-arrays.json --screenshot-folder-path /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots --log-file /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/tester.log --file-log-level debug --log-level info
+
+
+> @ledgerhq/clear-signing-tester@1.0.0 cli /tmp/csh-device-sdk-ts-pinned/apps/clear-signing-tester
+> tsx src/cli/EthereumTransactionTesterCli.ts raw-file /tmp/csh-device-shape-cases/feral-nested-arrays/raw.json --device flex --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --docker-image-tag csh-device-20260908 --speculos-port 19191 --speculos-vnc-port 29191 --erc7730-files /tmp/csh-device-shape-cases/feral-nested-arrays/calldata-feral-nested-arrays.json --screenshot-folder-path /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots --log-file /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/tester.log --file-log-level debug --log-level info
+
+touchscreen-controller Initialized touchscreen controller for flex
+cli Setting up CAL interceptor with 1 ERC7730 file(s)
+cli Processing: /tmp/csh-device-shape-cases/feral-nested-arrays/calldata-feral-nested-arrays.json
+Stored new descriptors for 1:0x455464f0d369dac13002e81e9fab857f6ad21795
+Stored 41 certificates
+CAL Interceptor started
+cli Interceptor active with 1 descriptor(s)
+main-service-controller Starting all services...
+speculos-service-controller Starting Docker container with name: cs-tester-speculos-flex-19191
+speculos-service-controller API url: http://localhost:19191
+speculos-service-controller VNC url: vnc://localhost:29191
+speculos-service-controller device=flex
+speculos-service-controller Using custom app: /custom-app/app.elf
+speculos-service-controller Custom app volume: /tmp/csh-app-ethereum-flex-1.22.3.elf:/custom-app/app.elf
+dmk-service-controller Starting DMK
+[DeviceSessionService] DeviceSession added { sessionId: 'd95030a5-176d-4818-9806-d3e694e3a5fc' }
+dmk-service-controller DMK started successfully
+main-service-controller All services started successfully
+test-batch-transaction Processing transactions from: /tmp/csh-device-shape-cases/feral-nested-arrays/raw.json
+test-batch-transaction Found 1 transaction to test
+test-batch-transaction Testing transaction 1/1
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_1.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_2.png
+Intercepted dapps request for 1:0x455464f0d369dac13002e81e9fab857f6ad21795 (descriptors_calldata)
+Intercepted certificate request for stax:cal_calldata_key:calldata
+Intercepted certificate request for stax:cal_network:network
+[ContextModule] [GatedSigningContextLoader] No gated descriptor found and proxy resolution failed {
+  to: '0x455464F0d369dAC13002e81e9fAB857f6aD21795',
+  selector: '0x2eeee163',
+  chainId: 1,
+  directError: '[ContextModule] HttpGatedDescriptorDataSource: Invalid gated descriptors response',
+  proxyError: '[ContextModule] HttpSafeProxyDataSource: Failed to fetch safe proxy implementation'
+}
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_3.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_4.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_5.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_6.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_7.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_8.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_9.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_10.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_11.png
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_12.png
+screen-analyzer SCREEN TEXT ANALYSIS
+screen-analyzer Accumulated screen texts from device: {
+  data: {
+    accumulatedTexts: [
+      'Review transaction to Pay For Sale Swipe to review Reject 1 of 8',
+      'Review transaction to Pay For Sale Swipe to review Reject 1 of 8',
+      'Review transaction to Pay For Sale Swipe to review Reject 1 of 8',
+      'Review transaction to Pay For Sale Swipe to review Reject 1 of 8',
+      'Review transaction to Pay For Sale Swipe to review Reject 1 of 8',
+      'Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8',
+      'Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8',
+      'Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8',
+      'Interaction with Feral File R 0x010101010101010101 01010101010101010101 01010101010101010101 010101 Reject 2 of 8',
+      'S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8',
+      'S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8',
+      'S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8',
+      'S 0x010101010101010101 01010101010101010101 01010101010101010101 010101 V 3 Price 1 Reject 3 of 8',
+      'Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8',
+      'Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8',
+      'Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8',
+      'Cost 2 Expiry Time 3 Destination 0x0000000000000000 000000000000000000 000004 Reject 4 of 8',
+      'Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8',
+      'Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8',
+      'Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8',
+      'Token Ids 101 Token Ids 202 Recipient 0x0000000000000000 000000000000000000 000011 Reject 5 of 8',
+      'Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8',
+      'Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8',
+      'Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8',
+      'Recipient 0x0000000000000000 000000000000000000 000022 Bps 111 Bps 222 Reject 6 of 8',
+      'Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8',
+      'Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8',
+      'Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8',
+      'Pay By Vault Cont... true Max fees 0 ETH Reject 7 of 8',
+      'Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign',
+      'Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign',
+      'Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign',
+      'Sign transaction to Pay For Sale? Reject 8 of 8 Hold to sign',
+      'Transaction signed',
+      'Transaction signed',
+      'Transaction signed',
+      'Ethereum This app enables signing transactions on the Ethereum network. Quit app'
+    ]
+  }
+}
+screen-analyzer Summary: 29/30 expected texts found
+screen-analyzer Missing texts: "Pay By Vault Contract"
+screen-analyzer Result: Some texts missing (partially clear signed)
+
+📋 TRANSACTION TEST RESULTS
+┌─────────┬─────────────────────────────────┬────────────────────────────┐
+│ (index) │ Description                     │ Status                     │
+├─────────┼─────────────────────────────────┼────────────────────────────┤
+│ 0       │ 'synthetic-feral-nested-arrays' │ '⚠️ partially clear signed' │
+└─────────┴─────────────────────────────────┴────────────────────────────┘
+
+📊 TRANSACTION BATCH SUMMARY
+┌─────────┬────────────────────────────┬───────┬────────────┐
+│ (index) │ Status                     │ Count │ Percentage │
+├─────────┼────────────────────────────┼───────┼────────────┤
+│ 0       │ '✅ Clear Signed'          │ 0     │ '0.0%'     │
+│ 1       │ '⚠️ Partially Clear Signed' │ 1     │ '100.0%'   │
+│ 2       │ '🙈 Blind Signed'          │ 0     │ '0.0%'     │
+│ 3       │ '❌ Errors'                │ 0     │ '0.0%'     │
+└─────────┴────────────────────────────┴───────┴────────────┘
+main-service-controller Stopping all services...
+[DeviceSessionService] DeviceSession removed { sessionId: 'd95030a5-176d-4818-9806-d3e694e3a5fc' }
+screenshot-saver Saved screenshot: /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots/screenshot_13.png
+main-service-controller All services stopped successfully
+CAL Interceptor stopped
+cli CAL interceptor stopped
+/tmp/csh-device-sdk-ts-pinned/apps/clear-signing-tester:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @ledgerhq/clear-signing-tester@1.0.0 cli: `tsx src/cli/EthereumTransactionTesterCli.ts raw-file /tmp/csh-device-shape-cases/feral-nested-arrays/raw.json --device flex --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --docker-image-tag csh-device-20260908 --speculos-port 19191 --speculos-vnc-port 29191 --erc7730-files /tmp/csh-device-shape-cases/feral-nested-arrays/calldata-feral-nested-arrays.json --screenshot-folder-path /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/screenshots --log-file /tmp/csh-ledger-shapes-flex-run2/feral-nested-arrays/tester.log --file-log-level debug --log-level info`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.

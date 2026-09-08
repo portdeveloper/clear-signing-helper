@@ -1,0 +1,891 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": [
+        {
+          "chainId": 1,
+          "address": "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "owner": "Uniswap Labs",
+    "contractName": "UniswapV3Router02"
+  },
+  "display": {
+    "formats": {
+      "approveMax(address token)": {
+        "intent": "Approve Max",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "approveMaxMinusOne(address token)": {
+        "intent": "Approve Max Minus One",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "approveZeroThenMax(address token)": {
+        "intent": "Approve Zero Then Max",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "approveZeroThenMaxMinusOne(address token)": {
+        "intent": "Approve Zero Then Max Minus One",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "callPositionManager(bytes data)": {
+        "intent": "Call Position Manager",
+        "fields": [
+          {
+            "path": "data",
+            "label": "Data",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "exactInput((bytes path,address recipient,uint256 amountIn,uint256 amountOutMinimum) params)": {
+        "intent": "Exact Input",
+        "fields": [
+          {
+            "path": "params.path",
+            "label": "Path",
+            "format": "raw"
+          },
+          {
+            "path": "params.recipient",
+            "label": "Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "params.amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "params.amountOutMinimum",
+            "label": "Amount Out Minimum",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "exactInputSingle((address tokenIn,address tokenOut,uint24 fee,address recipient,uint256 amountIn,uint256 amountOutMinimum,uint160 sqrtPriceLimitX96) params)": {
+        "intent": "Exact Input Single",
+        "fields": [
+          {
+            "path": "params.tokenIn",
+            "label": "Token In",
+            "format": "raw"
+          },
+          {
+            "path": "params.tokenOut",
+            "label": "Token Out",
+            "format": "raw"
+          },
+          {
+            "path": "params.fee",
+            "label": "Fee",
+            "format": "raw"
+          },
+          {
+            "path": "params.recipient",
+            "label": "Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "params.amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "params.amountOutMinimum",
+            "label": "Amount Out Minimum",
+            "format": "raw"
+          },
+          {
+            "path": "params.sqrtPriceLimitX96",
+            "label": "Sqrt Price Limit X96",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "exactOutput((bytes path,address recipient,uint256 amountOut,uint256 amountInMaximum) params)": {
+        "intent": "Exact Output",
+        "fields": [
+          {
+            "path": "params.path",
+            "label": "Path",
+            "format": "raw"
+          },
+          {
+            "path": "params.recipient",
+            "label": "Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "params.amountOut",
+            "label": "Amount Out",
+            "format": "raw"
+          },
+          {
+            "path": "params.amountInMaximum",
+            "label": "Amount In Maximum",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "exactOutputSingle((address tokenIn,address tokenOut,uint24 fee,address recipient,uint256 amountOut,uint256 amountInMaximum,uint160 sqrtPriceLimitX96) params)": {
+        "intent": "Exact Output Single",
+        "fields": [
+          {
+            "path": "params.tokenIn",
+            "label": "Token In",
+            "format": "raw"
+          },
+          {
+            "path": "params.tokenOut",
+            "label": "Token Out",
+            "format": "raw"
+          },
+          {
+            "path": "params.fee",
+            "label": "Fee",
+            "format": "raw"
+          },
+          {
+            "path": "params.recipient",
+            "label": "Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "params.amountOut",
+            "label": "Amount Out",
+            "format": "raw"
+          },
+          {
+            "path": "params.amountInMaximum",
+            "label": "Amount In Maximum",
+            "format": "raw"
+          },
+          {
+            "path": "params.sqrtPriceLimitX96",
+            "label": "Sqrt Price Limit X96",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "getApprovalType(address token,uint256 amount)": {
+        "intent": "Get Approval Type",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          }
+        ]
+      },
+      "increaseLiquidity((address token0,address token1,uint256 tokenId,uint256 amount0Min,uint256 amount1Min) params)": {
+        "intent": "Increase Liquidity",
+        "fields": [
+          {
+            "path": "params.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "params.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "params.tokenId",
+            "label": "Token Id",
+            "format": "raw"
+          },
+          {
+            "path": "params.amount0Min",
+            "label": "Amount0 Min",
+            "format": "raw"
+          },
+          {
+            "path": "params.amount1Min",
+            "label": "Amount1 Min",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "mint((address token0,address token1,uint24 fee,int24 tickLower,int24 tickUpper,uint256 amount0Min,uint256 amount1Min,address recipient) params)": {
+        "intent": "Mint",
+        "fields": [
+          {
+            "path": "params.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "params.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "params.fee",
+            "label": "Fee",
+            "format": "raw"
+          },
+          {
+            "path": "params.tickLower",
+            "label": "Tick Lower",
+            "format": "raw"
+          },
+          {
+            "path": "params.tickUpper",
+            "label": "Tick Upper",
+            "format": "raw"
+          },
+          {
+            "path": "params.amount0Min",
+            "label": "Amount0 Min",
+            "format": "raw"
+          },
+          {
+            "path": "params.amount1Min",
+            "label": "Amount1 Min",
+            "format": "raw"
+          },
+          {
+            "path": "params.recipient",
+            "label": "Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "multicall(bytes32 previousBlockhash,bytes[] data)": {
+        "intent": "Multicall",
+        "fields": [
+          {
+            "path": "previousBlockhash",
+            "label": "Previous Blockhash",
+            "format": "raw"
+          },
+          {
+            "path": "data.[]",
+            "label": "Data",
+            "format": "raw",
+            "separator": "Data {index}"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "multicall(uint256 deadline,bytes[] data)": {
+        "intent": "Multicall",
+        "fields": [
+          {
+            "path": "deadline",
+            "label": "Deadline",
+            "format": "raw"
+          },
+          {
+            "path": "data.[]",
+            "label": "Data",
+            "format": "raw",
+            "separator": "Data {index}"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "multicall(bytes[] data)": {
+        "intent": "Multicall",
+        "fields": [
+          {
+            "path": "data.[]",
+            "label": "Data",
+            "format": "raw",
+            "separator": "Data {index}"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "pull(address token,uint256 value)": {
+        "intent": "Pull",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "value",
+            "label": "Value",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "refundETH()": {
+        "intent": "Refund ETH",
+        "fields": [
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "selfPermit(address token,uint256 value,uint256 deadline,uint8 v,bytes32 r,bytes32 s)": {
+        "intent": "Self Permit",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "value",
+            "label": "Value",
+            "format": "raw"
+          },
+          {
+            "path": "deadline",
+            "label": "Deadline",
+            "format": "raw"
+          },
+          {
+            "path": "v",
+            "label": "V",
+            "format": "raw"
+          },
+          {
+            "path": "r",
+            "label": "R",
+            "format": "raw"
+          },
+          {
+            "path": "s",
+            "label": "S",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "selfPermitAllowed(address token,uint256 nonce,uint256 expiry,uint8 v,bytes32 r,bytes32 s)": {
+        "intent": "Self Permit Allowed",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "nonce",
+            "label": "Nonce",
+            "format": "raw"
+          },
+          {
+            "path": "expiry",
+            "label": "Expiry",
+            "format": "raw"
+          },
+          {
+            "path": "v",
+            "label": "V",
+            "format": "raw"
+          },
+          {
+            "path": "r",
+            "label": "R",
+            "format": "raw"
+          },
+          {
+            "path": "s",
+            "label": "S",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "selfPermitAllowedIfNecessary(address token,uint256 nonce,uint256 expiry,uint8 v,bytes32 r,bytes32 s)": {
+        "intent": "Self Permit Allowed If Necessary",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "nonce",
+            "label": "Nonce",
+            "format": "raw"
+          },
+          {
+            "path": "expiry",
+            "label": "Expiry",
+            "format": "raw"
+          },
+          {
+            "path": "v",
+            "label": "V",
+            "format": "raw"
+          },
+          {
+            "path": "r",
+            "label": "R",
+            "format": "raw"
+          },
+          {
+            "path": "s",
+            "label": "S",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "selfPermitIfNecessary(address token,uint256 value,uint256 deadline,uint8 v,bytes32 r,bytes32 s)": {
+        "intent": "Self Permit If Necessary",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "value",
+            "label": "Value",
+            "format": "raw"
+          },
+          {
+            "path": "deadline",
+            "label": "Deadline",
+            "format": "raw"
+          },
+          {
+            "path": "v",
+            "label": "V",
+            "format": "raw"
+          },
+          {
+            "path": "r",
+            "label": "R",
+            "format": "raw"
+          },
+          {
+            "path": "s",
+            "label": "S",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapExactTokensForTokens(uint256 amountIn,uint256 amountOutMin,address[] path,address to)": {
+        "intent": "Swap Exact Tokens For Tokens",
+        "fields": [
+          {
+            "path": "amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "path.[]",
+            "label": "Path",
+            "format": "raw",
+            "separator": "Path {index}"
+          },
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapTokensForExactTokens(uint256 amountOut,uint256 amountInMax,address[] path,address to)": {
+        "intent": "Swap Tokens For Exact Tokens",
+        "fields": [
+          {
+            "path": "amountOut",
+            "label": "Amount Out",
+            "format": "raw"
+          },
+          {
+            "path": "amountInMax",
+            "label": "Amount In Max",
+            "format": "raw"
+          },
+          {
+            "path": "path.[]",
+            "label": "Path",
+            "format": "raw",
+            "separator": "Path {index}"
+          },
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "sweepToken(address token,uint256 amountMinimum,address recipient)": {
+        "intent": "Sweep Token",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "amountMinimum",
+            "label": "Amount Minimum",
+            "format": "raw"
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "sweepToken(address token,uint256 amountMinimum)": {
+        "intent": "Sweep Token",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "amountMinimum",
+            "label": "Amount Minimum",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "sweepTokenWithFee(address token,uint256 amountMinimum,uint256 feeBips,address feeRecipient)": {
+        "intent": "Sweep Token With Fee",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "amountMinimum",
+            "label": "Amount Minimum",
+            "format": "raw"
+          },
+          {
+            "path": "feeBips",
+            "label": "Fee Bips",
+            "format": "raw"
+          },
+          {
+            "path": "feeRecipient",
+            "label": "Fee Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "sweepTokenWithFee(address token,uint256 amountMinimum,address recipient,uint256 feeBips,address feeRecipient)": {
+        "intent": "Sweep Token With Fee",
+        "fields": [
+          {
+            "path": "token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "amountMinimum",
+            "label": "Amount Minimum",
+            "format": "raw"
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "feeBips",
+            "label": "Fee Bips",
+            "format": "raw"
+          },
+          {
+            "path": "feeRecipient",
+            "label": "Fee Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "uniswapV3SwapCallback(int256 amount0Delta,int256 amount1Delta,bytes _data)": {
+        "intent": "Uniswap V3 Swap Callback",
+        "fields": [
+          {
+            "path": "amount0Delta",
+            "label": "Amount0 Delta",
+            "format": "raw"
+          },
+          {
+            "path": "amount1Delta",
+            "label": "Amount1 Delta",
+            "format": "raw"
+          },
+          {
+            "path": "_data",
+            "label": " data",
+            "format": "raw"
+          }
+        ]
+      },
+      "unwrapWETH9(uint256 amountMinimum,address recipient)": {
+        "intent": "Unwrap WETH9",
+        "fields": [
+          {
+            "path": "amountMinimum",
+            "label": "Amount Minimum",
+            "format": "raw"
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "unwrapWETH9(uint256 amountMinimum)": {
+        "intent": "Unwrap WETH9",
+        "fields": [
+          {
+            "path": "amountMinimum",
+            "label": "Amount Minimum",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "unwrapWETH9WithFee(uint256 amountMinimum,address recipient,uint256 feeBips,address feeRecipient)": {
+        "intent": "Unwrap WETH9 With Fee",
+        "fields": [
+          {
+            "path": "amountMinimum",
+            "label": "Amount Minimum",
+            "format": "raw"
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "feeBips",
+            "label": "Fee Bips",
+            "format": "raw"
+          },
+          {
+            "path": "feeRecipient",
+            "label": "Fee Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "unwrapWETH9WithFee(uint256 amountMinimum,uint256 feeBips,address feeRecipient)": {
+        "intent": "Unwrap WETH9 With Fee",
+        "fields": [
+          {
+            "path": "amountMinimum",
+            "label": "Amount Minimum",
+            "format": "raw"
+          },
+          {
+            "path": "feeBips",
+            "label": "Fee Bips",
+            "format": "raw"
+          },
+          {
+            "path": "feeRecipient",
+            "label": "Fee Recipient",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      },
+      "wrapETH(uint256 value)": {
+        "intent": "Wrap ETH",
+        "fields": [
+          {
+            "path": "value",
+            "label": "Value",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

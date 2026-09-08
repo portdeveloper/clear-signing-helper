@@ -1,0 +1,57 @@
+{
+  "chainId": 31337,
+  "sender": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "receipts": [
+    {
+      "name": "ERC20Mock",
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "chainId": 31337,
+      "transactionHash": "0x69b68691c510644dd15997543a8abd209416c5d669684254811025ba80eb6188",
+      "blockNumber": 1,
+      "artifactSha256": "54e3003996f77b02cd3a152bf3a522a2ff5a20c2c4859459ce075aba7cdd70d0",
+      "runtimeKeccak256": "0x399671bee32970b653b4df459736fafb74b4a3a546a467b019cfd669b539b2ce"
+    },
+    {
+      "name": "ERC4626Mock",
+      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "chainId": 31337,
+      "transactionHash": "0x56b9e63e1f697a857b2c8b45eea3a8b27df55011253a36f5f0a37efd8bd540f2",
+      "blockNumber": 2,
+      "artifactSha256": "efc26357165daeadcfea48238a0f75db0bd03d1e01dc8c5d9aed1d736527fec6",
+      "runtimeKeccak256": "0x7177c2b2e10ca2aa5dfa7dc5021e9fc9eff269125bab3ecd19d8966431519e03"
+    },
+    {
+      "name": "SwapRouter",
+      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "chainId": 31337,
+      "transactionHash": "0xbf51ffaece63fa85657d25340d1de5e45c7148fcd8dfb1975ac1860dd932a7c4",
+      "blockNumber": 3,
+      "artifactSha256": "2c9dd2093475803372b6bf4b9f9556b3b3ab29d9dc28100799e06b7267af143e",
+      "runtimeKeccak256": "0x6928bcd7fdde75e089b66a96472b3d4e664ad304a5b23250f467831d9c1c332e"
+    },
+    {
+      "transactionHash": "0x8f7dbd271ed8dde0a2de96af60bf406d14189e9f6877d0d8a5c2e66a821b7ae9",
+      "blockNumber": 4,
+      "status": 1,
+      "to": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "data": "0x40c10f19000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000000000000000000000000000000000000000f4240"
+    },
+    {
+      "transactionHash": "0x6921038563d246876e21b90b439c0a70348eeb06ac37ddcab6188566227e5b38",
+      "blockNumber": 5,
+      "status": 1,
+      "to": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "data": "0x095ea7b3000000000000000000000000e7f1725e7734ce288f8367e1bb143e90bb3f051200000000000000000000000000000000000000000000000000000000000f4240"
+    },
+    {
+      "transactionHash": "0xcdae8de853688d2ceb2ab20ebd67165dad51c8f12c3972ed5dea13e5d43fdff6",
+      "blockNumber": 6,
+      "status": 1,
+      "to": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "data": "0x6e553f6500000000000000000000000000000000000000000000000000000000000f4240000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+    }
+  ],
+  "depositedAssets": "1000000",
+  "receivedShares": "1000000",
+  "routerSwapExecution": "not attempted; local placeholder dependencies"
+}

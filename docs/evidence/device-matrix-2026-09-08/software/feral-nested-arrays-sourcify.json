@@ -1,0 +1,15 @@
+{
+  "runner": "@ethereum-sourcify/clear-signing-test-runner",
+  "implementation": "@ethereum-sourcify/clear-signing@0.2.2",
+  "cases": [
+    {
+      "description": "synthetic-feral-nested-arrays",
+      "status": "fail",
+      "rendered": {
+        "intent": "",
+        "fields": []
+      },
+      "message": "intent mismatch: expected \"Pay For Sale\", got \"\" (library warnings: UNSUPPORTED_NESTED_FIELD_GROUP: Nested field groups are not supported)"
+    }
+  ]
+}

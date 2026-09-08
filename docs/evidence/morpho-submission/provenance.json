@@ -1,0 +1,159 @@
+{
+  "protocol": {
+    "repository": "https://github.com/morpho-org/morpho-blue",
+    "commit": "c3f327e49ddae623e2e3162f8468d58fbb79d1b8",
+    "contract": "src/Morpho.sol:Morpho",
+    "submodules": "2f112697506eab12d433a65fdc31a639548fe365 lib/forge-std (2f11269)\n e282159d5170298eb2455a6c05280ab5a73a4ef0 lib/forge-std/lib/ds-test (heads/master)"
+  },
+  "registry": {
+    "repository": "https://github.com/ethereum/clear-signing-erc7730-registry",
+    "commit": "0318f9a51ec4fc7ba4aed6de5e315c8884d1fe38",
+    "descriptor": "registry/morpho/calldata-MorphoBlue.json"
+  },
+  "deployment": {
+    "chainId": 1,
+    "address": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+    "abiSource": "https://sourcify.dev/server/v2/contract/1/0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb?fields=abi",
+    "match": "exact_match",
+    "compiledFunctionAbiMatches": true,
+    "compiledAbiSha256": "76f62cd5b958c8dea8a40b1a6db4df32a2928471a2ec4b97911cbe7a17648553",
+    "deployedCodeVerifiedByHelper": false
+  },
+  "descriptor": "calldata-Morpho-ed3204cc.json",
+  "writeFunctions": 17,
+  "fixtures": [
+    {
+      "fixture": "synthetic-accrueInterest-151c1ade.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "accrueInterest((address,address,address,address,uint256))"
+    },
+    {
+      "fixture": "synthetic-borrow-50d8cd4b.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "borrow((address,address,address,address,uint256),uint256,uint256,address,address)"
+    },
+    {
+      "fixture": "synthetic-createMarket-8c1358a2.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "createMarket((address,address,address,address,uint256))"
+    },
+    {
+      "fixture": "synthetic-enableIrm-5a64f51e.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "enableIrm(address)"
+    },
+    {
+      "fixture": "synthetic-enableLltv-4d98a93b.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "enableLltv(uint256)"
+    },
+    {
+      "fixture": "synthetic-flashLoan-e0232b42.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "flashLoan(address,uint256,bytes)"
+    },
+    {
+      "fixture": "synthetic-liquidate-d8eabcb8.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "liquidate((address,address,address,address,uint256),address,uint256,uint256,bytes)"
+    },
+    {
+      "fixture": "synthetic-repay-20b76e81.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "repay((address,address,address,address,uint256),uint256,uint256,address,bytes)"
+    },
+    {
+      "fixture": "synthetic-setAuthorization-eecea000.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "setAuthorization(address,bool)"
+    },
+    {
+      "fixture": "synthetic-setAuthorizationWithSig-8069218f.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "setAuthorizationWithSig((address,address,bool,uint256,uint256),(uint8,bytes32,bytes32))"
+    },
+    {
+      "fixture": "synthetic-setFee-2b4f013c.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "setFee((address,address,address,address,uint256),uint256)"
+    },
+    {
+      "fixture": "synthetic-setFeeRecipient-e74b981b.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "setFeeRecipient(address)"
+    },
+    {
+      "fixture": "synthetic-setOwner-13af4035.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "setOwner(address)"
+    },
+    {
+      "fixture": "synthetic-supply-a99aad89.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "supply((address,address,address,address,uint256),uint256,uint256,address,bytes)"
+    },
+    {
+      "fixture": "synthetic-supplyCollateral-238d6579.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "supplyCollateral((address,address,address,address,uint256),uint256,address,bytes)"
+    },
+    {
+      "fixture": "synthetic-withdraw-5c2bea49.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "withdraw((address,address,address,address,uint256),uint256,uint256,address,address)"
+    },
+    {
+      "fixture": "synthetic-withdrawCollateral-8720316d.json",
+      "kind": "synthetic ABI coverage; not executed on chain",
+      "signature": "withdrawCollateral((address,address,address,address,uint256),uint256,address,address)"
+    },
+    {
+      "fixture": "registry-1.json",
+      "kind": "transaction example from pinned registry",
+      "description": "Borrow from Morpho Market - chain 1",
+      "txHash": "0xd65876b37b6cfd1c36051d7e4a710f122577ca66a5b94940cf0fd481c518d756",
+      "originalRawTx": "0x02f9014f018204d3830fb3888404a433b08303872a94bbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb80b9012450d8cd4b000000000000000000000000cacd6fd266af91b8aed52accc382b4e165586e290000000000000000000000003b855aa8cc56a3cbd5dbb5456f5a13ce86aa0fe8000000000000000000000000c5860e9e6b6f6e9d79dce5c5ab0f7a4b878bd431000000000000000000000000870ac11d48b15db9a138cf899d20f13f79ba00bc0000000000000000000000000000000000000000000000000d1d507e40be8000000000000000000000000000000000000000000000000c7e657b0c9a4ee0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008449f934dbfbfa050f5e7738bf2e73a8110229040000000000000000000000008449f934dbfbfa050f5e7738bf2e73a811022904c0"
+    },
+    {
+      "fixture": "registry-2.json",
+      "kind": "transaction example from pinned registry",
+      "description": "Repay on Morpho Market - chain 1",
+      "txHash": "0x51da07893f0ce41500eb968e8cbb353acfd493a981d1b1376c9da13bd61390d7",
+      "originalRawTx": "0x02f9016f0181b1841dcd6500842b39ac8083027dd194bbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb80b9014420b76e810000000000000000000000006c3ea9036406852006290770bedfcaba0e23a0e80000000000000000000000002260fac5e5542a773aa44fbcfedf7c193bc2c599000000000000000000000000c53c90d6e9a5b69e4abf3d5ae4c79225c7fef3d2000000000000000000000000870ac11d48b15db9a138cf899d20f13f79ba00bc0000000000000000000000000000000000000000000000000bef55718ad6000000000000000000000000000000000000000000000000000000000000d22a7d800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e4916bf722d5b2d397fd2f3a925029d2c4e83b5100000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000000c0"
+    },
+    {
+      "fixture": "registry-3.json",
+      "kind": "transaction example from pinned registry",
+      "description": "Supply on Morpho Market - chain 1",
+      "txHash": "0xda4b80253bbbbec23c7dfe3349da2206ee1a04c9f4e48e21c0510f2148e6126b",
+      "originalRawTx": "0x02f9016d01498305b8d8841940136a830191e794bbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb80b90144a99aad89000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb4800000000000000000000000038eeb52f0771140d10c4e9a9a72349a329fe8a6a000000000000000000000000ff1487bda8049a536f912e41e27b82a8a3845862000000000000000000000000870ac11d48b15db9a138cf899d20f13f79ba00bc0000000000000000000000000000000000000000000000000bef55718ad6000000000000000000000000000000000000000000000000000000000000055d4a800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e689f793882a9fbf80b26ee16f530076e013031100000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000000c0"
+    },
+    {
+      "fixture": "registry-4.json",
+      "kind": "transaction example from pinned registry",
+      "description": "Supply Collateral on Morpho Market - chain 1",
+      "txHash": "0x7f8c5721ec91f85d26337087db308564f0bb8ae4683f3a8186b859a5549c6324",
+      "originalRawTx": "0x02f9014d016f8315493884036746e08301eb4594bbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb80b90124238d6579000000000000000000000000dc035d45d973e3ec169d2276ddab16f1e407384f000000000000000000000000e0f63a424a4439cbe457d80e4f4b51ad25b2c56c000000000000000000000000da63266b5184d08dbfbace96267837c45d7d34da000000000000000000000000870ac11d48b15db9a138cf899d20f13f79ba00bc00000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000000000001486f278b6000000000000000000000000f11cc888d8da84d3bf735b7b357814fd071e8b1a00000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000c0"
+    },
+    {
+      "fixture": "registry-5.json",
+      "kind": "transaction example from pinned registry",
+      "description": "Withdraw from Morpho Market - chain 1",
+      "txHash": "0xaed67a56efd26a49af6fc08e1674a1aca01977f345df822bb6948fdc3ed986e3",
+      "originalRawTx": "0x02f9014f01820cae8374ff88840e3d347b8302b01494bbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb80b901245c2bea49000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000003eaa0f0f0a5d3d595ae4e4b0d27f439d01c3e7b200000000000000000000000012d66602c691aa93e90415ab22fb0760695ac768000000000000000000000000870ac11d48b15db9a138cf899d20f13f79ba00bc0000000000000000000000000000000000000000000000000cb2bba6f17b8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006cd0ed733213b14000000000000000000000000d7583e3cf08bbcab66f1242195227bbf9f865fda000000000000000000000000d7583e3cf08bbcab66f1242195227bbf9f865fdac0"
+    },
+    {
+      "fixture": "registry-6.json",
+      "kind": "transaction example from pinned registry",
+      "description": "Withdraw Collateral from Morpho Market - chain 1",
+      "txHash": "0x676bc37ff4709660d301508e85f6e27c4bfe1c143d04f9fb18af781a6f7ff7f6",
+      "originalRawTx": "0x02f9012d011d830186a0840436f2f083020e7f94bbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb80b901048720316d000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000dcee70654261af21c44c093c300ed3bb97b78192000000000000000000000000b7948b5beee825e609990484a99340d8767b420e000000000000000000000000870ac11d48b15db9a138cf899d20f13f79ba00bc0000000000000000000000000000000000000000000000000bef55718ad60000000000000000000000000000000000000000000000000000008e1bc9bf040000000000000000000000000000b1baf4287894eb272258651e7c581d16da883dda000000000000000000000000b1baf4287894eb272258651e7c581d16da883ddac0"
+    }
+  ],
+  "localTests": {
+    "passed": 23,
+    "updated": 23
+  },
+  "review": "Internal generated raw-draft review only; no protocol maintainer approval",
+  "publication": "not submitted"
+}

@@ -1,0 +1,162 @@
+{
+  "prepared": "/tmp/csh-source-pilots-20260908.EwRfw5",
+  "sourcePlans": [
+    {
+      "name": "openzeppelin-contracts",
+      "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+      "contract": "contracts/mocks/token/ERC4626Mock.sol:ERC4626Mock",
+      "project": "/tmp/csh-complete-pilots-zQONyz/openzeppelin-contracts"
+    },
+    {
+      "name": "uniswap-v3-periphery",
+      "commit": "80f26c86c57b8a5e4b913f42844d4c8bd274d058",
+      "contract": "contracts/SwapRouter.sol:SwapRouter"
+    }
+  ],
+  "steps": [
+    {
+      "name": "helper-build",
+      "command": "npm",
+      "args": [
+        "run",
+        "build"
+      ],
+      "ms": 1354,
+      "exitCode": 0
+    },
+    {
+      "name": "package",
+      "command": "npm",
+      "args": [
+        "pack",
+        "--ignore-scripts",
+        "--json",
+        "--pack-destination",
+        "/tmp/csh-complete-pilots-zQONyz"
+      ],
+      "ms": 456,
+      "exitCode": 0
+    },
+    {
+      "name": "install",
+      "command": "npm",
+      "args": [
+        "install",
+        "--prefix",
+        "/tmp/csh-complete-pilots-zQONyz/consumer",
+        "--ignore-scripts",
+        "--no-package-lock",
+        "/tmp/csh-complete-pilots-zQONyz/clear-signing-helper-0.2.0.tgz"
+      ],
+      "ms": 1163,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "/tmp/csh-source-pilots-20260908.EwRfw5/openzeppelin-contracts",
+        "/tmp/csh-complete-pilots-zQONyz/openzeppelin-contracts"
+      ],
+      "ms": 155,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-checkout",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--quiet",
+        "--detach",
+        "dbb6104ce834628e473d2173bbc9d47f81a9eec3"
+      ],
+      "ms": 32,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-commit",
+      "command": "git",
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-initial-status",
+      "command": "git",
+      "args": [
+        "status",
+        "--porcelain"
+      ],
+      "ms": 31,
+      "exitCode": 0
+    },
+    {
+      "name": "openzeppelin-contracts-build",
+      "command": "forge",
+      "args": [
+        "build",
+        "--offline",
+        "--extra-output",
+        "metadata",
+        "devdoc",
+        "userdoc"
+      ],
+      "ms": 2282,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "/tmp/csh-source-pilots-20260908.EwRfw5/uniswap-v3-periphery",
+        "/tmp/csh-complete-pilots-zQONyz/uniswap-v3-periphery"
+      ],
+      "ms": 60,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-checkout",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--quiet",
+        "--detach",
+        "80f26c86c57b8a5e4b913f42844d4c8bd274d058"
+      ],
+      "ms": 11,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-commit",
+      "command": "git",
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "ms": 3,
+      "exitCode": 0
+    },
+    {
+      "name": "uniswap-v3-periphery-initial-status",
+      "command": "git",
+      "args": [
+        "status",
+        "--porcelain"
+      ],
+      "ms": 11,
+      "exitCode": 0
+    }
+  ],
+  "transactionsBroadcast": "local disposable Anvil only",
+  "pilots": [],
+  "packageSha256": "a5c474c1b7ee33a35d9517c8b2d84aab5cb4cea0622597edca60b40854ed13f5"
+}

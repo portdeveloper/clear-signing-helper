@@ -1,0 +1,20 @@
+{
+  "runner": "@ethereum-sourcify/clear-signing-test-runner",
+  "implementation": "@ethereum-sourcify/clear-signing@0.2.2",
+  "cases": [
+    {
+      "description": "synthetic-weth-native-value",
+      "status": "pass",
+      "rendered": {
+        "intent": "Deposit",
+        "fields": [
+          {
+            "label": "Native value (wei)",
+            "value": "123456789000000000"
+          }
+        ],
+        "owner": "WETH"
+      }
+    }
+  ]
+}

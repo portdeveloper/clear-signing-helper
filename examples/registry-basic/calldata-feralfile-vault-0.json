@@ -1,0 +1,101 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": []
+    }
+  },
+  "metadata": {
+    "owner": "Feral File",
+    "contractName": "feralfile-vault-0"
+  },
+  "display": {
+    "formats": {
+      "payForSale(bytes32 r_,bytes32 s_,uint8 v_,(uint256 price,uint256 cost,uint256 expiryTime,address destination,uint256[] tokenIds,(address recipient,uint256 bps)[][] revenueShares,bool payByVaultContract) saleData_)": {
+        "intent": "Pay For Sale",
+        "fields": [
+          {
+            "path": "r_",
+            "label": "R ",
+            "format": "raw"
+          },
+          {
+            "path": "s_",
+            "label": "S ",
+            "format": "raw"
+          },
+          {
+            "path": "v_",
+            "label": "V ",
+            "format": "raw"
+          },
+          {
+            "path": "saleData_.price",
+            "label": "Price",
+            "format": "raw"
+          },
+          {
+            "path": "saleData_.cost",
+            "label": "Cost",
+            "format": "raw"
+          },
+          {
+            "path": "saleData_.expiryTime",
+            "label": "Expiry Time",
+            "format": "raw"
+          },
+          {
+            "path": "saleData_.destination",
+            "label": "Destination",
+            "format": "raw"
+          },
+          {
+            "path": "saleData_.tokenIds.[]",
+            "label": "Token Ids",
+            "format": "raw",
+            "separator": "Token Ids {index}"
+          },
+          {
+            "path": "saleData_.revenueShares.[]",
+            "label": "Revenue Shares",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "[]",
+                "label": "Revenue Shares",
+                "iteration": "sequential",
+                "fields": [
+                  {
+                    "path": "recipient",
+                    "label": "Recipient",
+                    "format": "raw"
+                  },
+                  {
+                    "path": "bps",
+                    "label": "Bps",
+                    "format": "raw"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "saleData_.payByVaultContract",
+            "label": "Pay By Vault Contract",
+            "format": "raw"
+          }
+        ]
+      },
+      "withdrawFund(uint256 weiAmount)": {
+        "intent": "Withdraw Fund",
+        "fields": [
+          {
+            "path": "weiAmount",
+            "label": "Wei Amount",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

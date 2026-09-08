@@ -1,0 +1,31 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": [
+        {
+          "chainId": 1,
+          "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "owner": "WETH",
+    "contractName": "weth-native-value"
+  },
+  "display": {
+    "formats": {
+      "deposit()": {
+        "intent": "Deposit",
+        "fields": [
+          {
+            "path": "@.value",
+            "label": "Native value (wei)",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

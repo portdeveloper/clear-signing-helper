@@ -1,0 +1,66 @@
+[
+  {
+    "case": "feral-nested-arrays",
+    "runner": "sourcify",
+    "exitCode": 0,
+    "counts": {
+      "fail": 1
+    }
+  },
+  {
+    "case": "feral-nested-arrays",
+    "runner": "rust",
+    "exitCode": 0,
+    "counts": {
+      "fail": 1
+    }
+  },
+  {
+    "case": "bundler-tuple-array",
+    "runner": "sourcify",
+    "exitCode": 0,
+    "counts": {
+      "pass": 1
+    }
+  },
+  {
+    "case": "bundler-tuple-array",
+    "runner": "rust",
+    "exitCode": 0,
+    "counts": {
+      "pass": 1
+    }
+  },
+  {
+    "case": "ekubo-signed-integers",
+    "runner": "sourcify",
+    "exitCode": 0,
+    "counts": {
+      "fail": 1
+    }
+  },
+  {
+    "case": "ekubo-signed-integers",
+    "runner": "rust",
+    "exitCode": 0,
+    "counts": {
+      "fail": 1
+    }
+  },
+  {
+    "case": "weth-native-value",
+    "runner": "sourcify",
+    "exitCode": 0,
+    "counts": {
+      "pass": 1
+    }
+  },
+  {
+    "case": "weth-native-value",
+    "runner": "rust",
+    "exitCode": 0,
+    "counts": {
+      "pass": 1
+    }
+  }
+]

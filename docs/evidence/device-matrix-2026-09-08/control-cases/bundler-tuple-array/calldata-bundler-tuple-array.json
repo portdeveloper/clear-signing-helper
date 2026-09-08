@@ -1,0 +1,58 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": [
+        {
+          "chainId": 1,
+          "address": "0x6566194141eefa99Af43Bb5Aa71460Ca2Dc90245"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "owner": "Morpho DAO",
+    "contractName": "bundler-tuple-array"
+  },
+  "display": {
+    "formats": {
+      "multicall((address to,bytes data,uint256 value,bool skipRevert,bytes32 callbackHash)[] bundle)": {
+        "intent": "Multicall",
+        "fields": [
+          {
+            "path": "bundle.[]",
+            "label": "Bundle",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "to",
+                "label": "To",
+                "format": "raw"
+              },
+              {
+                "path": "data",
+                "label": "Data",
+                "format": "raw"
+              },
+              {
+                "path": "value",
+                "label": "Value",
+                "format": "raw"
+              },
+              {
+                "path": "skipRevert",
+                "label": "Skip Revert",
+                "format": "raw"
+              },
+              {
+                "path": "callbackHash",
+                "label": "Callback Hash",
+                "format": "raw"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

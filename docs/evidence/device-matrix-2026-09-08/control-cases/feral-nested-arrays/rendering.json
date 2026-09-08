@@ -1,0 +1,111 @@
+{
+  "engine": {
+    "tool": "0.2.0",
+    "renderer": "@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1",
+    "schema": "f1da6154187a258475139f1b871f74a7bade0af23ff45c782fb85ecd4d7e8a3f",
+    "subset": 2
+  },
+  "contract": "src/Registry.sol:Registry",
+  "signature": "payForSale(bytes32,bytes32,uint8,(uint256,uint256,uint256,address,uint256[],(address,uint256)[][],bool))",
+  "chainId": 1,
+  "to": "0x455464f0d369dac13002e81e9fab857f6ad21795",
+  "value": "0",
+  "localBinding": false,
+  "intent": "Pay For Sale",
+  "fields": [
+    {
+      "label": "R ",
+      "value": "0x0101010101010101010101010101010101010101010101010101010101010101",
+      "fieldType": "bytes",
+      "format": "raw"
+    },
+    {
+      "label": "S ",
+      "value": "0x0101010101010101010101010101010101010101010101010101010101010101",
+      "fieldType": "bytes",
+      "format": "raw"
+    },
+    {
+      "label": "V ",
+      "value": "3",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Price",
+      "value": "1",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Cost",
+      "value": "2",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Expiry Time",
+      "value": "3",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Destination",
+      "value": "0x0000000000000000000000000000000000000004",
+      "fieldType": "address",
+      "format": "raw",
+      "rawAddress": "0x0000000000000000000000000000000000000004"
+    },
+    {
+      "label": "Token Ids",
+      "value": "101",
+      "separator": "saleData_.tokenIds.[0]",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Token Ids",
+      "value": "202",
+      "separator": "saleData_.tokenIds.[1]",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Recipient",
+      "value": "0x0000000000000000000000000000000000000011",
+      "separator": "saleData_.revenueShares.[0].[0].recipient",
+      "fieldType": "address",
+      "format": "raw",
+      "rawAddress": "0x0000000000000000000000000000000000000011"
+    },
+    {
+      "label": "Bps",
+      "value": "111",
+      "separator": "saleData_.revenueShares.[0].[0].bps",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Recipient",
+      "value": "0x0000000000000000000000000000000000000022",
+      "separator": "saleData_.revenueShares.[1].[0].recipient",
+      "fieldType": "address",
+      "format": "raw",
+      "rawAddress": "0x0000000000000000000000000000000000000022"
+    },
+    {
+      "label": "Bps",
+      "value": "222",
+      "separator": "saleData_.revenueShares.[1].[0].bps",
+      "fieldType": "uint",
+      "format": "raw"
+    },
+    {
+      "label": "Pay By Vault Contract",
+      "value": "true",
+      "fieldType": "bool",
+      "format": "raw"
+    }
+  ],
+  "warnings": []
+}

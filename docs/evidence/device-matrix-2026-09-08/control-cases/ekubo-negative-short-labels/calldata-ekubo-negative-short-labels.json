@@ -1,0 +1,66 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": [
+        {
+          "chainId": 1,
+          "address": "0xd26f20001a72a18C002b00e6710000d68700ce00"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "owner": "Ekubo Protocol",
+    "contractName": "ekubo-negative-short-labels"
+  },
+  "display": {
+    "formats": {
+      "swap((address token0,address token1,bytes32 config) poolKey,bool isToken1,int128 amount,uint96 sqrtRatioLimit,uint256 skipAhead,int256 calculatedAmountThreshold)": {
+        "intent": "Swap",
+        "fields": [
+          {
+            "path": "poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "isToken1",
+            "label": "Is Token1",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          },
+          {
+            "path": "sqrtRatioLimit",
+            "label": "Sqrt Ratio Limit",
+            "format": "raw"
+          },
+          {
+            "path": "skipAhead",
+            "label": "Skip Ahead",
+            "format": "raw"
+          },
+          {
+            "path": "calculatedAmountThreshold",
+            "label": "Amount limit",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

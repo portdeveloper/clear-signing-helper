@@ -1,0 +1,126 @@
+{
+  "ok": true,
+  "fixtureCount": 9,
+  "steps": [
+    {
+      "name": "init",
+      "ms": 574,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-approve-095ea7b3",
+      "ms": 443,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-burn-9dc29fac",
+      "ms": 439,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-deposit-6e553f65",
+      "ms": 437,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-mint-40c10f19",
+      "ms": 440,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-mint-94bf804d",
+      "ms": 446,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-redeem-ba087652",
+      "ms": 439,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-transfer-a9059cbb",
+      "ms": 445,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-transferFrom-23b872dd",
+      "ms": 440,
+      "exitCode": 0
+    },
+    {
+      "name": "fixture-withdraw-b460af94",
+      "ms": 443,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-approve-095ea7b3",
+      "ms": 460,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-burn-9dc29fac",
+      "ms": 459,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-deposit-6e553f65",
+      "ms": 452,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-mint-40c10f19",
+      "ms": 460,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-mint-94bf804d",
+      "ms": 466,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-redeem-ba087652",
+      "ms": 459,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-transfer-a9059cbb",
+      "ms": 462,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-transferFrom-23b872dd",
+      "ms": 460,
+      "exitCode": 0
+    },
+    {
+      "name": "preview-pilot-withdraw-b460af94",
+      "ms": 471,
+      "exitCode": 0
+    },
+    {
+      "name": "review",
+      "ms": 451,
+      "exitCode": 0
+    },
+    {
+      "name": "test-update",
+      "ms": 494,
+      "exitCode": 0
+    },
+    {
+      "name": "test",
+      "ms": 489,
+      "exitCode": 0
+    },
+    {
+      "name": "check-strict",
+      "ms": 463,
+      "exitCode": 0
+    },
+    {
+      "name": "export-strict",
+      "ms": 496,
+      "exitCode": 0
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "status": "pass",
+  "scope": "one Morpho registry supply fixture through public Ledger Ethereum app + Speculos + Device Management Kit",
+  "sdk": {
+    "repository": "https://github.com/LedgerHQ/device-sdk-ts",
+    "commit": "2e35ed527c1a9aee852809a39ed2eaf76a415af1",
+    "checkout": "/tmp/csh-device-sdk-ts-pinned",
+    "node": "v22.22.3",
+    "pnpm": "10.28.2",
+    "build": "pnpm install --frozen-lockfile && pnpm build:libs"
+  },
+  "app": {
+    "repository": "https://github.com/LedgerHQ/app-ethereum",
+    "release": "1.22.3",
+    "device": "flex",
+    "url": "https://github.com/LedgerHQ/app-ethereum/releases/download/1.22.3/app-1.22.3-flex.elf",
+    "path": "/tmp/csh-app-ethereum-flex-1.22.3.elf",
+    "sha256": "88ce93fe2b982c05f37aef108c1ea40f251ae394c25bb8232eb6a8adb3feaa5d"
+  },
+  "speculos": {
+    "image": "ghcr.io/ledgerhq/speculos:latest",
+    "digest": "sha256:6ed9eefd51cddd862b746719af4cd7a3265fe43d0588c388359753cab8d46d11"
+  },
+  "descriptor": "/tmp/csh-production-morpho-blue/submission-bundle/calldata-Morpho-ed3204cc.json",
+  "fixture": "/tmp/csh-production-ledger-evidence/raw-supply.json",
+  "fixtureSha256": "f38a9dd06386dc7a0c91aef28f2e8ee7c9f1ddae9bb27b6fdc421efaa18b5518",
+  "command": "COIN_APPS_PATH=/tmp/csh-production-ledger-evidence/coin-apps pnpm cs-tester cli raw-file /tmp/csh-production-ledger-evidence/raw-supply.json --device flex --custom-app /tmp/csh-app-ethereum-flex-1.22.3.elf --erc7730-files /tmp/csh-production-morpho-blue/submission-bundle/calldata-Morpho-ed3204cc.json --screenshot-folder-path /tmp/csh-production-ledger-evidence/screenshots --log-file /tmp/csh-production-ledger-evidence/tester-with-apps.log --file-log-level debug --log-level info",
+  "result": {
+    "processExitCode": 0,
+    "testerStatus": "clear_signed",
+    "clearSigningType": "eip7730",
+    "blindSigning": false,
+    "usedFallback": false,
+    "expectedTextSummary": "13/13 found",
+    "screenshots": "/tmp/csh-production-ledger-evidence/screenshots/screenshot_1.png through screenshot_10.png",
+    "screenSequence": ["Supply", "Morpho fields", "Oracle/Irm/Lltv", "Assets/Shares/On Behalf", "Data", "Sign transaction to Supply?", "Transaction signed"],
+    "signatureProduced": true,
+    "broadcast": false
+  },
+  "initialSetupFailure": {
+    "cause": "COIN_APPS_PATH unset produced invalid Docker volume :/apps",
+    "error": "docker: invalid spec: :/apps: empty section between colons",
+    "fix": "Set COIN_APPS_PATH to an empty directory; absolute --custom-app still bypasses Coin Apps lookup"
+  },
+  "observedCaveat": "The DMK context state reports contextErrorCount=2 due an ExternalPluginContextLoader error, while CAL context, EIP-7730 clear signing, all 13 expected screen texts, and the signature completed successfully."
+}

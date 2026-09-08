@@ -1,0 +1,9 @@
+{
+  "chainId": 31337,
+  "contracts": {
+    "contracts/CustomVaultProxy.sol:CustomVaultProxy": {
+      "address": "0x0000000000000000000000000000000000004003",
+      "implementation": "contracts/CustomVault.sol:CustomVault"
+    }
+  }
+}

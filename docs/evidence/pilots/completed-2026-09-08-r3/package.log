@@ -1,0 +1,196 @@
+[
+  {
+    "id": "clear-signing-helper@0.2.0",
+    "name": "clear-signing-helper",
+    "version": "0.2.0",
+    "size": 712640,
+    "unpackedSize": 3233060,
+    "shasum": "0d93501f6861594f00a54cdb8ebb83a7fc2d288b",
+    "integrity": "sha512-vqWPX8WR7Uau/U9ALPHPnhykB0fMTsmh3OEAZAJZT8FVDAwwYeNmtWYeX9AQPs4ddMm1aouG0r6YeOKN9JicDQ==",
+    "filename": "clear-signing-helper-0.2.0.tgz",
+    "files": [
+      {
+        "path": "PRD.md",
+        "size": 19431,
+        "mode": 420
+      },
+      {
+        "path": "README.md",
+        "size": 13711,
+        "mode": 420
+      },
+      {
+        "path": "dist/cli.js",
+        "size": 965888,
+        "mode": 493
+      },
+      {
+        "path": "dist/cli.js.map",
+        "size": 1808504,
+        "mode": 420
+      },
+      {
+        "path": "docs/ADVERSARIAL-REVIEW.md",
+        "size": 1563,
+        "mode": 420
+      },
+      {
+        "path": "docs/DEVICE-COMPATIBILITY.md",
+        "size": 8998,
+        "mode": 420
+      },
+      {
+        "path": "docs/DISTRIBUTION.md",
+        "size": 2824,
+        "mode": 420
+      },
+      {
+        "path": "docs/EXTERNAL-REVIEW.md",
+        "size": 4108,
+        "mode": 420
+      },
+      {
+        "path": "docs/HARDWARE-ACCEPTANCE.md",
+        "size": 3764,
+        "mode": 420
+      },
+      {
+        "path": "docs/luna-adversarial-validation.md",
+        "size": 1359,
+        "mode": 420
+      },
+      {
+        "path": "docs/luna-core-review.md",
+        "size": 2542,
+        "mode": 420
+      },
+      {
+        "path": "docs/luna-device-validation.md",
+        "size": 2486,
+        "mode": 420
+      },
+      {
+        "path": "docs/luna-foundry-validation.md",
+        "size": 5777,
+        "mode": 420
+      },
+      {
+        "path": "docs/luna-registry-validation.md",
+        "size": 6263,
+        "mode": 420
+      },
+      {
+        "path": "docs/PILOT-VALIDATION.md",
+        "size": 1143,
+        "mode": 420
+      },
+      {
+        "path": "docs/PRODUCTION-READINESS.md",
+        "size": 6579,
+        "mode": 420
+      },
+      {
+        "path": "docs/PRODUCTION-SUBMISSION.md",
+        "size": 13230,
+        "mode": 420
+      },
+      {
+        "path": "docs/REGISTRY-COMPATIBILITY.md",
+        "size": 6246,
+        "mode": 420
+      },
+      {
+        "path": "docs/RELEASE-SCOPE.md",
+        "size": 3613,
+        "mode": 420
+      },
+      {
+        "path": "docs/THIRD-PARTY-NOTICES.md",
+        "size": 21298,
+        "mode": 420
+      },
+      {
+        "path": "docs/VALIDATION.md",
+        "size": 7653,
+        "mode": 420
+      },
+      {
+        "path": "package.json",
+        "size": 1184,
+        "mode": 420
+      },
+      {
+        "path": "schemas/erc7730-tests-v2.schema.json",
+        "size": 7777,
+        "mode": 420
+      },
+      {
+        "path": "schemas/erc7730-v2.schema.json",
+        "size": 49509,
+        "mode": 420
+      },
+      {
+        "path": "schemas/README.md",
+        "size": 798,
+        "mode": 420
+      },
+      {
+        "path": "scripts/verify-renderer.mjs",
+        "size": 1022,
+        "mode": 420
+      },
+      {
+        "path": "vendor/clear-signing/dist/index.cjs",
+        "size": 92121,
+        "mode": 420
+      },
+      {
+        "path": "vendor/clear-signing/dist/index.d.cts",
+        "size": 8461,
+        "mode": 420
+      },
+      {
+        "path": "vendor/clear-signing/dist/index.d.ts",
+        "size": 8459,
+        "mode": 420
+      },
+      {
+        "path": "vendor/clear-signing/dist/index.js",
+        "size": 90943,
+        "mode": 420
+      },
+      {
+        "path": "vendor/clear-signing/dist/types-Br3mRksb.d.cts",
+        "size": 24235,
+        "mode": 420
+      },
+      {
+        "path": "vendor/clear-signing/dist/types-Br3mRksb.d.ts",
+        "size": 24235,
+        "mode": 420
+      },
+      {
+        "path": "vendor/clear-signing/LICENSE",
+        "size": 1070,
+        "mode": 420
+      },
+      {
+        "path": "vendor/clear-signing/package.json",
+        "size": 625,
+        "mode": 420
+      },
+      {
+        "path": "vendor/clear-signing/PROVENANCE.md",
+        "size": 1179,
+        "mode": 420
+      },
+      {
+        "path": "vendor/clear-signing/README.md",
+        "size": 14462,
+        "mode": 420
+      }
+    ],
+    "entryCount": 36,
+    "bundled": []
+  }
+]

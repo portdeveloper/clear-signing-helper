@@ -1,0 +1,49 @@
+{
+  "runner": "@llbartekll/cs-test",
+  "implementation": "llbartekll/clear-signing@0.1.0",
+  "cases": [
+    {
+      "description": "synthetic-ekubo-signed-integers",
+      "status": "fail",
+      "rendered": {
+        "intent": "Swap",
+        "owner": "Ekubo Protocol",
+        "fields": [
+          {
+            "label": "Token0",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Token1",
+            "value": "0x0000000000000000000000000000000000000002"
+          },
+          {
+            "label": "Config",
+            "value": "0x0101010101010101010101010101010101010101010101010101010101010101"
+          },
+          {
+            "label": "Is Token1",
+            "value": "false"
+          },
+          {
+            "label": "Amount",
+            "value": "115792089237316195423570985008687907853269984665640564039457584007913129639933"
+          },
+          {
+            "label": "Sqrt Ratio Limit",
+            "value": "4"
+          },
+          {
+            "label": "Skip Ahead",
+            "value": "5"
+          },
+          {
+            "label": "Calculated Amount Threshold",
+            "value": "115792089237316195423570985008687907853269984665640564039457584007913129639930"
+          }
+        ]
+      },
+      "message": "field value at [4] \"Amount\": expected \"-3\", got \"115792089237316195423570985008687907853269984665640564039457584007913129639933\""
+    }
+  ]
+}

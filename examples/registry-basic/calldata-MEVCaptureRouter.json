@@ -1,0 +1,527 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": []
+    }
+  },
+  "metadata": {
+    "owner": "Ekubo Protocol",
+    "contractName": "MEVCaptureRouter"
+  },
+  "display": {
+    "formats": {
+      "swap((address token0,address token1,bytes32 config) poolKey,bool isToken1,int128 amount,uint96 sqrtRatioLimit,uint256 skipAhead,int256 calculatedAmountThreshold)": {
+        "intent": "Swap",
+        "fields": [
+          {
+            "path": "poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "isToken1",
+            "label": "Is Token1",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          },
+          {
+            "path": "sqrtRatioLimit",
+            "label": "Sqrt Ratio Limit",
+            "format": "raw"
+          },
+          {
+            "path": "skipAhead",
+            "label": "Skip Ahead",
+            "format": "raw"
+          },
+          {
+            "path": "calculatedAmountThreshold",
+            "label": "Calculated Amount Threshold",
+            "format": "raw"
+          }
+        ]
+      },
+      "swap((address token0,address token1,bytes32 config) poolKey,bool isToken1,int128 amount,uint96 sqrtRatioLimit,uint256 skipAhead,int256 calculatedAmountThreshold,address recipient)": {
+        "intent": "Swap",
+        "fields": [
+          {
+            "path": "poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "isToken1",
+            "label": "Is Token1",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          },
+          {
+            "path": "sqrtRatioLimit",
+            "label": "Sqrt Ratio Limit",
+            "format": "raw"
+          },
+          {
+            "path": "skipAhead",
+            "label": "Skip Ahead",
+            "format": "raw"
+          },
+          {
+            "path": "calculatedAmountThreshold",
+            "label": "Calculated Amount Threshold",
+            "format": "raw"
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          }
+        ]
+      },
+      "swap((address token0,address token1,bytes32 config) poolKey,bytes32 params,int256 calculatedAmountThreshold)": {
+        "intent": "Swap",
+        "fields": [
+          {
+            "path": "poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "params",
+            "label": "Params",
+            "format": "raw"
+          },
+          {
+            "path": "calculatedAmountThreshold",
+            "label": "Calculated Amount Threshold",
+            "format": "raw"
+          }
+        ]
+      },
+      "swap((address token0,address token1,bytes32 config) poolKey,bytes32 params,int256 calculatedAmountThreshold,address recipient)": {
+        "intent": "Swap",
+        "fields": [
+          {
+            "path": "poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "params",
+            "label": "Params",
+            "format": "raw"
+          },
+          {
+            "path": "calculatedAmountThreshold",
+            "label": "Calculated Amount Threshold",
+            "format": "raw"
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          }
+        ]
+      },
+      "swap(((address token0,address token1,bytes32 config) poolKey,uint96 sqrtRatioLimit,uint256 skipAhead) node,(address token,int128 amount) tokenAmount,int256 calculatedAmountThreshold)": {
+        "intent": "Swap",
+        "fields": [
+          {
+            "path": "node.poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "node.poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "node.poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "node.sqrtRatioLimit",
+            "label": "Sqrt Ratio Limit",
+            "format": "raw"
+          },
+          {
+            "path": "node.skipAhead",
+            "label": "Skip Ahead",
+            "format": "raw"
+          },
+          {
+            "path": "tokenAmount.token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "tokenAmount.amount",
+            "label": "Amount",
+            "format": "raw"
+          },
+          {
+            "path": "calculatedAmountThreshold",
+            "label": "Calculated Amount Threshold",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapAllowPartialFill((address token0,address token1,bytes32 config) poolKey,bool isToken1,int128 amount,uint96 sqrtRatioLimit,uint256 skipAhead)": {
+        "intent": "Swap Allow Partial Fill",
+        "fields": [
+          {
+            "path": "poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "isToken1",
+            "label": "Is Token1",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          },
+          {
+            "path": "sqrtRatioLimit",
+            "label": "Sqrt Ratio Limit",
+            "format": "raw"
+          },
+          {
+            "path": "skipAhead",
+            "label": "Skip Ahead",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapAllowPartialFill((address token0,address token1,bytes32 config) poolKey,bool isToken1,int128 amount,uint96 sqrtRatioLimit,uint256 skipAhead,address recipient)": {
+        "intent": "Swap Allow Partial Fill",
+        "fields": [
+          {
+            "path": "poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "isToken1",
+            "label": "Is Token1",
+            "format": "raw"
+          },
+          {
+            "path": "amount",
+            "label": "Amount",
+            "format": "raw"
+          },
+          {
+            "path": "sqrtRatioLimit",
+            "label": "Sqrt Ratio Limit",
+            "format": "raw"
+          },
+          {
+            "path": "skipAhead",
+            "label": "Skip Ahead",
+            "format": "raw"
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapAllowPartialFill((address token0,address token1,bytes32 config) poolKey,bytes32 params)": {
+        "intent": "Swap Allow Partial Fill",
+        "fields": [
+          {
+            "path": "poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "params",
+            "label": "Params",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapAllowPartialFill((address token0,address token1,bytes32 config) poolKey,bytes32 params,address recipient)": {
+        "intent": "Swap Allow Partial Fill",
+        "fields": [
+          {
+            "path": "poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "params",
+            "label": "Params",
+            "format": "raw"
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapAllowPartialFill(((address token0,address token1,bytes32 config) poolKey,uint96 sqrtRatioLimit,uint256 skipAhead) node,(address token,int128 amount) tokenAmount)": {
+        "intent": "Swap Allow Partial Fill",
+        "fields": [
+          {
+            "path": "node.poolKey.token0",
+            "label": "Token0",
+            "format": "raw"
+          },
+          {
+            "path": "node.poolKey.token1",
+            "label": "Token1",
+            "format": "raw"
+          },
+          {
+            "path": "node.poolKey.config",
+            "label": "Config",
+            "format": "raw"
+          },
+          {
+            "path": "node.sqrtRatioLimit",
+            "label": "Sqrt Ratio Limit",
+            "format": "raw"
+          },
+          {
+            "path": "node.skipAhead",
+            "label": "Skip Ahead",
+            "format": "raw"
+          },
+          {
+            "path": "tokenAmount.token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "tokenAmount.amount",
+            "label": "Amount",
+            "format": "raw"
+          }
+        ]
+      },
+      "multicall(bytes[] data)": {
+        "intent": "Multicall",
+        "fields": [
+          {
+            "path": "data.[]",
+            "label": "Data",
+            "format": "raw",
+            "separator": "Data {index}"
+          }
+        ]
+      },
+      "refundNativeToken()": {
+        "intent": "Refund Native Token",
+        "fields": []
+      },
+      "multihopSwap((((address token0,address token1,bytes32 config) poolKey,uint96 sqrtRatioLimit,uint256 skipAhead)[] route,(address token,int128 amount) tokenAmount) s,int256 calculatedAmountThreshold)": {
+        "intent": "Multihop Swap",
+        "fields": [
+          {
+            "path": "s.route.[]",
+            "label": "Route",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "poolKey.token0",
+                "label": "Token0",
+                "format": "raw"
+              },
+              {
+                "path": "poolKey.token1",
+                "label": "Token1",
+                "format": "raw"
+              },
+              {
+                "path": "poolKey.config",
+                "label": "Config",
+                "format": "raw"
+              },
+              {
+                "path": "sqrtRatioLimit",
+                "label": "Sqrt Ratio Limit",
+                "format": "raw"
+              },
+              {
+                "path": "skipAhead",
+                "label": "Skip Ahead",
+                "format": "raw"
+              }
+            ]
+          },
+          {
+            "path": "s.tokenAmount.token",
+            "label": "Token",
+            "format": "raw"
+          },
+          {
+            "path": "s.tokenAmount.amount",
+            "label": "Amount",
+            "format": "raw"
+          },
+          {
+            "path": "calculatedAmountThreshold",
+            "label": "Calculated Amount Threshold",
+            "format": "raw"
+          }
+        ]
+      },
+      "multiMultihopSwap((((address token0,address token1,bytes32 config) poolKey,uint96 sqrtRatioLimit,uint256 skipAhead)[] route,(address token,int128 amount) tokenAmount)[] swaps,int256 calculatedAmountThreshold)": {
+        "intent": "Multi Multihop Swap",
+        "fields": [
+          {
+            "path": "swaps.[]",
+            "label": "Swaps",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "route.[]",
+                "label": "Route",
+                "iteration": "sequential",
+                "fields": [
+                  {
+                    "path": "poolKey.token0",
+                    "label": "Token0",
+                    "format": "raw"
+                  },
+                  {
+                    "path": "poolKey.token1",
+                    "label": "Token1",
+                    "format": "raw"
+                  },
+                  {
+                    "path": "poolKey.config",
+                    "label": "Config",
+                    "format": "raw"
+                  },
+                  {
+                    "path": "sqrtRatioLimit",
+                    "label": "Sqrt Ratio Limit",
+                    "format": "raw"
+                  },
+                  {
+                    "path": "skipAhead",
+                    "label": "Skip Ahead",
+                    "format": "raw"
+                  }
+                ]
+              },
+              {
+                "path": "tokenAmount.token",
+                "label": "Token",
+                "format": "raw"
+              },
+              {
+                "path": "tokenAmount.amount",
+                "label": "Amount",
+                "format": "raw"
+              }
+            ]
+          },
+          {
+            "path": "calculatedAmountThreshold",
+            "label": "Calculated Amount Threshold",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

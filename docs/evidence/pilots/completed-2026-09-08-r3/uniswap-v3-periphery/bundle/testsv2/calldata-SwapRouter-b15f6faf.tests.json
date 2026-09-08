@@ -1,0 +1,470 @@
+{
+  "$schema": "../../../specs/erc7730-tests-v2.schema.json",
+  "descriptor": "../calldata-SwapRouter-b15f6faf.json",
+  "dataProvider": {
+    "tokens": {},
+    "addressNames": {}
+  },
+  "tests": [
+    {
+      "description": "clear-signing/fixtures/pilot-exactInput-c04b8d59.json",
+      "rawTx": "0x02f90128827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b90104c04b8d59000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000002abcd000000000000000000000000000000000000000000000000000000000000c0",
+      "expected": {
+        "intent": "Pilot Exact Input",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Path",
+            "value": "0xabcd"
+          },
+          {
+            "label": "Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Deadline",
+            "value": "7"
+          },
+          {
+            "label": "Amount In",
+            "value": "7"
+          },
+          {
+            "label": "Amount Out Minimum",
+            "value": "7"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-exactInputSingle-414bf389.json",
+      "rawTx": "0x02f90128827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b90104414bf38900000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000007c0",
+      "expected": {
+        "intent": "Pilot Exact Input Single",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Token In",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Token Out",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Fee",
+            "value": "7"
+          },
+          {
+            "label": "Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Deadline",
+            "value": "7"
+          },
+          {
+            "label": "Amount In",
+            "value": "7"
+          },
+          {
+            "label": "Amount Out Minimum",
+            "value": "7"
+          },
+          {
+            "label": "Sqrt Price Limit X96",
+            "value": "7"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-exactOutput-f28c0498.json",
+      "rawTx": "0x02f90128827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b90104f28c0498000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000002abcd000000000000000000000000000000000000000000000000000000000000c0",
+      "expected": {
+        "intent": "Pilot Exact Output",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Path",
+            "value": "0xabcd"
+          },
+          {
+            "label": "Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Deadline",
+            "value": "7"
+          },
+          {
+            "label": "Amount Out",
+            "value": "7"
+          },
+          {
+            "label": "Amount In Maximum",
+            "value": "7"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-exactOutputSingle-db3e2198.json",
+      "rawTx": "0x02f90128827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b90104db3e219800000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000007c0",
+      "expected": {
+        "intent": "Pilot Exact Output Single",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Token In",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Token Out",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Fee",
+            "value": "7"
+          },
+          {
+            "label": "Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Deadline",
+            "value": "7"
+          },
+          {
+            "label": "Amount Out",
+            "value": "7"
+          },
+          {
+            "label": "Amount In Maximum",
+            "value": "7"
+          },
+          {
+            "label": "Sqrt Price Limit X96",
+            "value": "7"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-multicall-ac9650d8.json",
+      "rawTx": "0x02f90128827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b90104ac9650d800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000002abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002abcd000000000000000000000000000000000000000000000000000000000000c0",
+      "expected": {
+        "intent": "Pilot Multicall",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Data",
+            "value": "0xabcd"
+          },
+          {
+            "label": "Data",
+            "value": "0xabcd"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-refundETH-12210e8a.json",
+      "rawTx": "0x02e6827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e0808412210e8ac0",
+      "expected": {
+        "intent": "Pilot Refund ETH",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-selfPermit-f3995c67.json",
+      "rawTx": "0x02f8e7827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b8c4f3995c670000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000007ababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababc0",
+      "expected": {
+        "intent": "Pilot Self Permit",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Value",
+            "value": "7"
+          },
+          {
+            "label": "Deadline",
+            "value": "7"
+          },
+          {
+            "label": "V",
+            "value": "7"
+          },
+          {
+            "label": "R",
+            "value": "0xabababababababababababababababababababababababababababababababab"
+          },
+          {
+            "label": "S",
+            "value": "0xabababababababababababababababababababababababababababababababab"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-selfPermitAllowed-4659a494.json",
+      "rawTx": "0x02f8e7827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b8c44659a4940000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000007ababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababc0",
+      "expected": {
+        "intent": "Pilot Self Permit Allowed",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Nonce",
+            "value": "7"
+          },
+          {
+            "label": "Expiry",
+            "value": "7"
+          },
+          {
+            "label": "V",
+            "value": "7"
+          },
+          {
+            "label": "R",
+            "value": "0xabababababababababababababababababababababababababababababababab"
+          },
+          {
+            "label": "S",
+            "value": "0xabababababababababababababababababababababababababababababababab"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-selfPermitAllowedIfNecessary-a4a78f0c.json",
+      "rawTx": "0x02f8e7827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b8c4a4a78f0c0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000007ababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababc0",
+      "expected": {
+        "intent": "Pilot Self Permit Allowed If Necessary",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Nonce",
+            "value": "7"
+          },
+          {
+            "label": "Expiry",
+            "value": "7"
+          },
+          {
+            "label": "V",
+            "value": "7"
+          },
+          {
+            "label": "R",
+            "value": "0xabababababababababababababababababababababababababababababababab"
+          },
+          {
+            "label": "S",
+            "value": "0xabababababababababababababababababababababababababababababababab"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-selfPermitIfNecessary-c2e3140a.json",
+      "rawTx": "0x02f8e7827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b8c4c2e3140a0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000007ababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababc0",
+      "expected": {
+        "intent": "Pilot Self Permit If Necessary",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Value",
+            "value": "7"
+          },
+          {
+            "label": "Deadline",
+            "value": "7"
+          },
+          {
+            "label": "V",
+            "value": "7"
+          },
+          {
+            "label": "R",
+            "value": "0xabababababababababababababababababababababababababababababababab"
+          },
+          {
+            "label": "S",
+            "value": "0xabababababababababababababababababababababababababababababababab"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-sweepToken-df2ab5bb.json",
+      "rawTx": "0x02f887827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b864df2ab5bb000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000001c0",
+      "expected": {
+        "intent": "Pilot Sweep Token",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Amount Minimum",
+            "value": "7"
+          },
+          {
+            "label": "Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-sweepTokenWithFee-e0e189a0.json",
+      "rawTx": "0x02f8c7827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b8a4e0e189a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000001c0",
+      "expected": {
+        "intent": "Pilot Sweep Token With Fee",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Token",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Amount Minimum",
+            "value": "7"
+          },
+          {
+            "label": "Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Fee Bips",
+            "value": "7"
+          },
+          {
+            "label": "Fee Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-unwrapWETH9-49404b7c.json",
+      "rawTx": "0x02f867827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b84449404b7c00000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000001c0",
+      "expected": {
+        "intent": "Pilot Unwrap WETH9",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Amount Minimum",
+            "value": "7"
+          },
+          {
+            "label": "Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "description": "clear-signing/fixtures/pilot-unwrapWETH9WithFee-9b2c0a37.json",
+      "rawTx": "0x02f8a7827a69808080830f4240949fe46736679d2d9a65f0992f2272de9f3c7fa6e080b8849b2c0a370000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000001c0",
+      "expected": {
+        "intent": "Pilot Unwrap WETH9 With Fee",
+        "owner": "Independent pilot",
+        "fields": [
+          {
+            "label": "Amount Minimum",
+            "value": "7"
+          },
+          {
+            "label": "Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Fee Bips",
+            "value": "7"
+          },
+          {
+            "label": "Fee Recipient",
+            "value": "0x0000000000000000000000000000000000000001"
+          },
+          {
+            "label": "Native value (wei)",
+            "value": "0"
+          }
+        ]
+      }
+    }
+  ]
+}

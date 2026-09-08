@@ -1,0 +1,5 @@
+
+> clear-signing-helper@0.2.0 build
+> tsc --noEmit && node scripts/build.mjs
+
+Vendored clear-signing renderer verified (0.2.2, signed-int-fix.1).

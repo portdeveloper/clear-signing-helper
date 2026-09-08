@@ -1,0 +1,21 @@
+{
+  "engine": {
+    "tool": "0.2.0",
+    "renderer": "@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1",
+    "schema": "f1da6154187a258475139f1b871f74a7bade0af23ff45c782fb85ecd4d7e8a3f",
+    "subset": 2
+  },
+  "contracts": [
+    {
+      "id": "contracts/SwapRouter.sol:SwapRouter",
+      "descriptor": "calldata-SwapRouter-b15f6faf.json",
+      "exclusions": {
+        "receive()": "Unsupported entrypoint excluded by independent pilot; no fixture or signing claim.",
+        "uniswapV3SwapCallback(int256,int256,bytes)": "Pool-invoked callback, outside this user-operation pilot; signed integers are excluded by the first-release portability policy."
+      }
+    }
+  ],
+  "fixtures": 14,
+  "deploymentVerification": "not performed",
+  "publication": "not submitted"
+}

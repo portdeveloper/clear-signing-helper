@@ -1,0 +1,24 @@
+{
+  "$schema": "../../../specs/erc7730-tests-v2.schema.json",
+  "descriptor": "../calldata-weth-native-value.json",
+  "dataProvider": {
+    "tokens": {},
+    "addressNames": {}
+  },
+  "tests": [
+    {
+      "description": "synthetic-weth-native-value",
+      "rawTx": "0x02ec01808080830f424094c02aaa39b223fe8d0a0e5c4f27ead9083c756cc28801b69b4ba574920084d0e30db0c0",
+      "expected": {
+        "intent": "Deposit",
+        "owner": "WETH",
+        "fields": [
+          {
+            "label": "Native value (wei)",
+            "value": "123456789000000000"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "clear-signing-helper",
+  "version": "0.2.0",
+  "description": "Author and test ERC-7730 clear-signing descriptors in Foundry repositories",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "clear-signing": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "PRD.md",
+    "schemas",
+    "docs/*.md",
+    "scripts/verify-renderer.mjs",
+    "vendor/clear-signing"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "test": "npm run build && tsx --test test/*.test.ts",
+    "prepack": "npm run build",
+    "release:verify": "node scripts/verify-release.mjs",
+    "notices:generate": "node scripts/generate-third-party-notices.mjs",
+    "registry:snapshot": "tsx scripts/snapshot-registry.ts"
+  },
+  "dependencies": {
+    "@ethereum-sourcify/clear-signing": "file:vendor/clear-signing",
+    "@noble/hashes": "1.8.0",
+    "@iarna/toml": "2.2.5",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "commander": "14.0.3",
+    "ethers": "6.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.15",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3"
+  }
+}

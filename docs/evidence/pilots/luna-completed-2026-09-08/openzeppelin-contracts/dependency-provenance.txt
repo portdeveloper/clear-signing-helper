@@ -1,0 +1,4 @@
+root dbb6104ce834628e473d2173bbc9d47f81a9eec3
+ 8b1d7c2ac248c33c3506b1bff8321758943c5e11 lib/erc4626-tests (v0.1.0)
+ eb980e1d4f0e8173ec27da77297ae411840c8ccb lib/forge-std (v1.2.0)
+ cd98eff28324bfac652e63a239a60632a761790b lib/forge-std/lib/ds-test (remotes/origin/windows-compat-17-gcd98eff)

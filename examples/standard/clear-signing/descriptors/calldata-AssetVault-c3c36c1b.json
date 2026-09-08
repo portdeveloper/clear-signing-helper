@@ -1,0 +1,84 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": []
+    }
+  },
+  "metadata": {
+    "owner": "Example Protocol",
+    "contractName": "AssetVault"
+  },
+  "display": {
+    "formats": {
+      "deposit(uint256 assets,address receiver)": {
+        "intent": "Deposit",
+        "fields": [
+          {
+            "path": "assets",
+            "label": "Amount",
+            "format": "tokenAmount",
+            "params": {
+              "token": "0x0000000000000000000000000000000000000003"
+            }
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "addressName",
+            "params": {
+              "sources": [
+                "local"
+              ]
+            }
+          }
+        ]
+      },
+      "emergencyWithdraw(address receiver,uint256 assets)": {
+        "intent": "Emergency Withdraw",
+        "fields": [
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          }
+        ]
+      },
+      "transferAdmin(address newAdmin)": {
+        "intent": "Transfer Admin",
+        "fields": [
+          {
+            "path": "newAdmin",
+            "label": "New Admin",
+            "format": "raw"
+          }
+        ]
+      },
+      "withdraw(uint256 assets,address receiver,address owner)": {
+        "intent": "Withdraw",
+        "fields": [
+          {
+            "path": "assets",
+            "label": "Assets",
+            "format": "raw"
+          },
+          {
+            "path": "receiver",
+            "label": "Receiver",
+            "format": "raw"
+          },
+          {
+            "path": "owner",
+            "label": "Owner",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}

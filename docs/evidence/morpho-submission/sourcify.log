@@ -1,0 +1,24 @@
+[pass] clear-signing/fixtures/registry-1.json
+[pass] clear-signing/fixtures/registry-2.json
+[pass] clear-signing/fixtures/registry-3.json
+[pass] clear-signing/fixtures/registry-4.json
+[pass] clear-signing/fixtures/registry-5.json
+[pass] clear-signing/fixtures/registry-6.json
+[pass] clear-signing/fixtures/synthetic-accrueInterest-151c1ade.json
+[pass] clear-signing/fixtures/synthetic-borrow-50d8cd4b.json
+[pass] clear-signing/fixtures/synthetic-createMarket-8c1358a2.json
+[pass] clear-signing/fixtures/synthetic-enableIrm-5a64f51e.json
+[pass] clear-signing/fixtures/synthetic-enableLltv-4d98a93b.json
+[pass] clear-signing/fixtures/synthetic-flashLoan-e0232b42.json
+[pass] clear-signing/fixtures/synthetic-liquidate-d8eabcb8.json
+[pass] clear-signing/fixtures/synthetic-repay-20b76e81.json
+[pass] clear-signing/fixtures/synthetic-setAuthorization-eecea000.json
+[pass] clear-signing/fixtures/synthetic-setAuthorizationWithSig-8069218f.json
+[pass] clear-signing/fixtures/synthetic-setFee-2b4f013c.json
+[pass] clear-signing/fixtures/synthetic-setFeeRecipient-e74b981b.json
+[pass] clear-signing/fixtures/synthetic-setOwner-13af4035.json
+[pass] clear-signing/fixtures/synthetic-supply-a99aad89.json
+[pass] clear-signing/fixtures/synthetic-supplyCollateral-238d6579.json
+[pass] clear-signing/fixtures/synthetic-withdraw-5c2bea49.json
+[pass] clear-signing/fixtures/synthetic-withdrawCollateral-8720316d.json
+done: 23 pass, 0 fail, 0 error, 0 skipped

@@ -1,0 +1,20 @@
+{
+  "runner": "@llbartekll/cs-test",
+  "implementation": "llbartekll/clear-signing@0.1.0",
+  "cases": [
+    {
+      "description": "synthetic-weth-native-value",
+      "status": "pass",
+      "rendered": {
+        "intent": "Deposit",
+        "owner": "WETH",
+        "fields": [
+          {
+            "label": "Native value (wei)",
+            "value": "123456789000000000"
+          }
+        ]
+      }
+    }
+  ]
+}

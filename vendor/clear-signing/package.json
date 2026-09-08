@@ -1,0 +1,19 @@
+{
+  "name": "@ethereum-sourcify/clear-signing",
+  "version": "0.2.2",
+  "description": "Ethereum clear-signing renderer vendored for reproducible distribution",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    }
+  },
+  "files": ["dist", "LICENSE", "README.md"],
+  "license": "MIT",
+  "dependencies": { "@noble/hashes": "^1.7.1" },
+  "engines": { "node": ">=22.0.0" }
+}

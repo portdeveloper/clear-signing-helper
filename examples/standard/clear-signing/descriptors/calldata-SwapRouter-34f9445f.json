@@ -1,0 +1,200 @@
+{
+  "$schema": "https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json",
+  "context": {
+    "contract": {
+      "deployments": []
+    }
+  },
+  "metadata": {
+    "owner": "Example Protocol",
+    "contractName": "SwapRouter"
+  },
+  "display": {
+    "formats": {
+      "batchSwap((address tokenIn,address tokenOut,uint256 amountIn,uint256 minAmountOut)[] swaps,address recipient)": {
+        "intent": "Batch Swap",
+        "fields": [
+          {
+            "path": "swaps.[]",
+            "label": "Swaps",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "tokenIn",
+                "label": "Token In",
+                "format": "raw"
+              },
+              {
+                "path": "tokenOut",
+                "label": "Token Out",
+                "format": "raw"
+              },
+              {
+                "path": "amountIn",
+                "label": "Amount In",
+                "format": "raw"
+              },
+              {
+                "path": "minAmountOut",
+                "label": "Min Amount Out",
+                "format": "raw"
+              }
+            ]
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          }
+        ]
+      },
+      "executeRoute((address pool,address tokenIn,address tokenOut,uint256 amountIn,uint256 minAmountOut,bytes callData) step,address recipient)": {
+        "intent": "Execute Route",
+        "fields": [
+          {
+            "path": "step.pool",
+            "label": "Pool",
+            "format": "raw"
+          },
+          {
+            "path": "step.tokenIn",
+            "label": "Token In",
+            "format": "raw"
+          },
+          {
+            "path": "step.tokenOut",
+            "label": "Token Out",
+            "format": "raw"
+          },
+          {
+            "path": "step.amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "step.minAmountOut",
+            "label": "Min Amount Out",
+            "format": "raw"
+          },
+          {
+            "path": "step.callData",
+            "label": "Call Data",
+            "format": "raw"
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          }
+        ]
+      },
+      "executeRoute((address pool,address tokenIn,address tokenOut,uint256 amountIn,uint256 minAmountOut,bytes callData)[] steps,address recipient)": {
+        "intent": "Execute Route",
+        "fields": [
+          {
+            "path": "steps.[]",
+            "label": "Steps",
+            "iteration": "sequential",
+            "fields": [
+              {
+                "path": "pool",
+                "label": "Pool",
+                "format": "raw"
+              },
+              {
+                "path": "tokenIn",
+                "label": "Token In",
+                "format": "raw"
+              },
+              {
+                "path": "tokenOut",
+                "label": "Token Out",
+                "format": "raw"
+              },
+              {
+                "path": "amountIn",
+                "label": "Amount In",
+                "format": "raw"
+              },
+              {
+                "path": "minAmountOut",
+                "label": "Min Amount Out",
+                "format": "raw"
+              },
+              {
+                "path": "callData",
+                "label": "Call Data",
+                "format": "raw"
+              }
+            ]
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapExactTokensForTokens(uint256 amountIn,address tokenIn,address tokenOut)": {
+        "intent": "Swap Exact Tokens For Tokens",
+        "fields": [
+          {
+            "path": "amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "tokenIn",
+            "label": "Token In",
+            "format": "raw"
+          },
+          {
+            "path": "tokenOut",
+            "label": "Token Out",
+            "format": "raw"
+          }
+        ]
+      },
+      "swapExactTokensForTokens(uint256 amountIn,uint256 amountOutMin,address tokenIn,address tokenOut,address recipient)": {
+        "intent": "Swap Exact Tokens For Tokens",
+        "fields": [
+          {
+            "path": "amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "tokenIn",
+            "label": "Token In",
+            "format": "raw"
+          },
+          {
+            "path": "tokenOut",
+            "label": "Token Out",
+            "format": "raw"
+          },
+          {
+            "path": "recipient",
+            "label": "Recipient",
+            "format": "raw"
+          }
+        ]
+      },
+      "transferAdmin(address newAdmin)": {
+        "intent": "Transfer Admin",
+        "fields": [
+          {
+            "path": "newAdmin",
+            "label": "New Admin",
+            "format": "raw"
+          }
+        ]
+      }
+    }
+  }
+}
