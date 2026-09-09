@@ -9,7 +9,7 @@ Use this file to track release gates. Check a box only when its evidence is link
 | 1 | Complete submission path | Local path complete; physical/production trust acceptance external | [Device matrix](DEVICE-COMPATIBILITY.md), [hardware handoff](HARDWARE-ACCEPTANCE.md) |
 | 2 | Protocol maintainer pilots | Three real-source exercises complete; maintainer assessment external | [Pilot evidence and limitations](PILOT-VALIDATION.md) |
 | 3 | Rendering correctness and review | Automated hardening complete; human review external | [Adversarial record](ADVERSARIAL-REVIEW.md), [review packet](EXTERNAL-REVIEW.md) |
-| 4 | Distribution and releases | Developer preview selected; final revision verification and publication tracked in handoff | [Distribution](DISTRIBUTION.md), [executed CI](GITHUB-CI.md) |
+| 4 | Distribution and releases | Developer preview published; CI and public installation verified | [Distribution](DISTRIBUTION.md), [executed CI](GITHUB-CI.md) |
 | 5 | First-release scope | Owner selected calldata-only developer preview with strict portability | [Calldata-only scope and exclusions](RELEASE-SCOPE.md) |
 
 ## 1. Complete submission path
@@ -55,14 +55,14 @@ Found and fixed during the exercise: the two-minute Forge build timeout was too 
 - [x] Owner selected MIT; [LICENSE](../LICENSE) and package metadata updated, with the license included in both candidate archives.
 - [x] Establish pinned release inputs, package verification, release notes and update/rollback procedures — [candidate artifacts](../release/) and [distribution](DISTRIBUTION.md).
 - [x] Exercise the release verification commands locally; configure pinned CI actions and Node versions, with manual dispatch and no automatic publication.
-- [ ] Publish the developer preview after its automated checks and package verification pass; track the release in the [handoff](RELEASE-HANDOFF.md). External production validation remains open.
+- [x] Publish the [developer preview](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.2.0-preview.1) after automated checks and package verification; the [handoff](RELEASE-HANDOFF.md) records CI and fresh public-package installation. External production validation remains open.
 
 ## 5. First-release scope
 
 - [x] Prepare a calldata-only candidate; EIP-712 explicitly unsupported.
 - [x] Keep the 31 suffix-bearing registry examples as explicit rejections. Morpho's chosen fixtures do not require those suffixes; no bytes are silently removed.
 - [x] Owner selected the [developer preview scope](RELEASE-SCOPE.md), retaining calldata-only and strict portability restrictions.
-- [x] Document an explicit [wallet/feature compatibility matrix](DEVICE-COMPATIBILITY.md), distinguishing local preview from tested device support. No external publication performed.
+- [x] Document an explicit [wallet/feature compatibility matrix](DEVICE-COMPATIBILITY.md), distinguishing local preview from tested device support. The CLI preview is published; no descriptor registry submission has been made.
 - [x] State that raw drafts require semantic review and that export does not verify deployment or imply acceptance.
 
 ## Existing evidence

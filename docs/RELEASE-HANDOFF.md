@@ -2,14 +2,18 @@
 
 Updated 2026-09-09. The owner selected an experimental developer preview, `0.2.0-preview.1`, for generating, previewing and regression-testing ERC-7730 calldata descriptors in Foundry. The selected scope retains strict portability checks. External review and physical-wallet acceptance remain pending production-readiness work and do not block preview distribution.
 
+Published on 2026-09-09: [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.2.0-preview.1). [PR #6](https://github.com/portdeveloper/clear-signing-helper/pull/6) is merged. The release tag points to tested source commit `78c963896a4be12180a554ce6c45d242be592cee`; subsequent documentation updates do not change that artifact.
+
+All four [Linux/macOS Node 22/24 CI jobs](https://github.com/portdeveloper/clear-signing-helper/actions/runs/34345688789) passed and their downloaded packages match the local candidate. Published package SHA-256: `24025b0b1002b34b06b4589c6d52d14898e327a0121c561c84e3dcfd7fb11155`. The release assets include local, CI and post-publication verification records. A fresh install from the public download passed version verification and Foundry build → init → fixture → preview.
+
 ## Preview publication checklist
 
 - [x] Select the [developer preview scope](RELEASE-SCOPE.md) and explicit prerelease version.
 - [x] Include MIT/dependency notices, [release notes](../release/RELEASE-NOTES.md), and [installation and upgrade instructions](DISTRIBUTION.md).
-- [ ] Pass the automated suite, Solidity example tests and clean package verification on the final source revision.
-- [ ] Confirm the final revision's Linux/macOS CI and attach its run URL and verified package hash to the GitHub prerelease.
-- [ ] Publish a GitHub prerelease tagged `v0.2.0-preview.1`, attaching the verified tarball, checksum and verification record.
-- [ ] Download the published artifact, confirm its checksum, and verify a fresh installation.
+- [x] Pass the automated suite, Solidity example tests and clean package verification on the final source revision.
+- [x] Confirm the final revision's Linux/macOS CI and attach its run URL and verified package hash to the GitHub prerelease.
+- [x] Publish a GitHub prerelease tagged `v0.2.0-preview.1`, attaching the verified tarball, checksum and verification record.
+- [x] Download the published artifact, confirm its checksum, and verify a fresh installation.
 
 The GitHub prerelease is the default distribution plan. npm distribution, if selected, must use the explicit version and the `preview` dist-tag rather than `latest`. The release scripts build and verify artifacts; they do not publish automatically.
 

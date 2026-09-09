@@ -16,7 +16,7 @@ The preview is [calldata-only with strict portability checks](docs/RELEASE-SCOPE
 
 ## Install the developer preview
 
-Download `clear-signing-helper-0.2.0-preview.1.tgz` and its `.sha256` file from the [GitHub releases page](https://github.com/portdeveloper/clear-signing-helper/releases). If the prerelease is not available yet, build from this checkout below. Requires Node.js 22+ and Foundry.
+Download `clear-signing-helper-0.2.0-preview.1.tgz` and its `.sha256` file from the [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.2.0-preview.1). Requires Node.js 22+ and Foundry.
 
 From the download directory, verify the package and install it:
 
