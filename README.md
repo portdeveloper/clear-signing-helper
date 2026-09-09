@@ -2,17 +2,11 @@
 
 Create, preview, and regression-test ERC-7730 clear-signing descriptors alongside a Foundry project.
 
-Licensed under [MIT](LICENSE). Bundled dependencies retain their [third-party notices](docs/THIRD-PARTY-NOTICES.md).
+Use it to turn compiled contract functions into editable ERC-7730 JSON drafts, inspect the fields a transaction would display, and catch changes to signing output in CI. Descriptors and fixtures stay in your contract repository.
 
-This repository also includes the existing [agent skill](docs/AGENT-SKILL.md) for working from a deployed contract address. Install it with `npx skills add portdeveloper/clear-signing-helper`, or use the standalone Foundry CLI below. The skill remains under `.claude/skills/clear-signing-helper/`.
+**Developer preview: `0.2.0-preview.1`.** Supports calldata authoring and testing with [strict portability checks](docs/RELEASE-SCOPE.md). Generated labels, units and intent require developer review. Independent human review, protocol-maintainer assessment, physical-device testing and production wallet delivery remain pending. The CLI does not sign or send transactions.
 
-The CLI discovers compiled contracts, scaffolds their write functions, renders example transactions through Sourcify's reference library, and checks signing output in CI. Descriptors stay ordinary JSON in your repository.
-
-**Status: developer preview (`0.2.0-preview.1`).** Generate, preview, and regression-test ERC-7730 calldata descriptors in Foundry. Generated descriptors are drafts that require developer review. Independent human review, protocol-maintainer assessment, physical-device testing, and production wallet delivery remain pending; this release makes no production wallet compatibility claim.
-
-The [release handoff](docs/RELEASE-HANDOFF.md) tracks preview publication. The [production readiness checklist](docs/PRODUCTION-READINESS.md) retains the outstanding external validation work; those results are not prerequisites for distributing this experimental CLI. Nothing has been submitted to a descriptor registry.
-
-The preview is [calldata-only with strict portability checks](docs/RELEASE-SCOPE.md). The preceding candidate passed 31 tests locally and across Linux/macOS CI, plus clean package installation and emulator exercises. See [validation evidence](docs/VALIDATION.md) and [CI records](docs/GITHUB-CI.md) for the exact tested revisions; use the preview's verification record for its package hash.
+[Install](#install-the-developer-preview) · [Try an example](#try-the-included-example) · [Use your own project](#add-clear-signing-to-your-foundry-repository) · [Commands](#files-and-commands)
 
 ## Install the developer preview
 
@@ -31,55 +25,34 @@ npx --yes --ignore-scripts --package=clear-signing-helper@preview clear-signing 
 
 Pin `clear-signing-helper@0.2.0-preview.1` for reproducible installs. This is an experimental developer preview; specify the preview tag or exact version explicitly.
 
-For a checksum-verified tarball installation:
+Expected version: `0.2.0-preview.1`. Installation is independent of your contract repository; it does not need a `package.json` or Node dependencies. Have `forge` available on your PATH.
 
-Download `clear-signing-helper-0.2.0-preview.1.tgz` and its `.sha256` file from the [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.2.0-preview.1).
-
-From the download directory, verify the package and install it:
-
-```sh
-sha256sum --check clear-signing-helper-0.2.0-preview.1.tgz.sha256
-npm install --global --ignore-scripts ./clear-signing-helper-0.2.0-preview.1.tgz
-clear-signing --version
-```
-
-On macOS, use `shasum -a 256 --check` for the checksum command. The version should be `0.2.0-preview.1`. Continue with [your Foundry repository](#add-clear-signing-to-your-foundry-repository), or clone this repository to try the included example. For projects created with an earlier candidate, follow the [upgrade procedure](docs/DISTRIBUTION.md#upgrade-and-rollback).
-
-## Install from this checkout
-
-Requirements: Node.js 22+, npm, and Foundry. Install the Solidity compiler and project dependencies through your existing Foundry setup first (`forge build`). The helper's subsequent builds use `forge build --offline`.
-
-Forge builds have a ten-minute timeout to accommodate large optimized protocol repositories; metadata commands have a two-minute timeout.
-
-```sh
-npm ci --ignore-scripts
-npm run build
-npm install -g .
-clear-signing --help
-```
-
-Installation is independent of the target contract repository; that repository does not need `package.json` or Node dependencies. Alternatively run `node /path/to/clear-signing-helper/dist/cli.js` directly. The generated CLI bundles its dependencies into one file and requires Node 22 to run.
-
-To produce a distributable local package:
-
-```sh
-npm pack
-npm install --global --ignore-scripts ./clear-signing-helper-0.2.0-preview.1.tgz
-```
+Continue with the example below or [your own Foundry project](#add-clear-signing-to-your-foundry-repository). Existing users should follow the [upgrade procedure](docs/DISTRIBUTION.md#upgrade-and-rollback). For other installation methods, see [building from source](#install-from-source) and [verified tarballs](docs/DISTRIBUTION.md#build-and-verify-a-release).
 
 ## Try the included example
 
-The standard example includes an editable vault descriptor and a local deposit fixture. From this checkout:
+After installing the CLI, clone the example from the matching release and build its contracts:
 
 ```sh
-node dist/cli.js --root examples/standard preview \
-  --fixture clear-signing/fixtures/deposit.json
+git clone --depth 1 --branch v0.2.0-preview.1 \
+  https://github.com/portdeveloper/clear-signing-helper.git
+cd clear-signing-helper
+forge build --root examples/standard
 
-node dist/cli.js --root examples/standard preview \
-  --fixture clear-signing/fixtures/deposit.json --serve
+clear-signing --root examples/standard preview \
+  --fixture clear-signing/fixtures/deposit.json
 ```
 
-The second command prints a private loopback URL. Use `--open` to also launch your browser. Stop the server with Ctrl+C.
+This example includes an editable vault descriptor, a deposit fixture, and local token/address metadata. It needs no wallet, RPC endpoint or funded account. The example files live in the source repository; installing the npm package alone does not create them.
+
+To view the same transaction in your browser:
+
+```sh
+clear-signing --root examples/standard preview \
+  --fixture clear-signing/fixtures/deposit.json --open
+```
+
+The browser preview prints a private loopback URL and opens it in your browser. On a remote machine or without a desktop browser, use the terminal preview above. Use `--serve` instead of `--open` to print the URL without launching a browser. Stop the server with Ctrl+C.
 
 Expected fields:
 
@@ -94,9 +67,12 @@ These example addresses and token metadata are local fixtures. The automated Anv
 
 ## Add clear signing to your Foundry repository
 
-Run these commands from the contract repository. Substitute its actual contract identity and sample arguments.
+Run these commands from your contract repository. Build it once with your existing Foundry setup so the Solidity compiler and project dependencies are available; the helper subsequently uses `forge build --offline`.
+
+The example below assumes your project has `src/Vault.sol:Vault` with `deposit(uint256,address)`. Replace those with your actual compiled contract identity, function signature and sample arguments. The addresses below are local example values.
 
 ```sh
+forge build
 clear-signing init --contract src/Vault.sol:Vault --owner "My Protocol"
 
 clear-signing fixture \
@@ -113,7 +89,9 @@ clear-signing preview --fixture clear-signing/fixtures/deposit.json
 
 Omit `--contract` during init to select production contracts under the resolved source directory. Repeat it to select several contracts. Tests, scripts, interfaces, abstract contracts, and dependencies are excluded from default selection. Dependencies can be selected explicitly by their compiled identity.
 
-Drafts use raw values for every argument. Inspect the generated JSON before choosing units or action descriptions. For a vault deposit, edit the generated `display.formats` entry like this:
+`init` prints the generated descriptor path under `clear-signing/descriptors/`; `fixture` writes `clear-signing/fixtures/deposit.json`. `--local` marks an undeployed example binding, so you can preview before adding real deployment addresses.
+
+Drafts use raw values for every argument. The first preview shows an amount such as `1000000` until you add its token formatting and metadata. Inspect the generated JSON before choosing units or action descriptions. For a vault deposit, edit the generated `display.formats` entry like this:
 
 ```json
 "deposit(uint256 assets,address receiver)": {
@@ -150,7 +128,13 @@ Use the actual parameter names from your artifact; the tool checks them. Add met
 
 The token address must correspond to the asset the contract actually uses. An ABI cannot establish that relationship. Fixture metadata applies to the fixture's chain and is never fetched from RPC.
 
-After inspecting the source, descriptor, and preview:
+Run the preview again after editing the descriptor and fixture:
+
+```sh
+clear-signing preview --fixture clear-signing/fixtures/deposit.json
+```
+
+After inspecting the source, descriptor, and rendered fields:
 
 ```sh
 clear-signing review --accept
@@ -160,6 +144,8 @@ clear-signing test
 ```
 
 `review --accept` records your acknowledgement of the current source, descriptions, and exclusions. `test --update` accepts current rendering expectations. They are separate explicit actions; ordinary check/test runs do not modify tracked authoring.
+
+Commit `clear-signing.toml` and `clear-signing/`. On subsequent changes, run `clear-signing sync` to scaffold newly added functions, inspect the changes, and renew review/expectations deliberately. Run [strict check and test in CI](#ci) to detect stale review and changed output. A local fixture supports preview and testing; [export](#production-bindings-and-registry-export) additionally requires real deployment bindings and fixture coverage for every covered function.
 
 ## Files and commands
 
@@ -262,6 +248,39 @@ Human previews escape terminal controls and bidirectional overrides as visible t
 Missing metadata is visible as warnings and raw fallback in preview, and blocks test acceptance/export. Empty-array notices are informational and remain in expectations. Dates beyond the renderer's supported range fail instead of being silently accepted.
 
 Unsupported features fail explicitly: EIP-712, nested transaction decoding, external includes/references, conditional visibility, encryption, interpolated intents, maps/enums, factory bindings, and automatic registry access. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
+
+## Use with an agent
+
+The repository also includes an [agent skill](docs/AGENT-SKILL.md) for working from a deployed contract address:
+
+```sh
+npx skills add portdeveloper/clear-signing-helper
+```
+
+The skill lives under `.claude/skills/clear-signing-helper/`. Installing the standalone CLI above is sufficient for the Foundry workflow in this README.
+
+## Install from source
+
+Clone the repository, then run from its root:
+
+```sh
+npm ci --ignore-scripts
+npm run build
+npm install --global --ignore-scripts .
+clear-signing --help
+```
+
+Alternatively, run `node /path/to/clear-signing-helper/dist/cli.js` directly after building. To create a local package, run `npm pack`; see [distribution and checksum verification](docs/DISTRIBUTION.md).
+
+Forge builds have a ten-minute timeout to accommodate large optimized protocol repositories; metadata commands have a two-minute timeout.
+
+## Release status and evidence
+
+The preview is available on [npm](https://www.npmjs.com/package/clear-signing-helper/v/0.2.0-preview.1) and as a [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.2.0-preview.1). The GitHub assets contain the package checksum and local, CI, GitHub-download and npm-install verification records. All four Linux/macOS Node 22/24 CI packages matched the released tarball. See the [release handoff](docs/RELEASE-HANDOFF.md) for exact inputs and remaining distribution work.
+
+[Validation evidence](docs/VALIDATION.md) records automated tests, real-source exercises and emulator results. The [production readiness checklist](docs/PRODUCTION-READINESS.md) retains pending human and physical-device validation. Those results are not prerequisites for distributing this experimental CLI. No descriptor has been submitted to a registry by this project.
+
+Licensed under [MIT](LICENSE). Bundled dependencies retain their [third-party notices](docs/THIRD-PARTY-NOTICES.md).
 
 ## Develop and validate
 
