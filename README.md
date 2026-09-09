@@ -16,7 +16,24 @@ The preview is [calldata-only with strict portability checks](docs/RELEASE-SCOPE
 
 ## Install the developer preview
 
-Download `clear-signing-helper-0.2.0-preview.1.tgz` and its `.sha256` file from the [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.2.0-preview.1). Requires Node.js 22+ and Foundry.
+Requires Node.js 22+ and Foundry. Install the [npm preview](https://www.npmjs.com/package/clear-signing-helper/v/0.2.0-preview.1):
+
+```sh
+npm install --global --ignore-scripts clear-signing-helper@preview
+clear-signing --version
+```
+
+Or try the CLI without a global installation:
+
+```sh
+npx --yes --ignore-scripts --package=clear-signing-helper@preview clear-signing --help
+```
+
+Pin `clear-signing-helper@0.2.0-preview.1` for reproducible installs. This is an experimental developer preview; specify the preview tag or exact version explicitly.
+
+For a checksum-verified tarball installation:
+
+Download `clear-signing-helper-0.2.0-preview.1.tgz` and its `.sha256` file from the [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.2.0-preview.1).
 
 From the download directory, verify the package and install it:
 

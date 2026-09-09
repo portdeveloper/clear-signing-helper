@@ -15,7 +15,10 @@ All four [Linux/macOS Node 22/24 CI jobs](https://github.com/portdeveloper/clear
 - [x] Publish a GitHub prerelease tagged `v0.2.0-preview.1`, attaching the verified tarball, checksum and verification record.
 - [x] Download the published artifact, confirm its checksum, and verify a fresh installation.
 
-The GitHub prerelease is the default distribution plan. npm distribution, if selected, must use the explicit version and the `preview` dist-tag rather than `latest`. The release scripts build and verify artifacts; they do not publish automatically.
+- [x] Publish the identical verified package to [npm](https://www.npmjs.com/package/clear-signing-helper/v/0.2.0-preview.1) using `--tag preview`; verify anonymous download, SHA-256/SHA-512, fresh `@preview` installation, npx and the Foundry workflow. The GitHub release includes `npm-verification.json`.
+- [ ] Remove the extra `latest` tag returned by the registry after the first publication. The authenticated `npm dist-tag rm clear-signing-helper latest` request was rejected with HTTP 403. Both tags currently point to `0.2.0-preview.1`; production validation remains pending regardless of tags.
+
+The owner selected npm as an additional distribution channel on 2026-09-09. Use `@preview` or the exact version in installation instructions. The release scripts build and verify artifacts; they do not publish automatically.
 
 ## Artifacts
 
