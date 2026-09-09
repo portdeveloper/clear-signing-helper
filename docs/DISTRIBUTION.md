@@ -33,14 +33,25 @@ For a local tarball install:
 ```sh
 npm run build
 npm pack --ignore-scripts
-npm install --ignore-scripts ./clear-signing-helper-0.2.0.tgz
+npm install --ignore-scripts ./clear-signing-helper-0.2.0-preview.1.tgz
 ```
 
 `npm ci --ignore-scripts` is the supported clean checkout verification path.
 The package has no install-time mutation hook; lifecycle scripts are disabled
 in the commands above to make the verification boundary explicit.
 
+## Preview distribution
+
+The first public release uses version `0.2.0-preview.1` and a GitHub prerelease tagged `v0.2.0-preview.1`. Attach the verified tarball, SHA-256 sidecar and `release-verification.json`, with a link to green CI for the tagged source revision. Verify the downloaded release artifact and a fresh installation after publication. Keep the prerelease status visible.
+
+If npm distribution is selected, publish the same verified tarball with `npm publish ./release/clear-signing-helper-0.2.0-preview.1.tgz --tag preview --ignore-scripts`. Do not move `latest` to this experimental preview. npm authentication and package availability must be checked before using that channel.
+
+External human review, maintainer assessment and physical-wallet acceptance remain pending; they do not block this scoped developer preview. See the [release handoff](RELEASE-HANDOFF.md) for publication progress and the [production tracker](PRODUCTION-READINESS.md) for those unresolved results.
+
 ## Upgrade and rollback
+
+For users moving from an unpublished `0.2.0` candidate, retain the old tarball and back up `clear-signing.toml` and `clear-signing/`. Install the preview and run `clear-signing upgrade`. The explicit prerelease version changes the engine fingerprint, preserving descriptors while clearing old review. Inspect the source and previews before `clear-signing review --accept` and `clear-signing test --update`, then run `clear-signing check --strict-portability` and `clear-signing test`. Restore both the prior tool and its matching authoring files to roll back.
+
 
 To upgrade the helper, review the new renderer package and its source hashes,
 replace the contents of `vendor/clear-signing`, update the root dependency and
@@ -56,6 +67,6 @@ previous tarball while the rollback is reviewed.
 The GitHub Actions matrix is configured for Linux and macOS on Node.js 22.22.3
 and 24.20.0. It runs npm installation with scripts disabled, the Foundry
 example suites, the full test suite, and the reproducible package verification.
-The [local Node 24 record](../release/node24-verification.json) reports 31 passing tests using an official SHA-256-verified temporary ARM64 binary. Node 22.22.3 also passes all 31 tests and the complete release verifier on Linux ARM64. All four [GitHub runner jobs](GITHUB-CI.md) now pass on Ubuntu 24.04 x64 and macOS 15 ARM64 using both Node versions, producing identical package hashes. Verified candidates are uploaded as workflow artifacts; the workflow supports manual dispatch and does not publish npm packages or registry submissions.
+The [local Node 24 record](../release/node24-verification.json) reports 31 passing tests using an official SHA-256-verified temporary ARM64 binary. Node 22.22.3 also passes all 31 tests and the complete release verifier on Linux ARM64. For the preceding candidate, all four [GitHub runner jobs](GITHUB-CI.md) passed on Ubuntu 24.04 x64 and macOS 15 ARM64 using both Node versions, producing identical package hashes. Verified candidates are uploaded as workflow artifacts; the workflow supports manual dispatch and does not publish npm packages or registry submissions.
 
-Package versions are still unpublished `0.2.0` candidates; identify a candidate by its artifact hash, not version alone. The owner selected [MIT](../LICENSE), which is declared in package metadata and included in the package and source archive. To distribute publicly, choose the package/repository destination, rerun the checks for the resulting inputs, review the new artifact hash and authorize publication. The scripts do not perform publication.
+The preview has its own prerelease version and artifact hash. Historical `0.2.0` candidate records remain evidence for their recorded revisions. The owner selected [MIT](../LICENSE), which is declared in package metadata and included in the package and source archive. Release scripts do not perform publication.

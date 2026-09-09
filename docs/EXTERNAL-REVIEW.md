@@ -1,6 +1,6 @@
 # Maintainer and human review packet
 
-Prepared for review; no outreach has been sent. The owner needs to nominate the protocol maintainers and a human reviewer, or authorize outreach to named recipients.
+Independent human and maintainer review remain pending. These reviews inform production readiness and future fixes; they do not block distribution of the developer preview. Review requests are tracked in repository issues #3 and #4; the targeted outreach draft below has not been sent.
 
 ## Protocol maintainer exercise
 
@@ -20,7 +20,7 @@ For each candidate repository, record:
 
 Suggested outreach draft (not sent):
 
-> We have a standalone Foundry CLI that generates ERC-7730 calldata drafts and regression fixtures. We exercised your public source locally; this is not an official submission. Could a maintainer review the attached function intents, units, recipient/permission fields and exclusions, then try the documented authoring flow? We are seeking corrections and an assessment of usefulness before publication. Local checks and emulator results do not establish semantic approval or deployment identity.
+> We have a standalone Foundry CLI that generates ERC-7730 calldata drafts and regression fixtures. We exercised your public source locally; this is not an official submission. Could a maintainer review the attached function intents, units, recipient/permission fields and exclusions, then try the documented authoring flow? We are seeking corrections and an assessment of usefulness for the developer preview. Local checks and emulator results do not establish semantic approval or deployment identity.
 
 ## Focused human correctness review
 

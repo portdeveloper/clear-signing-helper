@@ -8,11 +8,25 @@ This repository also includes the existing [agent skill](docs/AGENT-SKILL.md) fo
 
 The CLI discovers compiled contracts, scaffolds their write functions, renders example transactions through Sourcify's reference library, and checks signing output in CI. Descriptors stay ordinary JSON in your repository.
 
-**Status:** unpublished v0.2 release candidate. The 31-test suite passes on Linux ARM64 locally and on Linux x64/macOS ARM64 in [GitHub CI](docs/GITHUB-CI.md), using Node 22.22.3 and 24.20.0 with Forge/Anvil/Cast 1.7.1. Independent clean builds and packaged installation pass; all four CI jobs produced identical candidate packages. Nothing has been published to npm or a descriptor registry.
+**Status: developer preview (`0.2.0-preview.1`).** Generate, preview, and regression-test ERC-7730 calldata descriptors in Foundry. Generated descriptors are drafts that require developer review. Independent human review, protocol-maintainer assessment, physical-device testing, and production wallet delivery remain pending; this release makes no production wallet compatibility claim.
 
-Track release gates and current work in the [production readiness checklist](docs/PRODUCTION-READINESS.md).
+The [release handoff](docs/RELEASE-HANDOFF.md) tracks preview publication. The [production readiness checklist](docs/PRODUCTION-READINESS.md) retains the outstanding external validation work; those results are not prerequisites for distributing this experimental CLI. Nothing has been submitted to a descriptor registry.
 
-The [release handoff](docs/RELEASE-HANDOFF.md) lists the remaining owner actions and prepared review materials. The first-release policy is [calldata-only with strict portability checks](docs/RELEASE-SCOPE.md).
+The preview is [calldata-only with strict portability checks](docs/RELEASE-SCOPE.md). The preceding candidate passed 31 tests locally and across Linux/macOS CI, plus clean package installation and emulator exercises. See [validation evidence](docs/VALIDATION.md) and [CI records](docs/GITHUB-CI.md) for the exact tested revisions; use the preview's verification record for its package hash.
+
+## Install the developer preview
+
+Download `clear-signing-helper-0.2.0-preview.1.tgz` and its `.sha256` file from the [GitHub releases page](https://github.com/portdeveloper/clear-signing-helper/releases). If the prerelease is not available yet, build from this checkout below. Requires Node.js 22+ and Foundry.
+
+From the download directory, verify the package and install it:
+
+```sh
+sha256sum --check clear-signing-helper-0.2.0-preview.1.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.2.0-preview.1.tgz
+clear-signing --version
+```
+
+On macOS, use `shasum -a 256 --check` for the checksum command. The version should be `0.2.0-preview.1`. Continue with [your Foundry repository](#add-clear-signing-to-your-foundry-repository), or clone this repository to try the included example. For projects created with an earlier candidate, follow the [upgrade procedure](docs/DISTRIBUTION.md#upgrade-and-rollback).
 
 ## Install from this checkout
 
@@ -33,7 +47,7 @@ To produce a distributable local package:
 
 ```sh
 npm pack
-npm install -g ./clear-signing-helper-0.2.0.tgz
+npm install --global --ignore-scripts ./clear-signing-helper-0.2.0-preview.1.tgz
 ```
 
 ## Try the included example
@@ -124,7 +138,7 @@ After inspecting the source, descriptor, and preview:
 ```sh
 clear-signing review --accept
 clear-signing test --update
-clear-signing check
+clear-signing check --strict-portability
 clear-signing test
 ```
 
@@ -189,9 +203,9 @@ The placeholder above is illustrative and fails validation until replaced with a
 Preview must match the fixture's chain and target against the descriptor. `localBinding: true` works only with an empty deployment list and cannot be exported. Adding production bindings requires new review and expectation acceptance.
 
 ```sh
-clear-signing check
+clear-signing check --strict-portability
 clear-signing test
-clear-signing export --out dist/clear-signing
+clear-signing export --strict-portability --out dist/clear-signing
 ```
 
 Export requires a production binding, current review, and at least one passing fixture for every covered function. The output includes:
