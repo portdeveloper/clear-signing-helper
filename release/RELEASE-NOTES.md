@@ -1,15 +1,37 @@
-# Unpublished 0.2.0 candidate — 2026-09-08
+# Clear Signing Helper 0.2.0-preview.1 — developer preview
 
-Clear Signing Helper is a standalone CLI for authoring ERC-7730 calldata descriptors inside Foundry repositories. It discovers compiled write functions, generates complete raw drafts, encodes fixtures, previews and snapshots signing output, tracks review freshness, and exports registry-shaped local bundles.
+Generate, preview, and regression-test ERC-7730 calldata descriptors alongside a Foundry project. This experimental CLI discovers compiled write functions, scaffolds editable JSON drafts, encodes sample calls, previews signing fields, tracks developer review, and checks rendering expectations in CI.
 
-This candidate adds strict portability checks for known consumer incompatibilities and includes `portability.json` in exports. Its release scope excludes signed integers, nested arrays and multi-field tuple arrays from strict workflows; broad draft generation remains available. EIP-712 and calldata suffixes remain explicit unsupported cases.
+## Scope and limitations
 
-Hardening makes payable native value mandatory, bounds input/decoded/output trees, rejects null metadata predictably, and escapes terminal/bidi controls in human previews. The signed-integer renderer correction is now maintained in a hash-verified vendor copy with license notices; installation no longer modifies dependencies.
+Use `clear-signing check --strict-portability`, `clear-signing test`, and `clear-signing export --strict-portability --out <directory>` for the documented preview workflow. Strict mode rejects signed integers, nested arrays and multi-field tuple arrays because of recorded consumer incompatibilities. EIP-712 and calldata suffixes remain unsupported. Ordinary draft authoring retains portability findings.
 
-Validation includes 31 tests on Linux ARM64 Node 22.22.3 and 24.20.0, four screen-check regressions, the full pinned registry corpus, Morpho live RPC runtime comparison, Morpho's 23 Flex emulator cases, and complete OpenZeppelin/Uniswap source pilots with strict exports. An actual OpenZeppelin ERC4626 deposit was mined and checked on disposable Anvil. Uniswap's 14 covered functions use raw synthetic calldata; the pool callback and receive entrypoint are excluded, and no swap execution is claimed.
+Generated descriptors require developer review of labels, intent, units, token relationships, recipients and permissions. Independent human review, protocol-maintainer assessment, physical Ledger testing and retail descriptor delivery remain pending. Emulator evidence used test trust. This preview does not claim production wallet compatibility or protocol approval.
 
-Packaging was tested through independent clean builds, identical tarball output, script-disabled installation, a real installed Foundry workflow and upgrade/rollback between distinct local candidate builds. Consult `release-verification.json` for the exact artifact hash and checks. Both candidates are unpublished 0.2.0 builds, not a released-version migration claim.
+The CLI does not hold keys, send transactions, verify deployed code, discover proxies, attest deployments or publish descriptors. Export writes a local submission draft. Registry review and wallet distribution are separate steps.
 
-The owner selected MIT; the license text and package metadata are included in the candidate. All four [remote platform CI jobs](../docs/GITHUB-CI.md) passed and produced identical packages. Still required: owner scope approval, protocol maintainer/human review, physical-device and intended descriptor-trust-path validation, and merge/publication authorization. See [the handoff](../docs/RELEASE-HANDOFF.md). The general CLI does not verify deployed code, discover proxies, sign transactions, attest or publish.
+## Install
 
-For upgrades, back up the repository's descriptor/config/review/expectation files and retain the previous tarball. Install the new pinned tarball with `--ignore-scripts`, run `clear-signing upgrade` if the engine changes, inspect source/previews, explicitly renew review and expectations, then run strict check and test. To roll back, reinstall the previous reviewed tarball and restore matching authoring files; run check/test before using it. Never treat automatic snapshot replacement as upgrade validation.
+Download `clear-signing-helper-0.2.0-preview.1.tgz` and its `.sha256` sidecar from this prerelease. Requires Node.js 22+ and Foundry. In the download directory:
+
+```sh
+sha256sum --check clear-signing-helper-0.2.0-preview.1.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.2.0-preview.1.tgz
+clear-signing --version
+```
+
+On macOS, use `shasum -a 256 --check` for the checksum command. Expected version: `0.2.0-preview.1`. Follow the [Foundry quickstart](https://github.com/portdeveloper/clear-signing-helper#add-clear-signing-to-your-foundry-repository).
+
+## Validation
+
+The release includes a package checksum and `release-verification.json` recording independent clean builds, identical package output, installation with lifecycle scripts disabled, an installed CLI version check and a real Foundry fixture/preview workflow. Consult the attached record and release CI link for the exact preview artifact and platform results.
+
+Historical evidence from the preceding candidate includes 31 automated tests across Linux/macOS and Node 22/24, four screen-check regressions, registry corpus comparisons, Morpho's 23 Flex emulator cases, and OpenZeppelin/Uniswap source exercises. Those records retain their original versions and hashes; they are not physical-device or human review results. See the [evidence index](https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/PRODUCTION-READINESS.md).
+
+MIT licensed, with retained third-party notices and hash-verified renderer provenance.
+
+## Upgrading from an unpublished candidate
+
+Back up descriptor/config/review/expectation files and retain the previous tarball. Install this preview, run `clear-signing upgrade`, inspect source and rendered fields, then explicitly run `clear-signing review --accept` and `clear-signing test --update`. The preview version changes the engine fingerprint and invalidates earlier review; descriptors are preserved. Run strict check and test before exporting.
+
+To roll back, reinstall the previous reviewed tarball and restore its matching authoring files, then run check/test. Do not put review acceptance or expectation updates in CI.

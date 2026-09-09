@@ -1,5 +1,7 @@
 # Physical wallet acceptance handoff
 
+Physical-device and retail trust-path validation remain pending. This packet tracks production wallet acceptance; it is not a prerequisite for distributing the developer preview CLI.
+
 Owner action needed: provide access to a Ledger Flex or Stax and a wallet integration/maintainer who can supply the reviewed descriptor through a supported physical-device trust path. Funds are not needed for display/signature-only validation. Use a dedicated empty test account; never send a seed phrase or private key to the helper or a reviewer.
 
 ## Why the emulator result cannot close this gate
@@ -26,7 +28,7 @@ Start with Morpho supply and WETH deposit, then run all 23 Morpho cases on the i
 3. Compare complete label/value pairs and order with the exported expected output. Check native value, beneficiary/recipient, amounts and every market parameter. Inspect full addresses and long values, including all continuation screens.
 4. Record whether the flow used EIP-7730 clear signing, any fallback/blind signing, truncation, missing fields or context errors. A `clear_signed` status alone does not pass the visual check.
 5. Run the two-entry tuple-array control. The previously observed column-wise ordering must remain a failed control unless the new device/app actually fixes it. Do not add unsupported shapes to the launch scope based on the happy path.
-6. Have the tester sign the result record and link captures. The owner then decides whether to approve the tested matrix for launch.
+6. Have the tester sign the result record and link captures. The owner then decides whether to approve a production compatibility claim for the tested matrix.
 
 ## Result record
 

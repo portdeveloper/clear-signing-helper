@@ -1,6 +1,6 @@
 # Production readiness tracker
 
-Updated: 2026-09-08. Status: local candidate work completed for the documented first-release scope; external gates remain. Start with the [owner handoff](RELEASE-HANDOFF.md). Production publication is not approved by these checks.
+Updated: 2026-09-09. The owner selected a developer preview release. This tracker records the work required for production-readiness claims; its external review and hardware items do not block distributing the experimental CLI. Preview publication requirements are in the [release handoff](RELEASE-HANDOFF.md). Unverified production claims remain out of scope.
 
 Use this file to track release gates. Check a box only when its evidence is linked below; keep external review and device validation separate from local test results.
 
@@ -9,8 +9,8 @@ Use this file to track release gates. Check a box only when its evidence is link
 | 1 | Complete submission path | Local path complete; physical/production trust acceptance external | [Device matrix](DEVICE-COMPATIBILITY.md), [hardware handoff](HARDWARE-ACCEPTANCE.md) |
 | 2 | Protocol maintainer pilots | Three real-source exercises complete; maintainer assessment external | [Pilot evidence and limitations](PILOT-VALIDATION.md) |
 | 3 | Rendering correctness and review | Automated hardening complete; human review external | [Adversarial record](ADVERSARIAL-REVIEW.md), [review packet](EXTERNAL-REVIEW.md) |
-| 4 | Distribution and releases | MIT candidate and Linux/macOS CI verified; publication external | [Distribution](DISTRIBUTION.md), [executed CI](GITHUB-CI.md) |
-| 5 | First-release scope | Candidate policy prepared and enforced in strict CI; owner approval pending | [Calldata-only scope and exclusions](RELEASE-SCOPE.md) |
+| 4 | Distribution and releases | Developer preview selected; final revision verification and publication tracked in handoff | [Distribution](DISTRIBUTION.md), [executed CI](GITHUB-CI.md) |
+| 5 | First-release scope | Owner selected calldata-only developer preview with strict portability | [Calldata-only scope and exclusions](RELEASE-SCOPE.md) |
 
 ## 1. Complete submission path
 
@@ -45,7 +45,7 @@ Found and fixed during the exercise: the two-minute Forge build timeout was too 
 - [x] Compare field values and ordering against independent implementations for the recorded Morpho and representative registry cases; known differences remain failures rather than accepted snapshots.
 - [x] Cover incorrect deployment binding, omitted fields/native value, hostile display controls and unsupported features. Protocol-specific semantic truth still requires the human review below.
 - [ ] Obtain focused human review of decoding, visibility, export and file/process boundaries.
-- [x] Resolve local automated findings: payable native-value visibility, input/output bounds, null metadata handling and safe terminal/HTML presentation. Luna independently reran 31 passing tests. Any findings from the pending human review must be resolved before launch.
+- [x] Resolve local automated findings: payable native-value visibility, input/output bounds, null metadata handling and safe terminal/HTML presentation. Luna independently reran 31 passing tests. Any new findings affecting the supported preview workflow must be resolved or the scope narrowed before its next release; independent human review remains pending.
 
 ## 4. Distribution and releases
 
@@ -55,13 +55,13 @@ Found and fixed during the exercise: the two-minute Forge build timeout was too 
 - [x] Owner selected MIT; [LICENSE](../LICENSE) and package metadata updated, with the license included in both candidate archives.
 - [x] Establish pinned release inputs, package verification, release notes and update/rollback procedures — [candidate artifacts](../release/) and [distribution](DISTRIBUTION.md).
 - [x] Exercise the release verification commands locally; configure pinned CI actions and Node versions, with manual dispatch and no automatic publication.
-- [ ] Obtain release authorization and publish to the owner's chosen destination after external gates pass.
+- [ ] Publish the developer preview after its automated checks and package verification pass; track the release in the [handoff](RELEASE-HANDOFF.md). External production validation remains open.
 
 ## 5. First-release scope
 
 - [x] Prepare a calldata-only candidate; EIP-712 explicitly unsupported.
 - [x] Keep the 31 suffix-bearing registry examples as explicit rejections. Morpho's chosen fixtures do not require those suffixes; no bytes are silently removed.
-- [ ] Owner approves the [candidate scope](RELEASE-SCOPE.md) for launch.
+- [x] Owner selected the [developer preview scope](RELEASE-SCOPE.md), retaining calldata-only and strict portability restrictions.
 - [x] Document an explicit [wallet/feature compatibility matrix](DEVICE-COMPATIBILITY.md), distinguishing local preview from tested device support. No external publication performed.
 - [x] State that raw drafts require semantic review and that export does not verify deployment or imply acceptance.
 
@@ -71,4 +71,4 @@ Found and fixed during the exercise: the two-minute Forge build timeout was too 
 - [Registry compatibility](REGISTRY-COMPATIBILITY.md): 278 calldata descriptors / 1,435 function entries; 574 rendered transactions and 31 explicit suffix rejections.
 - [Luna registry review](luna-registry-validation.md): independent corpus, integer and nested-array verification.
 
-Testnet funds were not required. Ledger signatures were produced only inside local emulators and were not broadcast. Source-pilot deployment and deposit transactions were sent only to disposable loopback Anvil nodes. Some probes intentionally failed; physical-device coverage, human/maintainer review and publication remain external gates.
+Testnet funds were not required. Ledger signatures were produced only inside local emulators and were not broadcast. Source-pilot deployment and deposit transactions were sent only to disposable loopback Anvil nodes. Some probes intentionally failed; physical-device coverage and human/maintainer review remain pending production-readiness work. Preview publication is tracked separately.

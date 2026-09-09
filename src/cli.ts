@@ -3,9 +3,10 @@ import { init, loadState, check, review, sync, preview, createFixture, runTests,
 import { Failure } from './io.js';
 import { servePreview } from './preview.js';
 import { displayText, humanOutput } from './output.js';
+import packageJson from '../package.json' with {type: 'json'};
 
 const program=new Command();
-program.name('clear-signing').description('Author, preview, and test ERC-7730 descriptors in a Foundry repository.').version('0.2.0')
+program.name('clear-signing').description('Developer preview: author, preview, and test ERC-7730 descriptors in a Foundry repository.').version(packageJson.version)
   .option('--root <directory>','Foundry project root (searches upward by default)')
   .option('--profile <name>','Foundry profile (defaults to saved configuration)')
   .option('--no-build','Use fingerprint-verified artifacts from an earlier run')

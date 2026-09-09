@@ -2,11 +2,12 @@ import { FunctionFragment, ParamType, isAddress } from 'ethers';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import schema from '../schemas/erc7730-v2.schema.json' with {type: 'json'};
+import packageJson from '../package.json' with {type: 'json'};
 import { Contract } from './foundry.js';
 import { assertKeys, assertTreeBudget, Diagnostic, fail, Failure, hash } from './io.js';
 
 export const SCHEMA_URL = 'https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json';
-export const ENGINE = {tool: '0.2.0', renderer: '@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1', schema: hash(schema), subset: 2};
+export const ENGINE = {tool: packageJson.version, renderer: '@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1', schema: hash(schema), subset: 2};
 export type Field = {path: string; label: string; format: string; params?: Record<string, any>; separator?: string};
 export type Group = {path: string; label?: string; fields: (Field | Group)[]; iteration?: 'sequential'};
 export type Descriptor = {$schema: string; context: {contract: {deployments: {chainId: number; address: string}[]}}; metadata: {owner: string; contractName?: string; info?: {url?: string; deploymentDate?: string}}; display: {formats: Record<string, {intent: string; fields: (Field | Group)[]}>}};

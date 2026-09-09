@@ -58,6 +58,8 @@ try {
   run(npm, ['install', '--ignore-scripts', '--no-package-lock', tarballs[0]], consumer);
   const installed = path.join(consumer, 'node_modules', 'clear-signing-helper');
   if (!fs.existsSync(path.join(installed, 'dist', 'cli.js'))) throw new Error('clean package install did not contain dist/cli.js');
+  const installedVersion = capture(process.execPath, [path.join(installed, 'dist', 'cli.js'), '--version'], consumer).trim();
+  if (installedVersion !== packageJson.version) throw new Error('installed CLI version differs from package version');
   cli(consumer, '--help');
 
   const smoke = path.join(temp, 'foundry-smoke');
@@ -96,6 +98,7 @@ try {
   fs.copyFileSync(tarballs[0], finalTarball);
   const evidence = {
     generatedAt: new Date().toISOString(),
+    version: packageJson.version,
     node: process.version,
     platform: `${process.platform}-${process.arch}`,
     forge: capture('forge', ['--version']).trim().split('\n')[0],
@@ -104,7 +107,7 @@ try {
     packageSha256: tarDigests[0],
     package: path.relative(root, finalTarball),
     priorPackageSha256: hasPriorCandidate ? digest(previousTarball) : null,
-    checks: ['clean npm ci --ignore-scripts', 'independent build equality', 'independent npm pack equality', 'clean consumer install', 'Foundry fixture and preview', 'installed bundled CLI int24 minimum', 'signed int24 renderer', hasPriorCandidate ? 'upgrade and rollback between distinct local candidate builds; consumer data preserved' : 'same-build reinstall; no prior candidate provided'],
+    checks: ['clean npm ci --ignore-scripts', 'independent build equality', 'independent npm pack equality', 'clean consumer install', 'installed CLI version matches package', 'Foundry fixture and preview', 'installed bundled CLI int24 minimum', 'signed int24 renderer', hasPriorCandidate ? 'upgrade and rollback between distinct local candidate builds; consumer data preserved' : 'same-build reinstall; no prior candidate provided'],
   };
   fs.writeFileSync(path.join(releaseDir, 'release-verification.json'), `${JSON.stringify(evidence, null, 2)}\n`);
   fs.writeFileSync(finalTarball + '.sha256', `${tarDigests[0]}  ${path.basename(finalTarball)}\n`);

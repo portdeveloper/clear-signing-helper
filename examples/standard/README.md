@@ -13,3 +13,5 @@ only Solidity `require` assertions.
 forge test --root examples/standard
 forge build --root examples/standard
 ```
+
+The checked-in descriptor and deposit expectation demonstrate the developer preview. The review record is empty: inspect the source and rendered fields, then run `clear-signing review --accept` in your checkout before using check/export.

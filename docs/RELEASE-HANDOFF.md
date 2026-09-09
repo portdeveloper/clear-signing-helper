@@ -1,35 +1,40 @@
-# Release handoff
+# Developer preview release handoff
 
-Prepared 2026-09-08. Local implementation, automated hardening, source pilots, emulator checks and package verification are complete for the [candidate scope](RELEASE-SCOPE.md). Nothing has been published. The items below require the owner or an external party; they are not recorded as passed.
+Updated 2026-09-09. The owner selected an experimental developer preview, `0.2.0-preview.1`, for generating, previewing and regression-testing ERC-7730 calldata descriptors in Foundry. The selected scope retains strict portability checks. External review and physical-wallet acceptance remain pending production-readiness work and do not block preview distribution.
 
-## What I need from the owner
+## Preview publication checklist
 
-| Owner action | Why it is needed | Material ready for review |
-| --- | --- | --- |
-| Approve the calldata-only launch scope | MIT is selected; signed/nested/tuple-array shapes and suffixes are deliberately outside the strict release workflow | [Scope](RELEASE-SCOPE.md), [release notes](../release/RELEASE-NOTES.md) |
-| Nominate a protocol maintainer and a human correctness reviewer, or authorize outreach to named people | Only those reviewers can provide semantic/maintainer approval and human review | [Ready review packet and unsent outreach draft](EXTERNAL-REVIEW.md), [three source exercises](PILOT-VALIDATION.md) |
-| Provide a Flex/Stax tester and a wallet integration contact able to deliver the reviewed descriptor under the intended trust path | Emulator injection used test trust. Physical review and retail descriptor delivery are not established by those results | [Hardware procedure, exact inputs and result form](HARDWARE-ACCEPTANCE.md) |
-| Authorize publication after the preceding gates pass | npm/registry access and the owner's release decision are external actions | Candidate artifacts below; no automatic publishing in the scripts |
+- [x] Select the [developer preview scope](RELEASE-SCOPE.md) and explicit prerelease version.
+- [x] Include MIT/dependency notices, [release notes](../release/RELEASE-NOTES.md), and [installation and upgrade instructions](DISTRIBUTION.md).
+- [ ] Pass the automated suite, Solidity example tests and clean package verification on the final source revision.
+- [ ] Confirm the final revision's Linux/macOS CI and attach its run URL and verified package hash to the GitHub prerelease.
+- [ ] Publish a GitHub prerelease tagged `v0.2.0-preview.1`, attaching the verified tarball, checksum and verification record.
+- [ ] Download the published artifact, confirm its checksum, and verify a fresh installation.
 
-No testnet funds or private keys are needed for the remaining display/review gates. If a maintainer later requests transaction execution on a specific testnet, that is a separate test with an explicit deployment and fixture.
+The GitHub prerelease is the default distribution plan. npm distribution, if selected, must use the explicit version and the `preview` dist-tag rather than `latest`. The release scripts build and verify artifacts; they do not publish automatically.
 
-The owner supplied [portdeveloper/clear-signing-helper](https://github.com/portdeveloper/clear-signing-helper) and GitHub CLI access. Its existing agent skill is preserved in [PR #1](https://github.com/portdeveloper/clear-signing-helper/pull/1). All four remote Linux/macOS jobs passed tests and package verification; [execution evidence](GITHUB-CI.md) closes that access/platform gate.
+## Artifacts
 
-## Candidate and evidence
+Run `npm run release:verify` to generate:
 
-Download remote candidates and verification records from the successful [Validate workflow runs](https://github.com/portdeveloper/clear-signing-helper/actions/workflows/ci.yml). The generated archive paths below are available in the local workspace after running the release scripts; binary candidates and generated hash manifests are not committed to Git.
+- `release/clear-signing-helper-0.2.0-preview.1.tgz`
+- `release/clear-signing-helper-0.2.0-preview.1.tgz.sha256`
+- `release/release-verification.json`
 
-- [Installable CLI tarball](../release/clear-signing-helper-0.2.0.tgz) and [SHA-256 sidecar](../release/clear-signing-helper-0.2.0.tgz.sha256).
-- [Release verification](../release/release-verification.json): two independent clean installs/builds, package equality, fresh installed Foundry workflow, signed-int rendering, candidate upgrade/rollback and preserved consumer data.
-- [Reviewable source/evidence archive](../release/clear-signing-helper-source.tar.gz) and [input hash manifest](../release/source-manifest.json).
-- [Validation record](VALIDATION.md): 31 automated tests on Node 22 and 24, four screen-check tests, registry corpus and mined local transactions.
-- [Device matrix](DEVICE-COMPATIBILITY.md): Morpho 23/23 Flex, WETH Flex/Stax, and retained failing controls.
-- [Morpho live runtime check](evidence/morpho-submission/live-rpc-2026-09-08.json): two RPC endpoints agree with the compiled constructor-bound runtime at a recorded finalized block; independently repeated by Luna.
+The verification record identifies the package by SHA-256 and records the actual host and checks. Its independent clean builds, fresh installed Foundry workflow and version check must pass for the preview. Previous candidate evidence is historical; it does not verify a changed package. The [Validate workflow](https://github.com/portdeveloper/clear-signing-helper/actions/workflows/ci.yml) uploads each job's package and verification record.
 
-The version is unpublished `0.2.0`; identify this candidate by the package/source hashes. Older root-level tarballs are retained as rollback test inputs. Use the tarball under `release/` for this handoff. The npm package omits large raw evidence; the source archive retains it.
+For a complete local source/evidence archive, run `node scripts/capture-release-inputs.mjs` after package verification. Historical emulator, pilot and Node 24 records retain their original dates and inputs. The npm tarball omits the large raw evidence; the repository retains it.
 
-## After the owner supplies those inputs
+## Pending production validation
 
-The owner's MIT license choice, repository destination and remote matrix are complete. Collect reviewer/device result records, fix any new findings, and regenerate the candidate hashes. Review that concrete result before merging and publication. Owner choices and external findings can change release inputs; the current verification does not pre-approve a changed artifact.
+These items stay open after preview publication:
 
-The [tracker](PRODUCTION-READINESS.md) keeps the remaining external boxes open. Ordinary draft export remains available; a draft's existence does not bypass the launch gates.
+| Work | Tracking and prepared material |
+| --- | --- |
+| Physical Ledger Flex/Stax review and intended descriptor trust/delivery path | [Issue #2](https://github.com/portdeveloper/clear-signing-helper/issues/2), [hardware packet](HARDWARE-ACCEPTANCE.md) |
+| Protocol-maintainer assessment of intent, units, recipients, permissions and usefulness | [Issue #3](https://github.com/portdeveloper/clear-signing-helper/issues/3), [source pilots](PILOT-VALIDATION.md) |
+| Independent human correctness and security review | [Issue #4](https://github.com/portdeveloper/clear-signing-helper/issues/4), [review packet](EXTERNAL-REVIEW.md) |
+
+The [production readiness tracker](PRODUCTION-READINESS.md) preserves the supporting evidence and missing results. Emulator tests used injected descriptors and test trust. Automated checks and agent reviews do not supply the missing human or physical-device results. Export creates submission drafts; no registry acceptance, protocol endorsement, deployed-code verification or retail wallet compatibility is claimed.
+
+No testnet funds or private keys are needed for the display/review work described in these packets. CLI publication and protocol-specific registry submission are separate actions.
