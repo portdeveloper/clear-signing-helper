@@ -26,7 +26,8 @@
     "prepack": "npm run build",
     "release:verify": "node scripts/verify-release.mjs",
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
-    "registry:snapshot": "tsx scripts/snapshot-registry.ts"
+    "registry:snapshot": "tsx scripts/snapshot-registry.ts",
+    "priors:snapshot": "tsx scripts/snapshot-priors.ts"
   },
   "dependencies": {
     "@ethereum-sourcify/clear-signing": "file:vendor/clear-signing",

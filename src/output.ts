@@ -38,14 +38,14 @@ function formatHumanOutput(data: any): string {
     if (typeof data.created === 'string') return `Created ${data.created}${data.source?` from ${data.source}`:''}\n${data.next}`;
     const imports=(data.imports??[]).map((i:any)=>`  ${i.contract} from ${i.source}${i.match?` (${i.match})`:''}: ${i.origin}${i.proxy?`\n    proxy ${i.proxy.type??''} -> implementation ${i.proxy.implementation.address}${i.proxy.implementation.name?` (${i.proxy.implementation.name})`:''}; the descriptor binds the proxy address`:''}`);
     const bindings=(data.bindings??[]).map((b:any)=>`  ${b.contract} bound to ${b.chainId}:${b.address} (from ${b.source})`);
-    const label:Record<string,string>={natspec:'NatSpec',ast:'AST',broadcast:'broadcast',convention:'convention'};
+    const label:Record<string,string>={natspec:'NatSpec',ast:'AST',broadcast:'broadcast',convention:'convention',registry:'registry prior'};
     const evidence=(data.provenance??[]).map((p:any)=>`  [${label[p.source]??p.source}] ${p.contract} ${p.signature}${p.path?` ${p.path}`:''}: ${p.detail}`);
     const suggestions=(data.suggestions??[]).flatMap((s:any)=>[`  ${s.id}${s.ambiguous?' (name shared by several compiled contracts; bind manually)':''}`,...s.deployments.map((d:any)=>`    deployed at ${d.chainId}:${d.address} by ${d.script}`)]);
     return [`${data.created.length} descriptor(s) created.`, ...data.contracts.map((c:any)=>`  ${c.id}\n    ${c.descriptor}`),
       ...(imports.length?['\nImported ABIs (recorded in clear-signing/abi/*.source.json):',...imports]:[]),
       ...(bindings.length?['\nDeployment bindings taken from deployment records:',...bindings]:[]),
       ...(suggestions.length?['\nDeployed contracts not selected (add with init --contract <id>):',...suggestions]:[]),
-      ...(evidence.length?['\nEvidence used in the drafts (NatSpec and AST are author facts, broadcast is the deployment record, convention is an editable registry default):',...evidence]:[]),
+      ...(evidence.length?['\nEvidence used in the drafts (NatSpec and AST are author facts, broadcast is the deployment record, convention is an editable registry default, registry prior is what other descriptors do with the same selector):',...evidence]:[]),
       ...(data.broadcastCalls?[`\n${data.broadcastCalls} recorded broadcast transaction(s) can seed fixtures with fixture --broadcast-tx <hash>.`]:[]),
       '\nDrafts use raw values. Review the action, recipients, limits, units, and token relationships.', data.next].join('\n');
   }

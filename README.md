@@ -219,6 +219,8 @@ Commit the TOML file and `clear-signing/`. Ignore `.clear-signing-cache/` and yo
 
 Global options: `--root <directory>`, `--profile <name>`, `--no-build`, and `--json`. Relative fixture/config paths resolve from the project root (the nearest `clear-signing.toml` or `foundry.toml`), including when invoked in a subdirectory. The saved profile is the default; an explicit flag or `FOUNDRY_PROFILE` overrides it.
 
+`check` also compares each format against what other registry descriptors do with the same function selector, using a pinned snapshot of the registry's display formats. When every prior types or hides an argument and the draft leaves it raw or shown, `check` warns (`CORPUS_DISAGREEMENT`); `init` lists the priors it found under the draft's evidence. This is advisory: the registry's choices for one contract are a strong hint for another with the same selector, not proof. Refresh the snapshot with `npm run priors:snapshot -- <registry-clone>`.
+
 `check` and `export` report known portability issues for nested arrays, tuple-array field ordering and signed integers. Use `--strict-portability` on either command to reject those ABI shapes in CI. Ordinary export includes `portability.json` for review. No findings does not mean a wallet has been verified; see the [tested device matrix](docs/DEVICE-COMPATIBILITY.md).
 
 `--no-build` works only after a successful helper build and an exact match of current source/config/artifact fingerprints. A missing cache, changed source, or modified artifact requires rebuilding. Source changes without ABI changes also invalidate review. Fingerprinting is conservative across the project's discovered artifacts and Solidity inputs, so unrelated project source changes may require review too.

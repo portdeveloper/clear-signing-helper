@@ -1,5 +1,9 @@
 # Developer preview release handoff
 
+## Before any release
+
+- Refresh the advisory registry prior: `npm run priors:snapshot -- <fresh registry clone>` and commit `src/data/registry-priors.json`; its `commit` and `generatedAt` fields are shown to users.
+
 ## 0.3.0-preview.1 (2026-09-19)
 
 - [x] Tag `v0.3.0-preview.1` on `main` at `7c14b70`; CI run [35440995617](https://github.com/portdeveloper/clear-signing-helper/actions/runs/35440995617) passed on Node 22.22.3 and 24.20.0, ubuntu-24.04 and macos-15.

@@ -5,6 +5,7 @@ import schema from '../schemas/erc7730-v2.schema.json' with {type: 'json'};
 import packageJson from '../package.json' with {type: 'json'};
 import { Contract } from './foundry.js';
 import type { Evidence } from './evidence.js';
+import { disagreements, priorsFor, summarizePrior } from './priors.js';
 import { assertKeys, assertTreeBudget, Diagnostic, fail, Failure, hash } from './io.js';
 
 export const SCHEMA_URL = 'https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json';
@@ -66,7 +67,7 @@ export function leaves(params: readonly ParamType[], prefix = '', depth = 0): {p
 // A concrete index such as path.[0] or path.[-1] addresses the same ABI leaf as path.[].
 export const normalizePath = (p: string) => p.replace(/\.\[-?\d+\]/g, '.[]');
 // Where a scaffolded value came from, so reviewers can tell author text and proofs from conventions.
-export interface Provenance {signature: string; path?: string; source: 'natspec' | 'ast' | 'broadcast' | 'convention'; detail: string}
+export interface Provenance {signature: string; path?: string; source: 'natspec' | 'ast' | 'broadcast' | 'convention' | 'registry'; detail: string}
 const firstSentence = (text: string) => text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, '').trim();
 // The registry linter warns above 30 characters because Ledger devices truncate longer intents.
 export const MAX_INTENT = 30, MAX_LABEL = 32;
@@ -133,6 +134,9 @@ export function scaffoldFormatWithProvenance(f: FunctionFragment, evidence?: Evi
     if (e && key) { item.format = 'enum'; item.params = {$ref: `$.metadata.enums.${key}`}; provenance.push({signature: sig, path: full, source: 'ast', detail: `enum ${e.canonicalName} with members ${e.members.join(', ')}`}); }
   } };
   apply(built);
+  // Advisory: what other registry descriptors do with this selector. Reported, never applied.
+  const priors = priorsFor(f.selector);
+  if (priors.length) provenance.push({signature: sig, source: 'registry', detail: `${priors.length} registry format(s) describe this selector; e.g. ${priors.slice(0, 2).map(summarizePrior).join(' | ')}`});
   return {format: {intent, fields: built}, provenance};
 }
 // Enum keys are the short enum name, qualified with its scope only when two enums share a name.
@@ -283,6 +287,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           if (typeof reason !== 'string' || !reason.trim()) add('HIDDEN_REASON', `${sig} hidden path ${leaf} needs a reason.`, key);
         }
         for (const leaf of leafMap.keys()) if (!displayedLeaves.has(leaf) && !hiddenHere[leaf]) add('UNDISPLAYED_ARGUMENT', `${sig} does not display ${leaf}. Signers will not see this argument.`, key, 'warning');
+        for (const dis of disagreements(key, spec.fields)) add('CORPUS_DISAGREEMENT', `${sig} shows ${dis.path} as ${dis.ours}, but all ${dis.among} registry format(s) for this selector have it ${dis.prior}. See the priors listed by init, or accept the difference.`, key, 'warning');
         if (actual.stateMutability === 'payable' && !seen.has('@.value')) fail('UNDISPLAYED_NATIVE_VALUE', `${sig} can transfer native currency and must display @.value.`);
       } catch(e) { if (e instanceof Failure) add(e.code, e.message, key); else throw e; }
     }

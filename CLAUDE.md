@@ -153,7 +153,7 @@ The six human steps in `docs/DOGFOOD.md` are all judgment slots the scaffold lea
 - The LLM stays outside the CLI: no API keys or model calls in the tool. The skill instructs the agent to fill the decisions file.
 - Acceptance: the PuddleSwap StakingRewards authoring in `docs/DOGFOOD.md` is reproducible from a decisions file alone; provenance distinguishes agent-authored intents from NatSpec ones.
 
-### 12. Registry-corpus selector prior — `todo` (cheap, deterministic)
+### 12. Registry-corpus selector prior — `done` (2026-09-19)
 
 If another registry descriptor already formats the same selector, that format is the strongest available hint and disagreement is worth a warning; no model needed.
 
@@ -161,6 +161,7 @@ If another registry descriptor already formats the same selector, that format is
 - `init` pre-fills the decisions template with the prior and its source (`registry:<entity>/<file>`); `check` warns `CORPUS_DISAGREEMENT` when a format's field formats differ in kind (raw vs tokenAmount, hidden vs shown) from every prior for that selector.
 - Keep the corpus snapshot date visible; add `registry:snapshot` refresh to the release checklist.
 - Acceptance: an ERC-20 `approve` or a Uniswap V2 `swapExactTokensForTokens` draft shows the prior; a deliberately raw amount on a selector the corpus formats as `tokenAmount` warns.
+- Result: `scripts/snapshot-priors.ts` writes `src/data/registry-priors.json` (includes and `$ref` definitions resolved, keyed by selector; 283 descriptors, 1450 formats, 550 selectors at registry `9f37816`, ~800 KB bundled). `src/priors.ts` aligns leaves by ABI position so differing parameter names still compare, classifies each leaf as hidden/raw/typed, and reports `CORPUS_DISAGREEMENT` only when every prior agrees and the draft differs. `init` lists priors under evidence as `[registry prior]`. Separate from `corpus.json`, which stays format-free for the compatibility tests. Release checklist gained a refresh step.
 
 ### 13. Advisory semantic verifier — `todo` (do last; treat as a hypothesis)
 
