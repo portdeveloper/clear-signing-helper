@@ -128,7 +128,7 @@ Upstream lint and the schemas run today; the Sourcify and Rust runners do not. T
 - Acceptance: the 0.2.0 Morpho exercise (23 cases) reproduces through the flag instead of `scripts/validate-morpho-registry.py`.
 - Result: `src/runners.ts` clones and builds the Sourcify runner and `cs-test` at the registry CI's pinned revisions (built-in pins, or `--runner-pins <clone>` / `registry add-deployment --runners` reading `.github/actions/run-*-tests/action.yml`), caches them under `~/.cache/clear-signing-helper/runners/`, runs both on each `testsv2` file with the bundle's `registry/` as registry root, and passes only when every case is `pass` and the count matches the fixture. Failures fail the export and remove the bundle; results and logs go to `review/runners/`. `registry setup-runners` pre-builds. Tests use stub executables via `CLEAR_SIGNING_RUNNERS_DIR`. The Morpho 23-case reproduction was not rerun; the real runners were exercised on the ABI-mode WETH bundle, the puddleswap StakingRewards bundle, and the registry's Morpho Blue test file with an added chain (see live results in the commit).
 
-### 10. Dogfood a real submission — `in progress` (PR #3003 open, awaiting registry CI and review)
+### 10. Dogfood a real submission — `in progress` (PR #3003 open; registry CI all green on first run; maintainer review pending)
 
 - Verify the puddleswap router on Sourcify (deployer side), import it with `init --address`, and take one contract through review, export and an actual registry PR opened by the owner. Record what still needed a human.
 - Acceptance: a merged registry PR whose files came out of `export` unchanged, or a written list of what the maintainers asked to change.
