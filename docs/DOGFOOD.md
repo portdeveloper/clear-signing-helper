@@ -44,4 +44,4 @@ What the tool derived: the ABI and NatSpec from the Sourcify match, the deployme
 ## Registry submission
 
 - Branch `puddleswap-staking-rewards` on `portdeveloper/clear-signing-erc7730-registry`, one commit, two files under `registry/puddleswap/`. Registry-side checks run locally: index buildable, `erc7730 lint` clean apart from excluded-function warnings, both schemas, both runners.
-- Pull request: opened by the owner after review; result to be recorded here.
+- Pull request: [ethereum/clear-signing-erc7730-registry#3003](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003), opened 2026-09-19 by the owner with the files exactly as exported. CI outcome and maintainer feedback to be recorded here.
