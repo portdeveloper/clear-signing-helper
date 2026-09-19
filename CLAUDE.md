@@ -97,6 +97,44 @@ The build already requests `devdoc` and `userdoc` and nothing reads them; `broad
 - Consider persisting provenance alongside review so a later reviewer sees what came from NatSpec versus convention.
 - Result: `FORGE_COMPILER_MISSING` names the missing compiler versions and the one `forge build` that fixes it. Terminal preview prints unlabeled groups flat and shows `Path 0: <value>` instead of `Item` / `Path 0: Path: <value>`. `init` and `sync` write `clear-signing/provenance.json` per contract; export copies the selected contracts' entries to `review/provenance.json`.
 
+## Roadmap, phase 2
+
+Phase 1 (items 1-6) shipped as 0.3.0-preview.1 on 2026-09-19. Phase 2 is ordered by what a Monad team actually needs first.
+
+### 7. Add a chain to an existing registry descriptor — `todo`
+
+Most protocols a new chain cares about already have a registry descriptor; the PR that matters is one deployment line plus one test case. Today that is manual.
+
+- `clear-signing registry add-deployment --registry <clone> --descriptor registry/<entity>/calldata-<Name>.json --chain-id <id> --address <addr>`.
+- Prove the address is the same contract: fetch the verified ABI from Sourcify and require every function selector in the descriptor's formats to exist in it (Etherscan fallback as in item 5). Refuse otherwise; never bind on name alone.
+- Append the deployment, then add a `testsv2` case by rendering an existing case's calldata against the new chain and address through the pinned renderer, so expected values are computed rather than copied.
+- Run upstream lint and the tests-v2 schema on the modified files. Print the exact `git` commands; never open the PR.
+- Acceptance: adding Monad mainnet (143) to a real registry descriptor produces a diff that passes the registry's lint and schema checks without hand edits.
+
+### 8. Converge the agent skill on the CLI — `todo`
+
+`.claude/skills/clear-signing-helper/SKILL.md` still drives `uvx erc7730 generate` and hand-written tests. With ABI mode and item 7, the skill should call the CLI for generation, fixtures, tests and export, and keep only the judgment steps (registry search first, intent wording, what to hide, ownership before PR).
+
+- Acceptance: the skill's happy path for "here is an address on chain X" is `init --address`, edit, `fixture`, `preview`, `review --accept`, `test --update`, `export`, and for "protocol already in the registry" it is item 7.
+
+### 9. Run the registry's test runners on export — `todo`
+
+Upstream lint and the schemas run today; the Sourcify and Rust runners do not. They are the last difference between the tool's green and the registry's CI.
+
+- Optional `export --registry-runners <registry-clone>` that runs both runners on the bundle when their toolchains are present, records results in `review/validation.json`, and fails on any failed case.
+- Acceptance: the 0.2.0 Morpho exercise (23 cases) reproduces through the flag instead of `scripts/validate-morpho-registry.py`.
+
+### 10. Dogfood a real submission — `todo`
+
+- Verify the puddleswap router on Sourcify (deployer side), import it with `init --address`, and take one contract through review, export and an actual registry PR opened by the owner. Record what still needed a human.
+- Acceptance: a merged registry PR whose files came out of `export` unchanged, or a written list of what the maintainers asked to change.
+
+### Later
+
+- EIP-712 descriptors (104 in the registry corpus): a separate decoding and review model.
+- Physical-device acceptance and independent human review, still open from the 0.2.0 tracker.
+- Persisting provenance into the review record so `review --accept` acknowledges sources explicitly.
+
 ## Working conventions
 
 - Build and test: `npm ci`, `npm run build`, `npx tsx --test test/*.test.ts` (or `npm test`). Tests compile the Foundry projects under `examples/` and drive the built `dist/cli.js`. Anvil is required for `test/anvil.test.ts`.
