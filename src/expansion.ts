@@ -28,12 +28,37 @@ export function expandNestedFields(fields: (Field | Group)[], fn: FunctionFragme
     if (length === 0) return [{path:`${base}.[]`,empty:true}];
     return Array.from({length}, (_, i) => contexts(`${base}.[${i}]${rest}`)).flat();
   };
-  const lower = (items: (Field | Group)[], prefix = ''): (Field | Group)[] => items.flatMap(item => {
+  // Map each wildcard prefix of the field path to the concrete index chosen for this element,
+  // so parameters such as tokenPath "swaps.[].token" follow the same element as the field.
+  const indexSubstitutions = (wild: string, concrete: string): [string, string][] => {
+    const subs: [string, string][] = [];
+    let w = 0, c = 0, pw = '', pc = '';
+    while (w < wild.length) {
+      if (wild.startsWith('.[]', w)) {
+        const m = /^\.\[\d+\]/.exec(concrete.slice(c));
+        if (!m) break;
+        subs.push([pw + '.[]', pc + m[0]]); pw += '.[]'; pc += m[0]; w += 3; c += m[0].length;
+      } else { pw += wild[w]; pc += concrete[c]; w++; c++; }
+    }
+    return subs.sort((a, b) => b[0].length - a[0].length);
+  };
+  const substituteParams = (params: Record<string, any> | undefined, subs: [string, string][]) => {
+    if (!params || !subs.length) return params;
+    const rewrite = (v: unknown): unknown => {
+      if (typeof v === 'string') { for (const [from, to] of subs) if (v.startsWith(from)) return to + v.slice(from.length); return v; }
+      return Array.isArray(v) ? v.map(rewrite) : v;
+    };
+    return Object.fromEntries(Object.entries(params).map(([k, v]) => [k, rewrite(v)]));
+  };
+  // prefix is the concrete path chosen so far; wild is the same prefix as written in the descriptor.
+  const lower = (items: (Field | Group)[], prefix = '', wild = ''): (Field | Group)[] => items.flatMap(item => {
     const fullPath = item.path.startsWith('@.') ? item.path : prefix + item.path;
+    const wildPath = item.path.startsWith('@.') ? item.path : wild + item.path;
     return contexts(fullPath).flatMap(context => {
       if (context.empty) return [{path:context.path,label:`${context.path}: empty`,fields:[]} as Group];
-      if ('fields' in item) return lower(item.fields, context.path + '.');
-      return [{...item,path:context.path, ...(context.path.includes('.[') ? {separator:context.path} : {})} as Field];
+      if ('fields' in item) return lower(item.fields, context.path + '.', wildPath + '.');
+      const params = substituteParams((item as Field).params, indexSubstitutions(wildPath, context.path));
+      return [{...item,path:context.path, ...(params ? {params} : {}), ...(context.path.includes('.[') ? {separator:context.path} : {})} as Field];
     });
   });
   const result = lower(fields);

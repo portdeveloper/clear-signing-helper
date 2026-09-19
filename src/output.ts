@@ -8,19 +8,39 @@ export function humanOutput(data: any): string {
 function formatHumanOutput(data: any): string {
   const portability = (data.portability?.findings??[]).map((f:any)=>`Portability ${f.code} (${f.signature}, ${f.path}): ${f.message}`);
   if (data.intent !== undefined && Array.isArray(data.fields)) {
-    const rows = (fields: any[], indent = '  '): string[] => fields.flatMap(f => f.fields ? [`${indent}${f.label ?? 'Item'}`, ...rows(f.fields, indent + '  ')] : [`${indent}${f.separator ? f.separator + ': ' : ''}${f.label}: ${f.value}`, ...(f.rawAddress && f.rawAddress !== f.value ? [`${indent}  Address: ${f.rawAddress}`] : [])]);
+    // Groups print a header only when they carry a label. A separator is the per-element title a
+    // device shows; when it already starts with the label, the label is not repeated.
+    const leaf = (f: any, indent: string) => {
+      const head = !f.separator ? `${f.label}` : String(f.separator).startsWith(String(f.label)) ? `${f.separator}` : `${f.separator}, ${f.label}`;
+      return [`${indent}${head}: ${f.value}`, ...(f.rawAddress && f.rawAddress !== f.value ? [`${indent}  Address: ${f.rawAddress}`] : [])];
+    };
+    const rows = (fields: any[], indent = '  '): string[] => fields.flatMap(f => f.fields ? (f.label ? [`${indent}${f.label}`, ...rows(f.fields, indent + '  ')] : rows(f.fields, indent)) : leaf(f, indent));
     return [`${data.intent}${data.localBinding ? ' (local draft)' : ''}`, `Chain ${data.chainId} · ${data.to}`, `Native value: ${data.value} wei`, ...rows(data.fields), ...data.warnings.map((w:any)=>`Warning ${w.code}: ${w.message}`), '\nReference rendering; wallet presentation may differ.'].join('\n');
   }
   if (data.url) return `Preview: ${data.url}\nPress Ctrl+C to stop.\n\n${formatHumanOutput(data.rendering)}`;
   if (data.upgraded !== undefined) return data.note;
   if (data.reviewed) return `Review recorded for ${data.reviewed.length} contract(s).\n${data.note}`;
-  if (data.exported) return [`Exported ${data.descriptors} descriptor(s) and ${data.fixtures} fixture(s) to ${data.exported}.`,...portability,'See portability.json. Wallet/deployment verification and registry publication have not been performed.'].join('\n');
+  if (data.exported) return [`Exported ${data.descriptors} descriptor(s) and ${data.fixtures} fixture(s) to ${data.exported}.`,
+    `Registry-ready files: ${data.registryPath}/ (copy into <registry-clone>/registry/${data.entity}/).`,
+    data.lint?.ran ? [`Upstream erc7730 lint: exit ${data.lint.exitCode}, ${data.lint.warnings} warning(s).`,...(data.lint.warnings ? data.lint.output.map((l:string)=>`  ${l}`) : [])].join('\n') : `Upstream erc7730 lint not run (${data.lint?.reason}). Run: ${data.lint?.command}`,
+    ...portability,'See review/portability.json. Wallet/deployment verification and registry publication have not been performed.'].join('\n');
   if (data.passed !== undefined) return `${data.passed} signing test(s) passed.${data.updated ? ` ${data.updated} expectation(s) updated.` : ''}`;
   if (data.created) {
-    if (typeof data.created === 'string') return `Created ${data.created}\n${data.next}`;
-    return [`${data.created.length} descriptor(s) created.`, ...data.contracts.map((c:any)=>`  ${c.id}\n    ${c.descriptor}`), '\nDrafts use raw values. Review the action, recipients, limits, units, and token relationships.', data.next].join('\n');
+    if (typeof data.created === 'string') return `Created ${data.created}${data.source?` from ${data.source}`:''}\n${data.next}`;
+    const imports=(data.imports??[]).map((i:any)=>`  ${i.contract} from ${i.source}${i.match?` (${i.match})`:''}: ${i.origin}${i.proxy?`\n    proxy ${i.proxy.type??''} -> implementation ${i.proxy.implementation.address}${i.proxy.implementation.name?` (${i.proxy.implementation.name})`:''}; the descriptor binds the proxy address`:''}`);
+    const bindings=(data.bindings??[]).map((b:any)=>`  ${b.contract} bound to ${b.chainId}:${b.address} (from ${b.source})`);
+    const label:Record<string,string>={natspec:'NatSpec',ast:'AST',broadcast:'broadcast',convention:'convention'};
+    const evidence=(data.provenance??[]).map((p:any)=>`  [${label[p.source]??p.source}] ${p.contract} ${p.signature}${p.path?` ${p.path}`:''}: ${p.detail}`);
+    const suggestions=(data.suggestions??[]).flatMap((s:any)=>[`  ${s.id}${s.ambiguous?' (name shared by several compiled contracts; bind manually)':''}`,...s.deployments.map((d:any)=>`    deployed at ${d.chainId}:${d.address} by ${d.script}`)]);
+    return [`${data.created.length} descriptor(s) created.`, ...data.contracts.map((c:any)=>`  ${c.id}\n    ${c.descriptor}`),
+      ...(imports.length?['\nImported ABIs (recorded in clear-signing/abi/*.source.json):',...imports]:[]),
+      ...(bindings.length?['\nDeployment bindings taken from deployment records:',...bindings]:[]),
+      ...(suggestions.length?['\nDeployed contracts not selected (add with init --contract <id>):',...suggestions]:[]),
+      ...(evidence.length?['\nEvidence used in the drafts (NatSpec and AST are author facts, broadcast is the deployment record, convention is an editable registry default):',...evidence]:[]),
+      ...(data.broadcastCalls?[`\n${data.broadcastCalls} recorded broadcast transaction(s) can seed fixtures with fixture --broadcast-tx <hash>.`]:[]),
+      '\nDrafts use raw values. Review the action, recipients, limits, units, and token relationships.', data.next].join('\n');
   }
   if (data.added) return [`Added ${data.added.length} format(s).`, ...data.added.map((s:string)=>`  ${s}`), ...data.diagnostics.map((d:any)=>`${d.code}: ${d.message}`), data.note].join('\n');
-  if (data.review === 'current') return [`Local checks passed. Review is current.`, ...data.contracts.map((c:any)=>`  ${c.contract}: ${c.covered} covered, ${c.excluded.length} excluded${c.excluded.length ? '\n' + c.excluded.map((e:any)=>`    ${e.signature}: ${e.reason}`).join('\n') : ''}`),...portability].join('\n');
+  if (data.review === 'current') return [`Local checks passed. Review is current.`, ...data.contracts.map((c:any)=>`  ${c.contract}: ${c.covered} covered, ${c.excluded.length} excluded${c.excluded.length ? '\n' + c.excluded.map((e:any)=>`    ${e.signature}: ${e.reason}`).join('\n') : ''}`),...(data.warnings??[]).map((w:any)=>`Warning ${w.code}${w.signature ? ` (${w.signature})` : ''}: ${w.message}`),...portability].join('\n');
   return JSON.stringify(data, null, 2);
 }

@@ -21,6 +21,13 @@ contract SwapRouter is AccessManaged {
         uint256 minAmountOut;
     }
 
+    enum SwapMode {
+        EXACT_IN,
+        EXACT_OUT
+    }
+
+    mapping(address caller => SwapMode mode) public defaultMode;
+
     event SwapExecuted(
         address indexed caller,
         address indexed recipient,
@@ -34,6 +41,12 @@ contract SwapRouter is AccessManaged {
     error EmptyRoute();
     error InvalidRecipient();
     error InvalidPath();
+
+    /// @notice Set default swap mode. Applies to later swaps by the caller.
+    /// @param mode Mode for later swaps
+    function setDefaultMode(SwapMode mode) external {
+        defaultMode[msg.sender] = mode;
+    }
 
     /// @notice Five-argument form used by common router integrations.
     function swapExactTokensForTokens(
@@ -57,6 +70,34 @@ contract SwapRouter is AccessManaged {
         _checkSwap(tokenIn, tokenOut, msg.sender);
         amountOut = amountIn;
         emit SwapExecuted(msg.sender, msg.sender, tokenIn, tokenOut, amountIn, amountOut);
+    }
+
+    /// @notice Uniswap V2 style path swap. The tokens are the first and last path elements.
+    function swapExactTokensForTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256 amountOut) {
+        if (path.length < 2 || deadline < block.timestamp) revert InvalidPath();
+        _checkSwap(path[0], path[path.length - 1], to);
+        if (amountIn < amountOutMin) revert InvalidPath();
+        amountOut = amountIn;
+        emit SwapExecuted(msg.sender, to, path[0], path[path.length - 1], amountIn, amountOut);
+    }
+
+    /// @notice Payable path swap; msg.value is the input amount.
+    function swapExactETHForTokens(uint256 amountOutMin, address[] calldata path, address to, uint256 deadline)
+        external
+        payable
+        returns (uint256 amountOut)
+    {
+        if (path.length < 2 || deadline < block.timestamp) revert InvalidPath();
+        _checkSwap(path[0], path[path.length - 1], to);
+        if (msg.value < amountOutMin) revert InvalidPath();
+        amountOut = msg.value;
+        emit SwapExecuted(msg.sender, to, path[0], path[path.length - 1], msg.value, amountOut);
     }
 
     function executeRoute(RouteStep[] calldata steps, address recipient)

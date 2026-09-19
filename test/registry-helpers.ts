@@ -35,3 +35,5 @@ export function harness(functions:FunctionFragment[],name:string) {
   const methods=functions.map(f=>`function ${f.name}(${f.inputs.map((p,i)=>`${type(p)}${p.baseType==='array'||p.baseType==='tuple'||p.type==='bytes'||p.type==='string'?' calldata':''} ${p.name||`arg${i}`}`).join(',')}) external${f.stateMutability==='payable'?' payable':''} {}`);
   return `// SPDX-License-Identifier: CC0-1.0\npragma solidity 0.8.28;\n// ABI-shape validation harness, not protocol implementation.\ncontract ${name} {\n${structs.join('\n')}\n${methods.join('\n')}\n}\n`;
 }
+// Corpus tests check raw leaf visibility; a zero-decimal native currency keeps native values comparable as strings.
+export const weiChain={name:'Shape harness',nativeCurrency:{name:'wei',symbol:'wei',decimals:0}};

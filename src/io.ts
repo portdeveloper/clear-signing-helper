@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 
-export type Diagnostic = {code: string; message: string; file?: string; signature?: string; remedy?: string};
+export type Diagnostic = {code: string; message: string; file?: string; signature?: string; remedy?: string; severity?: 'warning'};
 export class Failure extends Error {
   constructor(public code: string, message: string, public exitCode = 1, public details: Diagnostic[] = []) { super(message); }
 }
@@ -27,14 +27,14 @@ export function assertTreeBudget(value: unknown, maxNodes = 32768, maxDepth = 96
     }
   }
 }
-export const readText = (file: string) => {
+export const readText = (file: string, maxBytes = 8 * 1024 * 1024) => {
   try {
-    if (fs.statSync(file).size > 8 * 1024 * 1024) fail('INPUT_TOO_LARGE', `${file} exceeds the 8 MiB input limit.`);
+    if (fs.statSync(file).size > maxBytes) fail('INPUT_TOO_LARGE', `${file} exceeds the ${Math.round(maxBytes / 1024 / 1024)} MiB input limit.`);
     return fs.readFileSync(file, 'utf8');
   } catch (e) { if (e instanceof Failure) throw e; fail('READ_FAILED', `Cannot read ${file}: ${(e as Error).message}`, 2); }
 };
-export function readJson<T = any>(file: string): T {
-  try { return JSON.parse(readText(file)); } catch (e) { if (e instanceof Failure) throw e; fail('INVALID_JSON', `Invalid JSON in ${file}: ${(e as Error).message}`); }
+export function readJson<T = any>(file: string, maxBytes?: number): T {
+  try { return JSON.parse(readText(file, maxBytes)); } catch (e) { if (e instanceof Failure) throw e; fail('INVALID_JSON', `Invalid JSON in ${file}: ${(e as Error).message}`); }
 }
 // Check existing ancestors too, so a symlink cannot redirect a future write outside the project.
 export function safePath(root: string, relative: string): string {
@@ -71,5 +71,5 @@ export function walk(dir: string, suffix: string, skip = new Set<string>(), dept
 }
 export function assertKeys(value: any, keys: string[], location: string) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail('INVALID_INPUT', `${location} must be an object.`);
-  for (const key of Object.keys(value)) if (!keys.includes(key)) fail('UNSUPPORTED_FEATURE', `${location}.${key} is not supported in v0.1.`);
+  for (const key of Object.keys(value)) if (!keys.includes(key)) fail('UNSUPPORTED_FEATURE', `${location}.${key} is not supported by this tool version.`);
 }

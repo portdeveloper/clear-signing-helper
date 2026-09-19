@@ -7,7 +7,13 @@
   },
   "metadata": {
     "owner": "Example Protocol",
-    "contractName": "SwapRouter"
+    "contractName": "SwapRouter",
+    "enums": {
+      "SwapMode": {
+        "0": "EXACT_IN",
+        "1": "EXACT_OUT"
+      }
+    }
   },
   "display": {
     "formats": {
@@ -192,6 +198,81 @@
             "path": "newAdmin",
             "label": "New Admin",
             "format": "raw"
+          }
+        ]
+      },
+      "swapExactETHForTokens(uint256 amountOutMin,address[] path,address to,uint256 deadline)": {
+        "intent": "Swap Exact ETHFor Tokens",
+        "fields": [
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "path.[]",
+            "label": "Path",
+            "format": "raw",
+            "separator": "Path {index}"
+          },
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "deadline",
+            "label": "Deadline",
+            "format": "raw"
+          },
+          {
+            "path": "@.value",
+            "label": "Native amount",
+            "format": "amount"
+          }
+        ]
+      },
+      "swapExactTokensForTokens(uint256 amountIn,uint256 amountOutMin,address[] path,address to,uint256 deadline)": {
+        "intent": "Swap Exact Tokens For Tokens",
+        "fields": [
+          {
+            "path": "amountIn",
+            "label": "Amount In",
+            "format": "raw"
+          },
+          {
+            "path": "amountOutMin",
+            "label": "Amount Out Min",
+            "format": "raw"
+          },
+          {
+            "path": "path.[]",
+            "label": "Path",
+            "format": "raw",
+            "separator": "Path {index}"
+          },
+          {
+            "path": "to",
+            "label": "To",
+            "format": "raw"
+          },
+          {
+            "path": "deadline",
+            "label": "Deadline",
+            "format": "raw"
+          }
+        ]
+      },
+      "setDefaultMode(uint8 mode)": {
+        "intent": "Set default swap mode",
+        "fields": [
+          {
+            "path": "mode",
+            "label": "Mode for later swaps",
+            "format": "enum",
+            "params": {
+              "$ref": "$.metadata.enums.SwapMode"
+            }
           }
         ]
       }

@@ -17,14 +17,19 @@ const output=(data:unknown)=>{if(program.opts().json)process.stdout.write(JSON.s
 const select=(value:string,previous:string[])=>[...previous,value];
 const state=()=>loadState(program.opts());
 program.command('init').description('Discover contracts and create drafts without overwriting authoring')
-  .option('--contract <path:name>','Select a contract (repeatable)',select,[])
+  .option('--contract <path:name>','Select a compiled contract (repeatable)',select,[])
   .option('--owner <name>','Project owner label')
-  .action(options=>output(init({...program.opts(),...options})));
+  .option('--abi <file>','ABI mode: import an ABI JSON file instead of Foundry artifacts (repeatable)',select,[])
+  .option('--address <address>','ABI mode: fetch the verified ABI for this deployment (Sourcify, then Etherscan with ETHERSCAN_API_KEY)')
+  .option('--chain-id <number>','Chain ID for --address')
+  .option('--name <ContractName>','Contract name for an imported ABI')
+  .action(async options=>output(await init({...program.opts(),...options})));
 program.command('upgrade').description('Adopt this engine version and invalidate prior review; descriptors are preserved').action(()=>output(upgrade(program.opts())));
 program.command('sync').description('Add newly introduced functions while preserving existing formatting').action(()=>output(sync(state())));
 program.command('check').description('Check schema, ABI coverage, and review freshness')
+  .option('--contract <path:name>','Check only this selected contract (repeatable)',select,[])
   .option('--strict-portability','Fail on known consumer compatibility issues; does not certify wallet support')
-  .action(options=>output(check(state(),options.strictPortability===true)));
+  .action(options=>output(check(state(),options.strictPortability===true,options.contract)));
 program.command('review').description('Record developer review of the current source and descriptors')
   .option('--contract <path:name>','Review a selected contract (repeatable)',select,[])
   .option('--accept','Acknowledge that you inspected source changes, labels, units and field visibility')
@@ -32,12 +37,15 @@ program.command('review').description('Record developer review of the current so
 program.command('fixture').description('Encode an example transaction from the compiled ABI')
   .requiredOption('--name <name>','Fixture filename without .json')
   .requiredOption('--contract <path:name>','Selected contract identity')
-  .requiredOption('--function <signature>','Function name or canonical signature')
+  .option('--function <signature>','Function name or canonical signature')
   .option('--args <json>','JSON array of arguments; use strings for large integers','[]')
-  .requiredOption('--chain-id <number>','Chain ID')
-  .requiredOption('--to <address>','Target address')
+  .option('--chain-id <number>','Chain ID')
+  .option('--to <address>','Target address')
+  .option('--broadcast-tx <hash>','Take chain, target, calldata and value from a recorded broadcast transaction')
   .option('--value <wei>','Native transaction value in wei','0')
   .option('--from <address>','Sender for @.from fields')
+  .option('--chain-name <name>','Chain display name for amount/chainId formats (with --native-currency)')
+  .option('--native-currency <symbol:decimals>','Native currency for amount formats, e.g. MON:18')
   .option('--local','Use an explicit undeployed draft binding')
   .action(options=>output(createFixture(state(),{...options,local:options.local===true})));
 program.command('preview').description('Render one transaction fixture locally')
@@ -50,18 +58,28 @@ program.command('preview').description('Render one transaction fixture locally')
     else output(r);
   });
 program.command('test').description('Compare fixture renderings against checked-in expectations')
+  .option('--contract <path:name>','Test only fixtures of this selected contract (repeatable)',select,[])
   .option('--update','Explicitly accept current renderings as expectations')
-  .action(async options=>{const r=await runTests(state(),options.update===true);output({passed:r.passed,updated:r.updated});});
+  .action(async options=>{const r=await runTests(state(),options.update===true,options.contract);output({passed:r.passed,updated:r.updated});});
 program.command('export').description('Validate and write a submission bundle; does not publish')
   .requiredOption('--out <directory>','New output directory inside the project')
+  .option('--contract <path:name>','Export only this selected contract and its fixtures (repeatable)',select,[])
   .option('--strict-portability','Fail on known consumer compatibility issues before writing a bundle')
-  .action(async options=>output(await exportBundle(state(),options.out,options.strictPortability===true)));
+  .option('--entity <slug>','Registry folder name under registry/ (defaults to a slug of metadata.owner)')
+  .option('--inline-abi','Embed the compiled ABI in context.contract.abi (deprecated by the schema; off by default)')
+  .option('--no-lint','Skip running the pinned upstream erc7730 lint')
+  .action(async options=>output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,inlineAbi:options.inlineAbi===true,lint:options.lint!==false})));
 try {await program.parseAsync();} catch(e) {
   if(e instanceof CommanderError && e.exitCode===0) process.exitCode=0;
   else {
     const error=e instanceof Failure ? e : e instanceof CommanderError ? new Failure('USAGE_ERROR',e.message,2) : new Failure('UNEXPECTED_ERROR',(e as Error).message,2);
     if(program.opts().json||process.argv.includes('--json'))process.stdout.write(JSON.stringify({ok:false,diagnostics:error.details.length?error.details:[{code:error.code,message:error.message}]})+'\n');
-    else {process.stderr.write(`${error.code}: ${displayText(error.message)}\n`);for(const d of error.details)process.stderr.write(`  ${d.code} ${displayText(d.file??'')}${d.signature?` (${displayText(d.signature)})`:''}: ${displayText(d.message)}${d.remedy?`\n    ${displayText(d.remedy)}`:''}\n`);}
+    else {
+      // Escape control characters per line so genuine line breaks in tool output stay readable.
+      const lines=(text:string)=>String(text).split('\n').map(displayText).join('\n');
+      process.stderr.write(`${error.code}: ${lines(error.message)}\n`);
+      for(const d of error.details)process.stderr.write(`  ${d.code} ${displayText(d.file??'')}${d.signature?` (${displayText(d.signature)})`:''}: ${lines(d.message).replace(/\n/g,'\n    ')}${d.remedy?`\n    ${lines(d.remedy)}`:''}\n`);
+    }
     process.exitCode=error.exitCode;
   }
 }

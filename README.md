@@ -67,7 +67,7 @@ These example addresses and token metadata are local fixtures. The automated Anv
 
 ## Add clear signing to your Foundry repository
 
-Run these commands from your contract repository. Build it once with your existing Foundry setup so the Solidity compiler and project dependencies are available; the helper subsequently uses `forge build --offline`.
+Run these commands from your contract repository. Build it once with your existing Foundry setup so the Solidity compiler and project dependencies are available; the helper subsequently uses `forge build --offline --ast` with NatSpec outputs, which may recompile once. If a compiler is missing, the helper says which one and asks for that single `forge build`.
 
 The example below assumes your project has `src/Vault.sol:Vault` with `deposit(uint256,address)`. Replace those with your actual compiled contract identity, function signature and sample arguments. The addresses below are local example values.
 
@@ -87,9 +87,18 @@ clear-signing fixture \
 clear-signing preview --fixture clear-signing/fixtures/deposit.json
 ```
 
-Omit `--contract` during init to select production contracts under the resolved source directory. Repeat it to select several contracts. Tests, scripts, interfaces, abstract contracts, and dependencies are excluded from default selection. Dependencies can be selected explicitly by their compiled identity.
+Omit `--contract` during init to select production contracts under the resolved source directory. Repeat it to select several contracts. Tests, scripts, interfaces, abstract contracts, compile-only stubs with no entry points, and dependencies are excluded from default selection. Dependencies can be selected explicitly by their compiled identity.
 
-`init` prints the generated descriptor path under `clear-signing/descriptors/`; `fixture` writes `clear-signing/fixtures/deposit.json`. `--local` marks an undeployed example binding, so you can preview before adding real deployment addresses.
+Drafts are built from what the repository itself states or proves, and `init` prints where each value came from:
+
+- **NatSpec.** A function's `@notice` becomes the intent when its first sentence fits the registry linter's 30-character limit; `@param` text becomes a field label under a 32-character rule. Longer text is reported but not used.
+- **Solidity enums.** A parameter declared as an enum gets the `enum` format with its members under `metadata.enums`, read from the compiler AST.
+- **Constructor constants.** An `immutable` address assigned from a constructor argument, with that argument recorded in a broadcast, becomes `metadata.constants.<name>`. Reference it as `$.metadata.constants.<name>` in a `token` parameter. Values that differ between deployments are left out.
+- **ERC-20 and WETH conventions.** A contract with the full ERC-20 surface gets the registry's usual `approve`, `transfer` and `transferFrom` formats denominated in the contract itself; a WETH-shaped contract also gets `Wrap` and `Unwrap`. These are conventions, marked as such, and editable like any draft.
+
+`init` reads the repository's `broadcast/` records. A contract created by `forge script --broadcast` gets its `deployments` binding filled from that record, and deployed contracts outside the default selection, such as a router under `lib/`, are listed as suggestions with their addresses. Dry runs are ignored, and a contract name shared by several compiled contracts is never bound automatically.
+
+`init` prints the generated descriptor path under `clear-signing/descriptors/`; `fixture` writes `clear-signing/fixtures/deposit.json`. If a `forge script --broadcast` run already sent the transaction you want to describe, `fixture --name <n> --contract <id> --broadcast-tx <hash>` copies its chain, target, calldata and value verbatim. `--local` marks an undeployed example binding, so you can preview before adding real deployment addresses.
 
 Drafts use raw values for every argument. The first preview shows an amount such as `1000000` until you add its token formatting and metadata. Inspect the generated JSON before choosing units or action descriptions. For a vault deposit, edit the generated `display.formats` entry like this:
 
@@ -147,6 +156,21 @@ clear-signing test
 
 Commit `clear-signing.toml` and `clear-signing/`. On subsequent changes, run `clear-signing sync` to scaffold newly added functions, inspect the changes, and renew review/expectations deliberately. Run [strict check and test in CI](#ci) to detect stale review and changed output. A local fixture supports preview and testing; [export](#production-bindings-and-registry-export) additionally requires real deployment bindings and fixture coverage for every covered function.
 
+## Use without Foundry: ABI mode
+
+A Hardhat project, or a deployment you only know by address, gets the same fixture, test and export workflow. Run in an empty directory (or pass `--root`):
+
+```sh
+clear-signing init --address 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 --chain-id 1 --owner "WETH"
+clear-signing init --abi ./artifacts/Vault.json --name Vault --owner "My Protocol"
+```
+
+`--address` is the one network call the tool makes, and only when asked. It fetches the verified source match from [Sourcify](https://sourcify.dev), falling back to Etherscan V2 when `ETHERSCAN_API_KEY` is set. A verified proxy is resolved to its implementation: the descriptor describes the implementation's functions and binds the proxy address users actually call. NatSpec from the verified source feeds intents and labels the same way Foundry artifacts do. An unverified address is refused with the reason; verify it on Sourcify or pass the ABI you trust with `--abi`.
+
+Imported ABIs are stored under `clear-signing/abi/<Name>.json` with a `<Name>.source.json` sidecar recording where they came from, when, the match status, and any proxy resolution. Commit both. The engine fingerprints those files instead of Solidity sources, so editing an ABI invalidates review exactly as a source change would. `clear-signing.toml` records `mode = "abi"`; a directory cannot mix modes.
+
+Not available in ABI mode: Solidity enums, constructor constants, broadcast bindings and broadcast fixtures, since those come from the compiler AST and `forge script` records.
+
 ## Files and commands
 
 ```text
@@ -156,6 +180,8 @@ clear-signing/
   fixtures/deposit.json
   expectations/deposit.json
   review.json
+  provenance.json        where each scaffolded intent, label and format came from
+  abi/<Name>.json        ABI mode only, with <Name>.source.json beside it
 .clear-signing-cache/build.json
 ```
 
@@ -163,24 +189,24 @@ Commit the TOML file and `clear-signing/`. Ignore `.clear-signing-cache/` and yo
 
 | Command | Behavior |
 | --- | --- |
-| `init` | Scaffold selected contracts; existing descriptors are preserved |
+| `init` | Scaffold selected contracts; existing descriptors are preserved. `--abi <file>` or `--address <addr> --chain-id <id>` starts ABI mode |
 | `upgrade` | Adopt a new engine version, preserve descriptors/expectations, and invalidate old review |
 | `sync` | Add missing function formats; report obsolete references without deleting them |
-| `fixture` | Encode a sample call using the compiled ABI |
+| `fixture` | Encode a sample call using the compiled ABI, or copy a recorded broadcast transaction with `--broadcast-tx <hash>` |
 | `preview --fixture <path>` | Render in the terminal; `--open` / `--serve` enables a browser preview |
 | `review --accept` | Record review for all selections; `--contract` narrows it |
-| `check` | Validate schema, supported features, ABI coverage, and review freshness |
+| `check` | Validate schema, supported features, ABI coverage, and review freshness; `--contract` narrows it |
 | `test` | Render all fixtures and compare saved expectations |
-| `test --update` | Accept expectations only if every fixture renders without blocking warnings |
-| `export --out <directory>` | Validate and write a new submission bundle; never publishes |
+| `test --update` | Accept expectations only if every fixture renders without blocking warnings; `--contract` narrows both |
+| `export --out <directory>` | Validate, write a registry-shaped bundle, and run upstream lint; `--contract` exports one contract; never publishes |
 
-Global options: `--root <directory>`, `--profile <name>`, `--no-build`, and `--json`. Relative fixture/config paths resolve from the Foundry root, including when invoked in a subdirectory. The saved profile is the default; an explicit flag or `FOUNDRY_PROFILE` overrides it.
+Global options: `--root <directory>`, `--profile <name>`, `--no-build`, and `--json`. Relative fixture/config paths resolve from the project root (the nearest `clear-signing.toml` or `foundry.toml`), including when invoked in a subdirectory. The saved profile is the default; an explicit flag or `FOUNDRY_PROFILE` overrides it.
 
 `check` and `export` report known portability issues for nested arrays, tuple-array field ordering and signed integers. Use `--strict-portability` on either command to reject those ABI shapes in CI. Ordinary export includes `portability.json` for review. No findings does not mean a wallet has been verified; see the [tested device matrix](docs/DEVICE-COMPATIBILITY.md).
 
 `--no-build` works only after a successful helper build and an exact match of current source/config/artifact fingerprints. A missing cache, changed source, or modified artifact requires rebuilding. Source changes without ABI changes also invalidate review. Fingerprinting is conservative across the project's discovered artifacts and Solidity inputs, so unrelated project source changes may require review too.
 
-For a deliberate function exclusion, remove its descriptor format and record a reason in the selection's `exclusions` table in `clear-signing.toml`:
+For a deliberate function exclusion, remove its descriptor format and record a reason in the selection's `exclusions` table in `clear-signing.toml`. For a deliberately hidden argument, record a reason in the `hidden` table (see [Supported boundary](#supported-boundary)):
 
 ```toml
 [contracts.exclusions]
@@ -211,15 +237,21 @@ clear-signing test
 clear-signing export --strict-portability --out dist/clear-signing
 ```
 
-Export requires a production binding, current review, and at least one passing fixture for every covered function. The output includes:
+Export requires a production binding, current review, and at least one passing fixture for every covered function of each exported contract. Pass `--contract <id>` (repeatable) to export one contract while other selections are still drafts. The bundle is laid out the way the registry expects:
 
-- Standard descriptor JSON files.
-- `testsv2/*.tests.json` with unsigned transaction bytes, local metadata, and expected fields in the registry's v2 test schema.
-- Original fixtures and normalized renderings for review.
-- A validation summary and submission instructions.
-- A portability report describing known consumer limitations in the selected ABI shapes.
+```text
+<out>/
+  registry/<entity>/calldata-<ContractName>.json        relative $schema, as in the registry
+  registry/<entity>/testsv2/calldata-<ContractName>.tests.json
+  review/fixtures/ review/renderings/ review/validation.json review/portability.json
+  README.md                                             copy instructions and lint status
+```
 
-Export refuses existing directories, escaping paths, and conflicting metadata across fixtures for the same descriptor. Copy descriptors and `testsv2` into the appropriate registry entity folder for submission. Deployed-code verification, registry review, attestations, and wallet distribution remain separate steps. [Submission guide](https://clearsigning.org/build/)
+`<entity>` defaults to a kebab-case slug of `metadata.owner`; pass `--entity <slug>` to match an existing registry folder. Test descriptions follow the registry's `<fixture> - chain <id>` form. `--inline-abi` embeds the compiled ABI, which the schema marks deprecated, so it is off by default.
+
+Export then runs the registry's own linter, `erc7730` pinned to the version its CI uses, through `uvx`. A lint error removes the bundle and fails the export; warnings are recorded in `review/validation.json`. Without `uvx` the exact command is printed instead, and `--no-lint` skips it. `check` already warns locally when an intent exceeds the linter's 30-character limit.
+
+Export refuses existing directories, escaping paths, two selected contracts with the same name, and conflicting metadata across fixtures for the same descriptor. Copy `registry/<entity>/` into a registry clone and open the pull request from an account tied to the contract owner. Deployed-code verification, registry review, attestations, and wallet distribution remain separate steps. [Submission guide](https://clearsigning.org/build/)
 
 ## CI
 
@@ -236,18 +268,25 @@ See [the consumer CI example](docs/consumer-ci.yml) and [this project's validati
 
 ## Supported boundary
 
-The CLI pins ERC-7730 v2 schema 2.0.0 and Sourcify renderer 0.2.2 with a reproducible signed-integer decoding fix. [Patch details](docs/REGISTRY-COMPATIBILITY.md#signed-integer-fix) Its deliberately checked subset is:
+The CLI pins ERC-7730 v2 schema 2.0.0 and Sourcify renderer 0.2.2 with a reproducible signed-integer decoding fix. [Patch details](docs/REGISTRY-COMPATIBILITY.md#signed-integer-fix) A descriptor passes `check` when it satisfies the pinned schema and uses only formats the renderer implements:
 
+- Formats: `raw`, `amount`, `tokenAmount`, `addressName`, `nftName`, `date`, `duration`, `unit`, `enum`, `tokenTicker`, `chainId`, with the parameters the schema defines for each. `calldata` (nested calls) and `interoperableAddressName` are rejected explicitly. `tokenPath`, `collectionPath` and `nativeCurrencyAddress` may point at `@.to`, a literal address, `$.metadata.token`, or any address argument, including array elements such as `path.[0]` and `path.[-1]`.
 - Calldata write functions, overloads, inherited functions, tuples, fixed/dynamic nested arrays, and sequential groups that keep tuple members paired. Nested groups are expanded to concrete indexed paths for each local preview; exported descriptors retain standard nested groups, whose support varies across wallets.
-- Formats: `raw`, `addressName` with local names, `tokenAmount` with a fixed token or a scalar address path, and `date` with timestamp encoding.
-- Argument leaf paths and `@.to`, `@.from`, `@.value`. All argument leaves and the native value of payable functions must remain visible.
-- Local token/name metadata and exact, canonical ABI calldata up to 64 KiB. Input files are bounded to 8 MiB; descriptor/fixture trees to 32,768 nodes and 96 levels; decoded arguments to 8,192 nodes and 32 levels; signing output to 4,096 fields/groups.
+- Argument leaf paths and `@.to`, `@.from`, `@.value`. Payable functions must display `@.value`; drafts use the `amount` format for it. An argument left out of a format is reported as a warning. Record the reason under the selection's `hidden` table in `clear-signing.toml` to acknowledge it:
+
+```toml
+[contracts.hidden."swapExactTokensForTokens(uint256,uint256,address[],address,uint256)"]
+"path.[]" = "Route is implied by the input and output token amounts"
+```
+
+- Local metadata only. Fixtures may carry `tokens`, `addressNames`, `ensNames`, `nftCollectionNames`, `blockTimestamps`, and a `chain` entry with the native currency. Well-known chains, including Monad, fall back to a built-in native-currency table; anything else needs `chain` in the fixture, or `--chain-name` and `--native-currency` when creating it. Nothing is fetched.
+- Exact, canonical ABI calldata up to 64 KiB. Input files are bounded to 8 MiB; descriptor/fixture trees to 32,768 nodes and 96 levels; decoded arguments to 8,192 nodes and 32 levels; signing output to 4,096 fields/groups.
 
 Human previews escape terminal controls and bidirectional overrides as visible text. JSON and saved expectations retain the original values. The renderer is [vendored with provenance and dependency notices](docs/DISTRIBUTION.md); installation does not patch `node_modules`.
 
-Missing metadata is visible as warnings and raw fallback in preview, and blocks test acceptance/export. Empty-array notices are informational and remain in expectations. Dates beyond the renderer's supported range fail instead of being silently accepted.
+Missing token metadata is visible as warnings and raw fallback in preview, and blocks test acceptance/export. Empty-array notices and unnamed `addressName` values are informational: the address renders in full, as wallets show it, and the warning remains in expectations. Dates beyond the renderer's supported range fail instead of being silently accepted. Registry test runners use their own chain tables; an `amount` field on a chain they do not know will render raw there.
 
-Unsupported features fail explicitly: EIP-712, nested transaction decoding, external includes/references, conditional visibility, encryption, interpolated intents, maps/enums, factory bindings, and automatic registry access. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
+Unsupported features fail explicitly: EIP-712, nested transaction decoding, external includes/references, display definitions, constant-value fields, encryption, interpolated intents, factory bindings, and automatic registry access. Apart from `init --address` and the upstream lint run on export, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
 
 ## Use with an agent
 

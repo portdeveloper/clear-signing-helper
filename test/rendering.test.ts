@@ -67,3 +67,47 @@ await test('nested fixed/dynamic arrays preserve order, indices, and empty inner
   assert.ok(r.fields.some((f:any)=>f.warning?.code==='EMPTY_ARRAY'));
   assert.ok(flatten(r.fields).some((f:any)=>f.separator==='rows.[1].[0].amounts.[0]'));
 });
+
+await test('registry-style swap descriptor: typed addressName, tokenPath into path array, hidden route, native amount',async()=>{
+  const c=contract('swapExactETHForTokens(uint256 amountOutMin,address[] path,address to,uint256 deadline) payable');
+  const d=scaffold(c,'Example');
+  const key='swapExactETHForTokens(uint256 amountOutMin,address[] path,address to,uint256 deadline)';
+  d.display.formats[key]={intent:'Swap',fields:[
+    {path:'@.value',label:'Send',format:'amount'},
+    {path:'amountOutMin',label:'Receive at least',format:'tokenAmount',params:{tokenPath:'path.[-1]'}},
+    {path:'to',label:'Recipient',format:'addressName',params:{types:['eoa','wallet'],sources:['local','ens']}},
+    {path:'deadline',label:'Expires',format:'date',params:{encoding:'timestamp'}}]};
+  const selection={id:c.id,descriptor:'swap.json',exclusions:{},hidden:{'swapExactETHForTokens(uint256,address[],address,uint256)':{'path.[]':'Route is implied by the amounts'}}};
+  assert.deepEqual(validateDescriptor(d,c,selection),[]);
+  // Without the hidden entry the omission is a warning, never an error.
+  const diagnostics=validateDescriptor(d,c,{...selection,hidden:{}});
+  assert.deepEqual(diagnostics.map(x=>[x.code,x.severity]),[['UNDISPLAYED_ARGUMENT','warning']]);
+  const iface=new Interface(c.abi);
+  const r=await renderFixture({contract:c.id,chainId:10143,to:address,data:iface.encodeFunctionData('swapExactETHForTokens',[990000n,[address,other],'0x000000000000000000000000000000000000dEaD',1790000000n]),value:'2000000000000000000',localBinding:true,
+    chain:{name:'Monad Testnet',nativeCurrency:{name:'Monad',symbol:'MON',decimals:18}},tokens:{[other]:{name:'USD Coin',symbol:'USDC',decimals:6}},ensNames:{'0x000000000000000000000000000000000000dEaD':'burn.eth'}},d,c);
+  assert.deepEqual(r.warnings,[]);
+  assert.deepEqual(r.fields.map((f:any)=>[f.label,f.value]),[['Send','2 MON'],['Receive at least','0.99 USDC'],['Recipient','burn.eth'],['Expires','2026-09-21 14:13:20Z']]);
+});
+
+await test('tokenPath inside a tuple array follows the element it is expanded with',async()=>{
+  const c=contract('batch((address token,uint256 amount)[][] rows)');
+  const d=scaffold(c,'Example');
+  const key=Object.keys(d.display.formats)[0];
+  d.display.formats[key]={intent:'Batch',fields:[{path:'rows.[]',label:'Row',iteration:'sequential',fields:[{path:'[]',label:'Item',iteration:'sequential',fields:[{path:'token',label:'Token',format:'raw'},{path:'amount',label:'Amount',format:'tokenAmount',params:{tokenPath:'rows.[].[].token'}}]}]}]};
+  assert.deepEqual(validateDescriptor(d,c,{id:c.id,descriptor:'b.json',exclusions:{}}),[]);
+  const r=await renderFixture({contract:c.id,chainId:1,to:address,data:new Interface(c.abi).encodeFunctionData('batch',[[[[address,1000000n]],[[other,5n]]]]),value:'0',localBinding:true,
+    tokens:{[address]:{name:'A',symbol:'AAA',decimals:6},[other]:{name:'B',symbol:'BBB',decimals:0}}},d,c);
+  const flatten=(fields:any[]):any[]=>fields.flatMap(f=>f.fields?flatten(f.fields):[f]);
+  assert.deepEqual(flatten(r.fields).filter(f=>f.format==='tokenAmount').map(f=>f.value),['1 AAA','5 BBB']);
+});
+
+await test('terminal preview prints unlabeled groups flat and does not repeat a label already in the separator',async()=>{
+  const {humanOutput}=await import('../src/output.js');
+  const c=contract('route(address[] path,(uint256 a,uint256 b)[] legs)');
+  const d=scaffold(c,'Example');
+  const r=await renderFixture({contract:c.id,chainId:31337,to:address,data:new Interface(c.abi).encodeFunctionData('route',[[address,other],[[1,2]]]),value:'0',localBinding:true},d,c);
+  const text=humanOutput(r);
+  assert.ok(!text.includes('Item'),text);
+  assert.ok(text.includes('  Path 0: '+address),text);
+  assert.ok(text.includes('  Legs\n    A: 1\n    B: 2')||text.includes('Legs'),text);
+});

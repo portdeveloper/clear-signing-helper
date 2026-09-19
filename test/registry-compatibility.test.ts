@@ -2,18 +2,18 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
 import {FunctionFragment,Interface,Transaction} from 'ethers';
-import {scaffold,validateDescriptor} from '../src/descriptors.js';
+import {scaffold,validateDescriptor,errorsOf} from '../src/descriptors.js';
 import {renderFixture,blockingWarnings} from '../src/fixtures.js';
 import {init,loadState,createFixture,preview} from '../src/app.js';
 import {getContract} from '../src/foundry.js';
 import {Failure} from '../src/io.js';
-import {corpus,registryContract,sample,rawValues,renderedValues,harness} from './registry-helpers.js';
+import {corpus,registryContract,sample,rawValues,renderedValues,harness,weiChain} from './registry-helpers.js';
 
 await test('every registry calldata descriptor can generate a basic draft and render every parameter',async()=>{
   let functions=0;
   for(const entry of corpus.descriptors) {
     const c=registryContract(entry),d=scaffold(c,entry.owner),iface=new Interface(c.abi);
-    assert.deepEqual(validateDescriptor(d,c,{id:c.id,descriptor:entry.file,exclusions:{}}),[],entry.file);
+    assert.deepEqual(errorsOf(validateDescriptor(d,c,{id:c.id,descriptor:entry.file,exclusions:{}})),[],entry.file);
     assert.equal(Object.keys(d.display.formats).length,entry.signatures.length);
     for(const f of c.functions) {
       const args=f.inputs.map(sample),data=iface.encodeFunctionData(f,args);
@@ -38,7 +38,7 @@ await test('replay all registry transactions without hiding ABI suffixes',async(
       const tx=Transaction.from(example.rawTx);assert.equal(tx.data,example.data);
       const f=iface.getFunction(tx.data.slice(0,10))!;assert.ok(f,`${entry.file}: selector absent`);
       const args=iface.decodeFunctionData(f,tx.data),encoded=iface.encodeFunctionData(f,args);
-      const fixture={contract:c.id,chainId:Number(tx.chainId),to:tx.to!,data:tx.data,value:tx.value.toString(),...(example.from?{from:example.from}:{}),localBinding:!entry.deployments.length};
+      const fixture={contract:c.id,chainId:Number(tx.chainId),to:tx.to!,data:tx.data,value:tx.value.toString(),...(example.from?{from:example.from}:{}),localBinding:!entry.deployments.length,chain:weiChain};
       if(encoded.toLowerCase()!==tx.data.toLowerCase()) {
         assert.ok(tx.data.toLowerCase().startsWith(encoded.toLowerCase()),'known incompatibility must be an appended suffix, not a decoding defect');
         await assert.rejects(()=>renderFixture(fixture,d,c),(e:any)=>e instanceof Failure && e.code==='NONCANONICAL_CALLDATA');
@@ -46,7 +46,7 @@ await test('replay all registry transactions without hiding ABI suffixes',async(
       }
       const r=await renderFixture(fixture,d,c);
       assert.deepEqual(blockingWarnings(r),[],`${entry.file}: ${example.description}`);
-      assert.deepEqual(renderedValues(r.fields),[...f.inputs.flatMap((p,i)=>rawValues(p,args[i])),tx.value.toString()],`${entry.file}: decoded args and native value must all be visible`);
+      assert.deepEqual(renderedValues(r.fields),[...f.inputs.flatMap((p,i)=>rawValues(p,args[i])),`${tx.value} wei`],`${entry.file}: decoded args and native value must all be visible`);
       rendered++;
     }
   }
@@ -60,12 +60,12 @@ await test('Sourcify-verified deployed ABIs generate valid complete basic descri
     const iface=new Interface(entry.abi),functions=iface.fragments.filter((f):f is FunctionFragment=>f.type==='function'&&!['view','pure'].includes((f as FunctionFragment).stateMutability));
     const c={id:'src/Verified.sol:Verified',name:'Verified',source:'src/Verified.sol',artifact:'',abi:entry.abi,functions,special:[],metadata:{}};
     const d=scaffold(c,'Verified ABI reference');d.context.contract.deployments=[{chainId:entry.chainId,address:entry.address}];
-    assert.deepEqual(validateDescriptor(d,c,{id:c.id,descriptor:entry.registryFile,exclusions:{}}),[],entry.registryFile);
+    assert.deepEqual(errorsOf(validateDescriptor(d,c,{id:c.id,descriptor:entry.registryFile,exclusions:{}})),[],entry.registryFile);
     for(const f of functions) {
       const args=f.inputs.map(sample),value=f.stateMutability==='payable'?'1000000000000000':'0';
-      const r=await renderFixture({contract:c.id,chainId:entry.chainId,to:entry.address,data:iface.encodeFunctionData(f,args),value},d,c);
+      const r=await renderFixture({contract:c.id,chainId:entry.chainId,to:entry.address,data:iface.encodeFunctionData(f,args),value,chain:weiChain},d,c);
       assert.deepEqual(blockingWarnings(r),[],`${entry.registryFile} ${f.format()}`);
-      assert.deepEqual(renderedValues(r.fields),[...f.inputs.flatMap((p,i)=>rawValues(p,args[i])),...(f.stateMutability==='payable'?[value]:[])]);
+      assert.deepEqual(renderedValues(r.fields),[...f.inputs.flatMap((p,i)=>rawValues(p,args[i])),...(f.stateMutability==='payable'?[`${value} wei`]:[])]);
     }
   }
 });
@@ -97,13 +97,13 @@ await test('representative registry ABIs compile through real Forge and the auth
     const c=getContract(state.project,ref.id),d=state.descriptors.get(ref.id)!;
     assert.equal(c.functions.length,ref.functions.length);
     for(const f of ref.functions)assert.ok(c.functions.some(actual=>actual.format('sighash')===f.format('sighash')));
-    assert.deepEqual(validateDescriptor(d,c,state.config.contracts.find(s=>s.id===ref.id)!),[],ref.entry.file);
+    assert.deepEqual(errorsOf(validateDescriptor(d,c,state.config.contracts.find(s=>s.id===ref.id)!)),[],ref.entry.file);
     // Pick the largest ABI shape to exercise nested tuple/array cases through
     // fixture creation and preview after a genuine Forge compilation.
     const f=[...c.functions].sort((a,b)=>b.format('full').length-a.format('full').length)[0];
-    createFixture(state,{name:`registry-${i}`,contract:c.id,function:f.format('sighash'),args:JSON.stringify(f.inputs.map(sample)),chainId:'31337',to:'0x0000000000000000000000000000000000000001',value:'7',local:true});
+    createFixture(state,{name:`registry-${i}`,contract:c.id,function:f.format('sighash'),args:JSON.stringify(f.inputs.map(sample)),chainId:'31337',to:'0x0000000000000000000000000000000000000001',value:'7',local:true,chainName:'Shape harness',nativeCurrency:'wei:0'});
     const r=await preview(state,`clear-signing/fixtures/registry-${i}.json`);
     assert.deepEqual(blockingWarnings(r),[],ref.entry.file);
-    assert.deepEqual(renderedValues(r.fields),[...f.inputs.flatMap((p,j)=>rawValues(p,sample(p,j))),'7'],ref.entry.file);
+    assert.deepEqual(renderedValues(r.fields),[...f.inputs.flatMap((p,j)=>rawValues(p,sample(p,j))),'7 wei'],ref.entry.file);
   }
 });

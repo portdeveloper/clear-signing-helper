@@ -3,9 +3,10 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { Interface, FunctionFragment } from 'ethers';
 import { fail, hash, readJson, safePath, walk, writeJson } from './io.js';
+import { readBroadcasts, type BroadcastDeployment, type BroadcastCall } from './broadcast.js';
 
-export interface Contract { id: string; name: string; source: string; artifact: string; abi: any[]; functions: FunctionFragment[]; special: string[]; metadata: any; }
-export interface Project { root: string; profile: string; config: any; forgeVersion: string; contracts: Contract[]; fingerprint: string; }
+export interface Contract { id: string; name: string; source: string; artifact: string; abi: any[]; functions: FunctionFragment[]; special: string[]; metadata: any; userdoc?: any; devdoc?: any; ast?: any; }
+export interface Project { root: string; profile: string; config: any; forgeVersion: string; contracts: Contract[]; fingerprint: string; deployments: BroadcastDeployment[]; calls: BroadcastCall[]; }
 export function findRoot(start = process.cwd()): string {
   let dir = path.resolve(start);
   while (true) {
@@ -21,7 +22,14 @@ function forge(root: string, profile: string, args: string[]): string {
   const result = spawnSync('forge', args, {cwd: root, env: {...process.env, FOUNDRY_PROFILE: profile}, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout});
   if (result.error && 'code' in result.error && result.error.code === 'ETIMEDOUT') fail('FORGE_TIMEOUT', `forge ${args[0]} exceeded ${timeout / 1000} seconds. Run the same build directly to diagnose compiler performance.`, 2);
   if (result.error) fail('FORGE_UNAVAILABLE', `Forge failed: ${result.error.message}. Install Foundry and verify forge --version.`, 2);
-  if (result.status !== 0) fail('FORGE_FAILED', `forge ${args[0]} failed:\n${result.stderr || result.stdout}`, 2);
+  const text = result.stderr || result.stdout || '';
+  // --offline cannot download compilers; the fix is one ordinary build, so say so instead of dumping solc's complaint.
+  if (result.status !== 0 && args.includes('--offline') && /no compiler versions? (?:are|is) available|No solc version installed|invalid solc version/i.test(text)) {
+    const versions = [...new Set([...text.matchAll(/version requirement: (\S+)/g)].map(m => m[1]))];
+    const which = versions.length ? `Solidity compiler${versions.length > 1 ? 's' : ''} ${versions.join(', ')}` : 'a Solidity compiler version that is not installed';
+    fail('FORGE_COMPILER_MISSING', `The offline build needs ${which}. Run \`forge build\` once in ${root} so Foundry downloads it, then retry.`, 2);
+  }
+  if (result.status !== 0) fail('FORGE_FAILED', `forge ${args[0]} failed:\n${text}`, 2);
   return result.stdout;
 }
 const ignoredDirs = new Set(['.git', 'node_modules', 'out', 'cache', 'broadcast', '.clear-signing-cache']);
@@ -61,7 +69,7 @@ function sourceFingerprint(root: string, config: any, contracts: Contract[], ver
   const buildKeys = ['src','test','script','out','libs','remappings','libraries','include_paths','allow_paths','skip','evm_version','solc','auto_detect_solc','optimizer','optimizer_runs','optimizer_details','via_ir','bytecode_hash','cbor_metadata','use_literal_content','revert_strings','extra_output','extra_output_files','dynamic_test_linking','additional_compiler_profiles','compilation_restrictions'];
   const buildConfig = Object.fromEntries(buildKeys.map(key => [key, config[key]]));
   return hash({version, profile, config: buildConfig, sources: [...files].sort().map(file => [path.relative(root, file), fs.existsSync(file) ? hash(fs.readFileSync(file, 'utf8')) : 'missing']),
-    artifacts: contracts.map(c => [c.id, hash(readJson(c.artifact))])});
+    artifacts: contracts.map(c => [c.id, hash(readJson(c.artifact, 64 * 1024 * 1024))])});
 }
 export function loadProject(options: {root?: string; profile?: string; build?: boolean}): Project {
   const root = findRoot(options.root);
@@ -71,11 +79,12 @@ export function loadProject(options: {root?: string; profile?: string; build?: b
   try { config = JSON.parse(forge(root, profile, ['config', '--json'])); } catch { fail('FORGE_CONFIG', 'Could not parse forge config --json.', 2); }
   // Build output must stay in this project, even when read-only dependencies are external.
   for (const dir of [config.out, config.cache_path, config.build_info_path].filter(Boolean)) safePath(root, path.relative(root,path.resolve(root,dir)));
-  if (options.build !== false) forge(root, profile, ['build', '--offline', '--extra-output', 'metadata', 'devdoc', 'userdoc']);
+  // AST and NatSpec are evidence inputs: enums, constructor immutables, author notices and parameter docs.
+  if (options.build !== false) forge(root, profile, ['build', '--offline', '--ast', '--extra-output', 'metadata', 'devdoc', 'userdoc']);
   const out = safePath(root, path.relative(root,path.resolve(root,config.out)));
   const contracts: Contract[] = [];
   for (const file of walk(out, '.json')) {
-    const a = readJson(file);
+    const a = readJson(file, 64 * 1024 * 1024);
     if (!Array.isArray(a.abi) || !a.bytecode?.object || a.bytecode.object === '0x') continue;
     let metadata = a.metadata ?? a.rawMetadata;
     if (typeof metadata === 'string') { try { metadata = JSON.parse(metadata); } catch { continue; } }
@@ -86,7 +95,7 @@ export function loadProject(options: {root?: string; profile?: string; build?: b
     if (!fs.existsSync(path.resolve(root, source))) continue;
     const iface = new Interface(a.abi);
     const functions = iface.fragments.filter((f): f is FunctionFragment => f.type === 'function' && !['view', 'pure'].includes((f as FunctionFragment).stateMutability));
-    contracts.push({id: `${source}:${name}`, name, source, artifact: file, abi: a.abi, functions: functions.sort((a,b) => a.format().localeCompare(b.format())), special: a.abi.filter((x: any) => ['fallback', 'receive'].includes(x.type)).map((x: any) => `${x.type}()`), metadata});
+    contracts.push({id: `${source}:${name}`, name, source, artifact: file, abi: a.abi, functions: functions.sort((a,b) => a.format().localeCompare(b.format())), special: a.abi.filter((x: any) => ['fallback', 'receive'].includes(x.type)).map((x: any) => `${x.type}()`), metadata, userdoc: a.userdoc, devdoc: a.devdoc, ast: a.ast});
   }
   contracts.sort((a,b) => a.id.localeCompare(b.id));
   const ids = new Set<string>();
@@ -96,11 +105,31 @@ export function loadProject(options: {root?: string; profile?: string; build?: b
   if (options.build === false) {
     if (!fs.existsSync(cache) || readJson(cache).fingerprint !== fingerprint) fail('STALE_BUILD', 'Build inputs or artifacts changed. Run without --no-build to rebuild.', 2);
   } else writeJson(cache, {fingerprint});
-  return {root, profile, config, forgeVersion, contracts, fingerprint};
+  const {deployments, calls} = readBroadcasts(root, typeof config.broadcast === 'string' ? config.broadcast : 'broadcast');
+  return {root, profile, config, forgeVersion, contracts, fingerprint, deployments, calls};
 }
+const under = (root: string, dir: string | undefined, source: string) => !!dir && path.resolve(root, source).startsWith(path.resolve(root, dir) + path.sep);
+// Production contracts: under src, outside test/script directories, with at least one entry point to describe.
 export function defaultContracts(project: Project) {
-  const prefix = path.resolve(project.root, project.config.src) + path.sep;
-  return project.contracts.filter(c => path.resolve(project.root, c.source).startsWith(prefix) && !c.source.endsWith('.t.sol') && !c.source.endsWith('.s.sol'));
+  const {root, config} = project;
+  return project.contracts.filter(c => under(root, config.src, c.source) && !under(root, config.test, c.source) && !under(root, config.script, c.source)
+    && !c.source.endsWith('.t.sol') && !c.source.endsWith('.s.sol') && (c.functions.length > 0 || c.special.length > 0));
+}
+// Broadcast creations for compiled contracts. Ambiguous when several compiled contracts share the recorded name.
+export function deployedContracts(project: Project): {deployment: BroadcastDeployment; contracts: Contract[]}[] {
+  return project.deployments.map(deployment => ({deployment, contracts: project.contracts.filter(c => c.name === deployment.contractName)})).filter(x => x.contracts.length);
+}
+// Deployed contracts outside the default selection, typically dependencies under lib/.
+export function suggestedContracts(project: Project, selected: Contract[]) {
+  const ids = new Set(selected.map(c => c.id));
+  const suggestions = new Map<string, {id: string; deployments: {chainId: number; address: string; script: string}[]; ambiguous: boolean}>();
+  for (const {deployment, contracts} of deployedContracts(project)) for (const c of contracts) {
+    if (ids.has(c.id) || (!c.functions.length && !c.special.length)) continue;
+    const entry = suggestions.get(c.id) ?? {id: c.id, deployments: [], ambiguous: contracts.length > 1};
+    entry.deployments.push({chainId: deployment.chainId, address: deployment.address, script: deployment.script});
+    suggestions.set(c.id, entry);
+  }
+  return [...suggestions.values()];
 }
 export function getContract(project: Project, id: string) {
   const contract = project.contracts.find(c => c.id === id);

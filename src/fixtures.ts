@@ -4,12 +4,18 @@ import { Descriptor, ENGINE, parseSignature } from './descriptors.js';
 import { Contract } from './foundry.js';
 import { expandNestedFields } from './expansion.js';
 import { assertKeys, assertTreeBudget, fail } from './io.js';
+import { KNOWN_CHAINS } from './chains.js';
 
 export interface Fixture {
   contract: string; chainId: number; to: string; data: string; value: string; from?: string;
   localBinding?: boolean;
+  // Local metadata only. Nothing is fetched. Keys are addresses; block heights are decimal strings.
+  chain?: {name: string; nativeCurrency: {name: string; symbol: string; decimals: number}};
   tokens?: Record<string, {name: string; symbol: string; decimals: number}>;
   addressNames?: Record<string, string>;
+  ensNames?: Record<string, string>;
+  nftCollectionNames?: Record<string, string>;
+  blockTimestamps?: Record<string, number>;
 }
 export interface Rendering {
   engine: typeof ENGINE; contract: string; signature: string; chainId: number; to: string; value: string; from?: string;
@@ -17,7 +23,7 @@ export interface Rendering {
 }
 export function validateFixture(f: Fixture) {
   assertTreeBudget(f);
-  assertKeys(f, ['contract', 'chainId', 'to', 'data', 'value', 'from', 'localBinding', 'tokens', 'addressNames'], 'fixture');
+  assertKeys(f, ['contract', 'chainId', 'to', 'data', 'value', 'from', 'localBinding', 'chain', 'tokens', 'addressNames', 'ensNames', 'nftCollectionNames', 'blockTimestamps'], 'fixture');
   if (typeof f.contract !== 'string') fail('INVALID_FIXTURE', 'fixture.contract must be a source:contract identity.');
   if (!Number.isSafeInteger(f.chainId) || f.chainId <= 0) fail('INVALID_FIXTURE', 'chainId must be a positive safe integer.');
   if (typeof f.to !== 'string' || !isAddress(f.to) || (f.from !== undefined && !isAddress(f.from))) fail('INVALID_FIXTURE', 'to/from must be valid EVM addresses.');
@@ -34,13 +40,25 @@ export function validateFixture(f: Fixture) {
       if (typeof token.name !== 'string' || !token.name.trim() || typeof token.symbol !== 'string' || !token.symbol.trim() || !Number.isInteger(token.decimals) || token.decimals < 0 || token.decimals > 255) fail('INVALID_METADATA', `${address} needs name, symbol and integer decimals in [0,255].`);
     }
   }
-  if (f.addressNames !== undefined) {
-    assertKeys(f.addressNames, Object.keys(f.addressNames ?? {}), 'addressNames');
+  for (const key of ['addressNames', 'ensNames', 'nftCollectionNames'] as const) {
+    const map = f[key];
+    if (map === undefined) continue;
+    assertKeys(map, Object.keys(map ?? {}), key);
     const seen = new Set<string>();
-    for (const [address, name] of Object.entries(f.addressNames)) {
-      if (!isAddress(address) || typeof name !== 'string' || !name.trim() || seen.has(address.toLowerCase())) fail('INVALID_METADATA', `Invalid or duplicate local name: ${address}`);
+    for (const [address, name] of Object.entries(map)) {
+      if (!isAddress(address) || typeof name !== 'string' || !name.trim() || seen.has(address.toLowerCase())) fail('INVALID_METADATA', `Invalid or duplicate ${key} entry: ${address}`);
       seen.add(address.toLowerCase());
     }
+  }
+  if (f.blockTimestamps !== undefined) {
+    assertKeys(f.blockTimestamps, Object.keys(f.blockTimestamps ?? {}), 'blockTimestamps');
+    for (const [height, ts] of Object.entries(f.blockTimestamps)) if (!/^(0|[1-9][0-9]*)$/.test(height) || !Number.isSafeInteger(ts) || ts < 0) fail('INVALID_METADATA', `blockTimestamps.${height} must map a decimal block height to a nonnegative integer timestamp.`);
+  }
+  if (f.chain !== undefined) {
+    assertKeys(f.chain, ['name', 'nativeCurrency'], 'chain');
+    assertKeys(f.chain.nativeCurrency, ['name', 'symbol', 'decimals'], 'chain.nativeCurrency');
+    const n = f.chain.nativeCurrency;
+    if (typeof f.chain.name !== 'string' || !f.chain.name.trim() || typeof n?.name !== 'string' || !n.name.trim() || typeof n.symbol !== 'string' || !n.symbol.trim() || !Number.isInteger(n.decimals) || n.decimals < 0 || n.decimals > 255) fail('INVALID_METADATA', 'chain requires a name and nativeCurrency {name, symbol, decimals in [0,255]}.');
   }
 }
 export async function renderFixture(f: Fixture, d: Descriptor, contract: Contract): Promise<Rendering> {
@@ -69,8 +87,8 @@ export async function renderFixture(f: Fixture, d: Descriptor, contract: Contrac
   } else if (!d.context.contract.deployments.some(dep => dep.chainId === f.chainId && dep.address.toLowerCase() === f.to.toLowerCase())) {
     fail('DEPLOYMENT_MISMATCH', `No descriptor binding for ${f.chainId}:${f.to}. Use localBinding only for an undeployed draft.`);
   }
-  const tokens = Object.fromEntries(Object.entries(f.tokens ?? {}).map(([k,v]) => [k.toLowerCase(), v]));
-  const names = Object.fromEntries(Object.entries(f.addressNames ?? {}).map(([k,v]) => [k.toLowerCase(), v]));
+  const lower = <T,>(map: Record<string, T> | undefined) => Object.fromEntries(Object.entries(map ?? {}).map(([k,v]) => [k.toLowerCase(), v]));
+  const tokens = lower(f.tokens), names = lower(f.addressNames), ens = lower(f.ensNames), collections = lower(f.nftCollectionNames);
   const result = await format({chainId: f.chainId, to: f.to, data: f.data, value: BigInt(f.value), from: f.from}, {
     descriptorResolverOptions: {type: 'custom', resolver: {
       index: {calldataIndex: {[`eip155:${f.chainId}:${f.to.toLowerCase()}`]: 'local.json'}, typedDataIndex: {}},
@@ -78,7 +96,12 @@ export async function renderFixture(f: Fixture, d: Descriptor, contract: Contrac
     }},
     externalDataProvider: {
       resolveToken: async (chainId, address) => chainId === f.chainId ? tokens[address.toLowerCase()] ?? null : null,
-      resolveLocalName: async address => names[address.toLowerCase()] ? {name: names[address.toLowerCase()], typeMatch: true} : null
+      // Local fixtures cannot verify address types; a supplied name is trusted for the declared types.
+      resolveLocalName: async address => names[address.toLowerCase()] ? {name: names[address.toLowerCase()], typeMatch: true} : null,
+      resolveEnsName: async address => ens[address.toLowerCase()] ? {name: ens[address.toLowerCase()], typeMatch: true} : null,
+      resolveNftCollectionName: async (chainId, address) => chainId === f.chainId && collections[address.toLowerCase()] ? {name: collections[address.toLowerCase()]} : null,
+      resolveBlockTimestamp: async (chainId, height) => chainId === f.chainId && f.blockTimestamps?.[height.toString()] !== undefined ? {timestamp: f.blockTimestamps[height.toString()]} : null,
+      resolveChainInfo: async chainId => chainId === f.chainId ? f.chain ?? KNOWN_CHAINS[chainId] ?? null : null
     }
   });
   assertTreeBudget(result.fields ?? [], 65536, 96);
@@ -92,4 +115,6 @@ export async function renderFixture(f: Fixture, d: Descriptor, contract: Contrac
   return {engine: ENGINE, contract: contract.id, signature: fn.format('sighash'), chainId: f.chainId, to: f.to.toLowerCase(), value: f.value, ...(f.from ? {from: f.from.toLowerCase()} : {}),
     localBinding: f.localBinding === true, intent: String(result.intent), fields: result.fields ?? [], warnings: [...new Map(warnings.map(w => [w.code + w.message, w])).values()]};
 }
-export function blockingWarnings(rendering: Rendering) { return rendering.warnings.filter(w => w.code !== 'EMPTY_ARRAY'); }
+// An unnamed address renders as its checksummed value, which is what wallets show; that is not a defect.
+export const INFORMATIONAL_WARNINGS = new Set(['EMPTY_ARRAY', 'UNKNOWN_ADDRESS']);
+export function blockingWarnings(rendering: Rendering) { return rendering.warnings.filter(w => !INFORMATIONAL_WARNINGS.has(w.code)); }

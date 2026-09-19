@@ -2,38 +2,67 @@ import fs from 'node:fs';
 import path from 'node:path';
 import TOML from '@iarna/toml';
 import { Interface } from 'ethers';
-import { loadProject, defaultContracts, getContract, type Project } from './foundry.js';
-import { ENGINE, scaffold, scaffoldFormat, signature, parseSignature, validateDescriptor, reviewQuestions, type Descriptor, type Selection } from './descriptors.js';
+import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
+import { ENGINE, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance } from './descriptors.js';
+import { gatherEvidence } from './evidence.js';
 import {portabilityFindings, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
 import { renderFixture, validateFixture, blockingWarnings, type Fixture, type Rendering } from './fixtures.js';
 import { registryTests } from './registry.js';
+import { runUpstreamLint, lintCommand, type LintResult } from './lint.js';
+import { loadAbiProject, importAbiFile, importVerified, ABI_DIR } from './abi-project.js';
+import { fetchVerifiedContract } from './fetch.js';
 
-export interface Config {version: number; profile: string; engine: string; contracts: Selection[]}
+export interface Config {version: number; profile: string; engine: string; mode?: 'foundry' | 'abi'; contracts: Selection[]}
 export interface Options {root?: string; profile?: string; build?: boolean}
 export interface State {project: Project; config: Config; descriptors: Map<string, Descriptor>; review: Record<string, {fingerprint: string; questions?: unknown}>}
 const configName = 'clear-signing.toml';
 const reviewName = 'clear-signing/review.json';
+const provenanceName = 'clear-signing/provenance.json';
+// Provenance is kept per contract so a later reviewer can tell author text and proofs from conventions.
+function recordProvenance(root: string, entries: (Provenance & {contract: string})[], replace: boolean) {
+  const file = safePath(root, provenanceName);
+  const current: Record<string, Provenance[]> = fs.existsSync(file) ? readJson(file) : {};
+  assertKeys(current, Object.keys(current ?? {}), 'provenance');
+  for (const {contract, ...p} of entries) { if (replace && !(contract in current)) current[contract] = []; (current[contract] ??= []).push(p); }
+  if (replace) for (const id of new Set(entries.map(e => e.contract))) current[id] = entries.filter(e => e.contract === id).map(({contract, ...p}) => p);
+  writeJson(file, current);
+}
 function saveConfig(project: Project, config: Config) { writeText(safePath(project.root, configName), TOML.stringify(config as any)); }
 function configFrom(root: string, allowUpgrade = false): Config {
   let c: Config;
   try { c = TOML.parse(readText(safePath(root, configName))) as unknown as Config; } catch(e) { if (e instanceof Failure) throw e; fail('INVALID_CONFIG', `Invalid ${configName}: ${(e as Error).message}`, 2); }
-  assertKeys(c, ['version','profile','engine','contracts'], 'config');
+  assertKeys(c, ['version','profile','engine','mode','contracts'], 'config');
+  if (c.mode !== undefined && c.mode !== 'foundry' && c.mode !== 'abi') fail('INVALID_CONFIG', 'mode must be "foundry" or "abi".', 2);
   if (c.version !== 1 || typeof c.profile !== 'string' || (!allowUpgrade && c.engine !== hash(ENGINE))) fail('CONFIG_VERSION', 'Configuration engine/profile is incompatible. Run upgrade to adopt this engine, then inspect changes and renew review.', 2);
   if (!Array.isArray(c.contracts) || !c.contracts.length) fail('INVALID_CONFIG', 'Select at least one contract with init.', 2);
   const ids = new Set<string>(), files = new Set<string>();
   for (const s of c.contracts) {
-    assertKeys(s, ['id','descriptor','exclusions'], 'contract selection');
+    assertKeys(s, ['id','descriptor','exclusions','hidden'], 'contract selection');
     if (typeof s.id !== 'string' || typeof s.descriptor !== 'string') fail('INVALID_CONFIG', 'Selections require id and descriptor strings.', 2);
     safePath(root, s.descriptor);
     if (ids.has(s.id) || files.has(path.resolve(root, s.descriptor))) fail('INVALID_CONFIG', 'Contract identities and descriptor paths must be unique.', 2);
     ids.add(s.id); files.add(path.resolve(root, s.descriptor));
     assertKeys(s.exclusions, Object.keys(s.exclusions ?? {}), 'exclusions');
+    if (s.hidden !== undefined) {
+      assertKeys(s.hidden, Object.keys(s.hidden ?? {}), 'hidden');
+      for (const [sig, paths] of Object.entries(s.hidden)) assertKeys(paths, Object.keys((paths as any) ?? {}), `hidden.${sig}`);
+    }
   }
   return c;
 }
+// Project root: the nearest directory holding clear-signing.toml or foundry.toml.
+export function findConfigRoot(start = process.cwd()): string {
+  let dir = path.resolve(start);
+  while (true) {
+    if (fs.existsSync(path.join(dir, configName)) || fs.existsSync(path.join(dir, 'foundry.toml'))) return fs.realpathSync(dir);
+    if (path.dirname(dir) === dir) fail('NO_PROJECT', `No ${configName} or foundry.toml found above ${start}. Use --root <project>, or init --abi / init --address in a new directory.`, 2);
+    dir = path.dirname(dir);
+  }
+}
+const loadFor = (config: Config, options: Options, root: string) => config.mode === 'abi' ? loadAbiProject(root) : loadProject({...options, root, profile: options.profile ?? process.env.FOUNDRY_PROFILE ?? config.profile});
 export function upgrade(options: Options) {
-  const root = findProjectRoot(options.root), config = configFrom(root, true);
+  const root = findConfigRoot(options.root), config = configFrom(root, true);
   if (config.engine === hash(ENGINE)) return {upgraded:false, note:'Configuration already uses this engine.'};
   config.engine = hash(ENGINE);
   writeText(safePath(root, configName), TOML.stringify(config as any));
@@ -42,45 +71,86 @@ export function upgrade(options: Options) {
 }
 export function loadState(options: Options): State {
   // Resolve the persisted profile before loading artifacts.
-  const root = findProjectRoot(options.root);
+  const root = findConfigRoot(options.root);
   const config = configFrom(root);
-  const profile = options.profile ?? process.env.FOUNDRY_PROFILE ?? config.profile;
-  const project = loadProject({...options, root, profile});
+  const project = loadFor(config, options, root);
   const descriptors = new Map(config.contracts.map(s => [s.id, readJson<Descriptor>(safePath(root, s.descriptor))]));
   const reviewFile = safePath(root, reviewName);
   const review = fs.existsSync(reviewFile) ? readJson(reviewFile) : {};
   assertKeys(review, Object.keys(review ?? {}), 'review');
   return {project, config, descriptors, review};
 }
-import { findRoot as findProjectRoot } from './foundry.js';
-export function init(options: Options & {contract?: string[]; owner?: string}) {
-  const project = loadProject(options);
+export interface InitOptions extends Options {contract?: string[]; owner?: string; abi?: string[]; name?: string; address?: string; chainId?: string}
+export async function init(options: InitOptions) {
+  const abiMode = !!(options.abi?.length || options.address);
+  // Mode is decided once, at the first init, and recorded in the config.
+  let root: string, existingConfig: Config | undefined;
+  if (abiMode) {
+    root = options.root ? fs.realpathSync(path.resolve(options.root)) : (() => { try { return findConfigRoot(); } catch { return fs.realpathSync(process.cwd()); } })();
+    if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) fail('NO_PROJECT', `${root} is not a directory.`, 2);
+    existingConfig = fs.existsSync(path.join(root, configName)) ? configFrom(root) : undefined;
+    if (existingConfig && existingConfig.mode !== 'abi') fail('MODE_CONFLICT', `${configName} at ${root} is a Foundry-mode project. ABI imports belong in a separate directory (use --root).`, 2);
+    if (!existingConfig && fs.existsSync(path.join(root, 'foundry.toml'))) fail('MODE_CONFLICT', `${root} is a Foundry project; run init without --abi/--address to use its compiled artifacts, or pick another --root for ABI mode.`, 2);
+  } else {
+    root = findConfigRoot(options.root);
+    existingConfig = fs.existsSync(path.join(root, configName)) ? configFrom(root) : undefined;
+    if (!existingConfig && !fs.existsSync(path.join(root, 'foundry.toml'))) fail('NO_PROJECT', `${root} has no foundry.toml. For a non-Foundry project use init --abi <file> or init --address <addr> --chain-id <id>.`, 2);
+  }
+  const mode: Config['mode'] = existingConfig?.mode ?? (abiMode ? 'abi' : 'foundry');
+  const imports: {id: string; file: string; sidecar: string; source: any}[] = [];
+  if (abiMode) {
+    if (mode !== 'abi') fail('MODE_CONFLICT', 'This project uses Foundry artifacts; --abi and --address are not available here.', 2);
+    if (options.address) {
+      const chainId = Number(options.chainId);
+      if (!Number.isSafeInteger(chainId) || chainId <= 0) fail('FIXTURE_ARGUMENTS', '--address requires --chain-id <id>.', 2);
+      imports.push(importVerified(root, await fetchVerifiedContract(chainId, options.address), options.name));
+    }
+    for (const file of options.abi ?? []) imports.push(importAbiFile(root, file, options.abi!.length === 1 ? options.name : undefined));
+  }
+  const project = mode === 'abi' ? loadAbiProject(root) : loadProject({...options, root});
   const configFile = safePath(project.root, configName);
   const existing = fs.existsSync(configFile);
-  const config: Config = existing ? configFrom(project.root) : {version: 1, profile: project.profile, engine: hash(ENGINE), contracts: []};
-  const selected = options.contract?.length ? options.contract.map(id => getContract(project,id)) : defaultContracts(project);
-  if (!selected.length) fail('NO_CONTRACTS', 'No production contracts found. Pass --contract path:Name after a successful forge build.', 2);
+  const config: Config = existing ? configFrom(project.root) : {version: 1, profile: project.profile, engine: hash(ENGINE), ...(mode === 'abi' ? {mode} : {}), contracts: []};
+  const selected = imports.length ? imports.map(i => getContract(project, i.id)) : options.contract?.length ? options.contract.map(id => getContract(project,id)) : mode === 'abi' ? project.contracts : defaultContracts(project);
+  if (!selected.length) fail('NO_CONTRACTS', mode === 'abi' ? `No ABI files under ${ABI_DIR}/.` : 'No production contracts found. Pass --contract path:Name after a successful forge build.', 2);
   const writes: {file: string; descriptor: Descriptor}[] = [];
+  const bindings: {contract: string; chainId: number; address: string; source: string}[] = [];
+  const provenance: (Provenance & {contract: string})[] = [];
   for (const c of selected) {
     if (config.contracts.some(s => s.id === c.id)) continue;
     const file = `clear-signing/descriptors/calldata-${c.name}-${hash(c.id).slice(0,8)}.json`;
     if (fs.existsSync(safePath(project.root, file))) fail('FILE_EXISTS', `Refusing to overwrite ${file}.`, 2);
-    const descriptor = scaffold(c, options.owner ?? path.basename(project.root));
+    const scaffolded = scaffoldWithProvenance(c, options.owner ?? path.basename(project.root), gatherEvidence(project, c));
+    const descriptor = scaffolded.descriptor;
+    provenance.push(...scaffolded.provenance.map(p => ({contract: c.id, ...p})));
+    // Deployment bindings come from the repository's own records (broadcasts, or the verified-source import), never guessed.
+    for (const dep of broadcastBindings(project, c)) { descriptor.context.contract.deployments.push({chainId: dep.chainId, address: dep.address}); bindings.push({contract: c.id, chainId: dep.chainId, address: dep.address, source: dep.file}); }
     config.contracts.push({id: c.id, descriptor: file, exclusions: {}});
     writes.push({file, descriptor});
   }
   for (const {file, descriptor} of writes) writeJson(safePath(project.root, file), descriptor);
+  if (writes.length) recordProvenance(project.root, provenance, true);
   if (writes.length || !existing) saveConfig(project, config);
   const reviewFile = safePath(project.root, reviewName);
   if (!fs.existsSync(reviewFile)) writeJson(reviewFile, {});
-  return {created: writes.map(w => w.file), contracts: config.contracts, next: 'Inspect action labels and field formats, create transaction fixtures with fixture, then run review --accept after inspecting them.', questions: selected.map(c => ({contract:c.id, functions:reviewQuestions(c)}))};
+  const suggestions = suggestedContracts(project, selected);
+  return {created: writes.map(w => w.file), mode, imports: imports.map(i => ({contract: i.id, file: i.file, sidecar: i.sidecar, source: i.source.source, origin: i.source.origin, match: i.source.match, proxy: i.source.proxy})), contracts: config.contracts, bindings, suggestions, provenance, broadcastCalls: project.calls.length, next: 'Inspect action labels and field formats, create transaction fixtures with fixture, then run review --accept after inspecting them.', questions: selected.map(c => ({contract:c.id, functions:reviewQuestions(c)}))};
+}
+// Broadcast creations that map to exactly this compiled contract. A name shared by several compiled
+// contracts is ambiguous and yields nothing; the user binds it explicitly.
+function broadcastBindings(project: Project, c: Contract) {
+  return deployedContracts(project).filter(x => x.contracts.length === 1 && x.contracts[0].id === c.id).map(x => x.deployment);
+}
+export function selectContracts(state: State, ids?: string[]) {
+  if (!ids?.length) return state.config.contracts;
+  return ids.map(id => {const s=state.config.contracts.find(s=>s.id===id); if(!s) fail('CONTRACT_NOT_SELECTED', `${id} is not selected. Run init --contract '${id}' first.`,2); return s;});
 }
 export function reviewFingerprint(state: State, selection: Selection) {
   return hash({engine: ENGINE, build: state.project.fingerprint, selection, descriptor: state.descriptors.get(selection.id)});
 }
-export function diagnostics(state: State, includeReview = true): Diagnostic[] {
+export function diagnostics(state: State, includeReview = true, selections = state.config.contracts): Diagnostic[] {
   const errors: Diagnostic[] = [];
-  for (const s of state.config.contracts) {
+  for (const s of selections) {
     try {
       const c = getContract(state.project, s.id);
       errors.push(...validateDescriptor(state.descriptors.get(s.id)!, c, s));
@@ -90,17 +160,18 @@ export function diagnostics(state: State, includeReview = true): Diagnostic[] {
   return errors;
 }
 function throwDiagnostics(errors: Diagnostic[]) { if (errors.length) throw new Failure('CHECK_FAILED', `${errors.length} issue(s) require attention.`, 1, errors); }
-export function check(state: State, strictPortability=false) {
-  const errors = diagnostics(state);
-  throwDiagnostics(errors);
-  const findings=state.config.contracts.flatMap(s=>portabilityFindings(s.id,state.descriptors.get(s.id)!));
+export function check(state: State, strictPortability=false, ids?: string[]) {
+  const selections = selectContracts(state, ids);
+  const all = diagnostics(state, true, selections);
+  throwDiagnostics(errorsOf(all));
+  const findings=selections.flatMap(s=>portabilityFindings(s.id,state.descriptors.get(s.id)!));
   if(strictPortability && findings.length)throw new Failure('PORTABILITY_REVIEW', 'Known consumer compatibility issues require target-wallet validation.',1,findings.map(f=>({code:f.code,signature:f.signature,message:`${f.contract} ${f.path}: ${f.message}`,remedy:'Inspect the compatibility report and validate the target wallet. Ordinary check/export remains available for authoring drafts.'})));
-  return {contracts: state.config.contracts.map(s => ({contract:s.id, covered:Object.keys(state.descriptors.get(s.id)!.display.formats).length, excluded:Object.entries(s.exclusions).map(([signature,reason])=>({signature,reason}))})), review:'current', deploymentVerification:'not performed',portability:{walletVerification:'not performed',reference:PORTABILITY_REFERENCE,findings}};
+  return {contracts: selections.map(s => ({contract:s.id, covered:Object.keys(state.descriptors.get(s.id)!.display.formats).length, excluded:Object.entries(s.exclusions).map(([signature,reason])=>({signature,reason})), hidden:Object.entries(s.hidden??{}).flatMap(([signature,paths])=>Object.entries(paths).map(([path,reason])=>({signature,path,reason})))})), review:'current', warnings:warningsOf(all), deploymentVerification:'not performed',portability:{walletVerification:'not performed',reference:PORTABILITY_REFERENCE,findings}};
 }
 export function review(state: State, ids: string[] | undefined, accept: boolean) {
   if (!accept) fail('ACKNOWLEDGEMENT_REQUIRED', 'Inspect descriptors, source changes, and previews first. Then pass --accept to record your review. This is not an audit or attestation.', 2);
-  const selections = ids?.length ? ids.map(id => {const s=state.config.contracts.find(s=>s.id===id); if(!s) fail('CONTRACT_NOT_SELECTED', `${id} is not selected.`,2); return s;}) : state.config.contracts;
-  const errors = selections.flatMap(s => validateDescriptor(state.descriptors.get(s.id)!, getContract(state.project,s.id), s));
+  const selections = selectContracts(state, ids);
+  const errors = errorsOf(selections.flatMap(s => validateDescriptor(state.descriptors.get(s.id)!, getContract(state.project,s.id), s)));
   throwDiagnostics(errors);
   for (const s of selections) state.review[s.id] = {fingerprint:reviewFingerprint(state,s), questions:reviewQuestions(getContract(state.project,s.id))};
   writeJson(safePath(state.project.root, reviewName), state.review);
@@ -108,19 +179,26 @@ export function review(state: State, ids: string[] | undefined, accept: boolean)
 }
 export function sync(state: State) {
   const writes: {file:string; d:Descriptor}[] = [];
-  const added: string[] = [];
+  const added: string[] = [], provenance: (Provenance & {contract: string})[] = [];
   for (const s of state.config.contracts) {
     const c = getContract(state.project, s.id), d=state.descriptors.get(s.id)!;
     // Validate structure before mutation, but allow the coverage/obsolete-reference issues sync addresses.
-    const structural = validateDescriptor(d,c,s).filter(e=>!['MISSING_COVERAGE','OBSOLETE_FORMAT','STALE_EXCLUSION','UNSUPPORTED_ENTRYPOINT'].includes(e.code));
+    const structural = errorsOf(validateDescriptor(d,c,s)).filter(e=>!['MISSING_COVERAGE','OBSOLETE_FORMAT','STALE_EXCLUSION','UNSUPPORTED_ENTRYPOINT'].includes(e.code));
     throwDiagnostics(structural);
     const formats = new Set(Object.keys(d.display.formats).map(k=>parseSignature(k).format('sighash')));
+    const evidence = gatherEvidence(state.project, c), enumKeys = enumKeysFor(evidence);
     let changed=false;
-    for(const f of c.functions) if(!formats.has(f.format('sighash')) && !s.exclusions[f.format('sighash')]) {d.display.formats[signature(f)]=scaffoldFormat(f); added.push(`${s.id} ${f.format('sighash')}`); changed=true;}
+    for(const f of c.functions) if(!formats.has(f.format('sighash')) && !s.exclusions[f.format('sighash')]) {
+      const r=scaffoldFormatWithProvenance(f, evidence, enumKeys);
+      d.display.formats[signature(f)]=r.format; added.push(`${s.id} ${f.format('sighash')}`); changed=true; provenance.push(...r.provenance.map(p=>({contract:s.id,...p})));
+      // Only enums the new formats reference are added; existing metadata is never rewritten.
+      for(const [key,members] of Object.entries(enumMetadata(evidence, enumKeys))) if(JSON.stringify(r.format).includes(`$.metadata.enums.${key}"`) && !d.metadata.enums?.[key]) d.metadata.enums={...(d.metadata.enums??{}),[key]:members};
+    }
     if(changed) writes.push({file:s.descriptor,d});
   }
   for(const w of writes) writeJson(safePath(state.project.root,w.file),w.d);
-  return {added, diagnostics:diagnostics(state), note:'Existing fields preserved. Remove obsolete formats explicitly; inspect additions before review --accept.'};
+  if(provenance.length) recordProvenance(state.project.root, provenance, false);
+  return {added, provenance, diagnostics:errorsOf(diagnostics(state)), note:'Existing fields preserved. Remove obsolete formats explicitly; inspect additions before review --accept.'};
 }
 export async function preview(state: State, fixturePath: string): Promise<Rendering> {
   const file=safePath(state.project.root,fixturePath), f=readJson<Fixture>(file);
@@ -128,33 +206,52 @@ export async function preview(state: State, fixturePath: string): Promise<Render
   const selection=state.config.contracts.find(s=>s.id===f.contract);
   if(!selection) fail('CONTRACT_NOT_SELECTED', `${f.contract} is not selected.`,2);
   const c=getContract(state.project,f.contract), d=state.descriptors.get(f.contract)!;
-  throwDiagnostics(validateDescriptor(d,c,selection));
+  throwDiagnostics(errorsOf(validateDescriptor(d,c,selection)));
   return renderFixture(f,d,c);
 }
-export function createFixture(state: State, options: {name:string; contract:string; function:string; args:string; chainId:string; to:string; value:string; from?:string; local:boolean}) {
+export function createFixture(state: State, options: {name:string; contract:string; function?:string; args:string; chainId?:string; to?:string; value:string; from?:string; local:boolean; chainName?:string; nativeCurrency?:string; broadcastTx?:string}) {
   if(!/^[a-zA-Z0-9_-]+$/.test(options.name)) fail('INVALID_NAME','Fixture names may contain letters, digits, hyphens and underscores.',2);
   const c=getContract(state.project,options.contract);
   if(!state.config.contracts.some(s=>s.id===c.id)) fail('CONTRACT_NOT_SELECTED', 'Run init --contract for this contract first.',2);
   const iface=new Interface(c.abi);
-  let data:string;
-  try {const args=JSON.parse(options.args); if(!Array.isArray(args)) throw new Error('--args must be a JSON array'); data=iface.encodeFunctionData(options.function,args);} catch(e) {fail('FIXTURE_ARGUMENTS',`Could not encode arguments: ${(e as Error).message}`,2);}
-  const fixture: Fixture={contract:c.id, chainId:Number(options.chainId), to:options.to, data, value:options.value, ...(options.from?{from:options.from}:{}), ...(options.local?{localBinding:true}:{}), tokens:{}, addressNames:{}};
+  let data:string, source:string|undefined;
+  if(options.broadcastTx) {
+    // A recorded broadcast transaction is real calldata against a real deployment; nothing is re-encoded.
+    const call=state.project.calls.find(x=>x.hash===options.broadcastTx!.toLowerCase());
+    if(!call) fail('BROADCAST_TX_NOT_FOUND',`No CALL with hash ${options.broadcastTx} in broadcast records. Available: ${state.project.calls.map(x=>`${x.hash} (${x.function??'?'} on ${x.chainId}:${x.to}, ${x.script})`).join('; ')||'none'}`,2);
+    if(!c.functions.some(f=>f.selector.toLowerCase()===call.data.slice(0,10).toLowerCase())) fail('BROADCAST_TX_MISMATCH',`Transaction ${call.hash} calls selector ${call.data.slice(0,10)}, which is not a write function of ${c.id}.`,2);
+    data=call.data; source=call.file;
+    options={...options, chainId:String(call.chainId), to:call.to, value:call.value, from:options.from??call.from};
+  } else {
+    if(!options.function||!options.chainId||!options.to) fail('FIXTURE_ARGUMENTS','--function, --chain-id and --to are required unless --broadcast-tx is given.',2);
+    try {const args=JSON.parse(options.args); if(!Array.isArray(args)) throw new Error('--args must be a JSON array'); data=iface.encodeFunctionData(options.function,args);} catch(e) {fail('FIXTURE_ARGUMENTS',`Could not encode arguments: ${(e as Error).message}`,2);}
+  }
+  let chain: Fixture['chain'];
+  if (options.chainName || options.nativeCurrency) {
+    const m=/^([A-Za-z0-9._-]+):(\d{1,3})$/.exec(options.nativeCurrency??'');
+    if(!options.chainName || !m) fail('FIXTURE_ARGUMENTS','--chain-name and --native-currency SYMBOL:DECIMALS must be given together.',2);
+    chain={name:options.chainName, nativeCurrency:{name:m[1], symbol:m[1], decimals:Number(m[2])}};
+  }
+  const fixture: Fixture={contract:c.id, chainId:Number(options.chainId), to:options.to!, data, value:options.value, ...(options.from?{from:options.from}:{}), ...(options.local?{localBinding:true}:{}), ...(chain?{chain}:{}), tokens:{}, addressNames:{}};
   validateFixture(fixture);
   const file=`clear-signing/fixtures/${options.name}.json`;
   if(fs.existsSync(safePath(state.project.root,file))) fail('FILE_EXISTS',`Refusing to overwrite ${file}.`,2);
   writeJson(safePath(state.project.root,file),fixture);
-  return {created:file, next:`Run preview --fixture ${file}. Add local token metadata and address names to the fixture as needed.`};
+  return {created:file, ...(source?{source}:{}), next:`Run preview --fixture ${file}. Add local token metadata and address names to the fixture as needed.`};
 }
-export function fixtureFiles(state: State) {
-  return walk(safePath(state.project.root,'clear-signing/fixtures'),'.json').map(file=>path.relative(state.project.root,file));
+export function fixtureFiles(state: State, ids?: string[]) {
+  const files = walk(safePath(state.project.root,'clear-signing/fixtures'),'.json').map(file=>path.relative(state.project.root,file));
+  if (!ids?.length) return files;
+  const wanted = new Set(ids);
+  return files.filter(file => { try { return wanted.has(readJson(safePath(state.project.root, file))?.contract); } catch { return false; } });
 }
 export function expectationPath(fixture: string) {
   if(!fixture.startsWith('clear-signing/fixtures/')) fail('FIXTURE_LOCATION','Test fixtures must live under clear-signing/fixtures/.');
   return fixture.replace('clear-signing/fixtures/','clear-signing/expectations/');
 }
-export async function runTests(state: State, update=false) {
-  const files=fixtureFiles(state);
-  if(!files.length) fail('NO_FIXTURES','No fixtures found. Use fixture to create a sample transaction.');
+export async function runTests(state: State, update=false, ids?: string[]) {
+  const files=fixtureFiles(state, ids);
+  if(!files.length) fail('NO_FIXTURES',`No fixtures found${ids?.length ? ` for ${ids.join(', ')}` : ''}. Use fixture to create a sample transaction.`);
   const errors:Diagnostic[]=[], renders:{file:string; rendering:Rendering}[]=[];
   const updates:{file:string;rendering:Rendering}[]=[];
   for(const file of files) {
@@ -177,11 +274,16 @@ export async function runTests(state: State, update=false) {
   for(const u of updates) writeJson(u.file,u.rendering);
   return {passed:renders.length, updated:updates.length, renders};
 }
-export async function exportBundle(state: State, out: string, strictPortability=false) {
-  const {portability}=check(state,strictPortability);
-  const tests=await runTests(state);
+export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; inlineAbi?: boolean; lint?: boolean}
+// Registry entity folders are kebab-case slugs of the owner name, e.g. "Morpho DAO" -> "morpho-dao".
+export const entitySlug = (owner: string) => owner.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const REGISTRY_SCHEMA = '../../specs/erc7730-v2.schema.json';
+export async function exportBundle(state: State, out: string, strictPortability=false, ids?: string[], options: ExportOptions = {}) {
+  const selections = selectContracts(state, ids);
+  const {portability}=check(state,strictPortability,ids);
+  const tests=await runTests(state,false,ids);
   const errors:Diagnostic[]=[];
-  for(const s of state.config.contracts) {
+  for(const s of selections) {
     const d=state.descriptors.get(s.id)!;
     if(!d.context.contract.deployments.length) errors.push({code:'DEPLOYMENTS_REQUIRED',message:`${s.id} has no production bindings.`,file:s.descriptor});
     for(const key of Object.keys(d.display.formats)) {
@@ -190,30 +292,52 @@ export async function exportBundle(state: State, out: string, strictPortability=
     }
   }
   for(const r of tests.renders) if(r.rendering.localBinding) errors.push({code:'LOCAL_BINDING_EXPORT',message:'Local-only fixtures cannot be exported. Supply real descriptor bindings and remove localBinding.',file:r.file});
+  const owners=new Set(selections.map(s=>state.descriptors.get(s.id)!.metadata.owner));
+  const entity=options.entity ?? entitySlug([...owners][0] ?? '');
+  if(!options.entity && owners.size>1) errors.push({code:'ENTITY_AMBIGUOUS',message:`Selected descriptors name different owners (${[...owners].join(', ')}). Pass --entity <registry-folder> or export per contract.`});
+  if(!/^[a-z0-9][a-z0-9-]*$/.test(entity)) errors.push({code:'ENTITY_INVALID',message:`Registry entity folder must be a kebab-case slug; got "${entity}". Pass --entity.`});
   throwDiagnostics(errors);
   const target=safePath(state.project.root,out);
   if(fs.existsSync(target)) fail('OUTPUT_EXISTS',`Refusing to overwrite ${out}. Choose a new output directory.`,2);
   const stage=safePath(state.project.root,`${out}.tmp-${process.pid}`);
   if(fs.existsSync(stage)) fail('OUTPUT_EXISTS',`Staging directory already exists: ${stage}`,2);
   fs.mkdirSync(stage,{recursive:true});
+  let lint: LintResult;
+  const registryDir=path.join(stage,'registry',entity), descriptorFiles:string[]=[];
   try {
     const names=new Set<string>();
-    for(const s of state.config.contracts) {
-      const name=path.basename(s.descriptor);
-      if(names.has(name)) fail('EXPORT_COLLISION',`Duplicate descriptor filename ${name}.`);
-      names.add(name); writeJson(path.join(stage,name),state.descriptors.get(s.id));
+    for(const s of selections) {
+      const c=getContract(state.project,s.id), source=state.descriptors.get(s.id)!;
+      // Registry filenames carry the contract name only; the working copy keeps its identity hash.
+      const name=`calldata-${c.name}.json`;
+      if(names.has(name)) fail('EXPORT_COLLISION',`Two selected contracts are both named ${c.name}. Export them separately with --contract.`);
+      names.add(name);
+      const descriptor=structuredClone(source);
+      descriptor.$schema=REGISTRY_SCHEMA;
+      if(options.inlineAbi) descriptor.context.contract.abi=c.abi;
+      writeJson(path.join(registryDir,name),descriptor); descriptorFiles.push(path.join('registry',entity,name));
       const fixtures = tests.renders.filter(r=>r.rendering.contract===s.id).map(r=>({name:r.file,fixture:readJson<Fixture>(safePath(state.project.root,r.file)),rendering:r.rendering}));
-      if(fixtures.length) writeJson(path.join(stage,'testsv2',name.replace(/\.json$/,'.tests.json')),registryTests(name,state.descriptors.get(s.id)!,fixtures));
+      if(fixtures.length) writeJson(path.join(registryDir,'testsv2',name.replace(/\.json$/,'.tests.json')),registryTests(name,source,fixtures));
     }
     for(const r of tests.renders) {
       const name=path.relative('clear-signing/fixtures',r.file);
-      writeJson(path.join(stage,'fixtures',name),readJson(safePath(state.project.root,r.file)));
-      writeJson(path.join(stage,'renderings',name),r.rendering);
+      writeJson(path.join(stage,'review','fixtures',name),readJson(safePath(state.project.root,r.file)));
+      writeJson(path.join(stage,'review','renderings',name),r.rendering);
     }
-    writeJson(path.join(stage,'validation.json'),{engine:ENGINE, contracts:state.config.contracts.map(s=>({id:s.id,descriptor:path.basename(s.descriptor),exclusions:s.exclusions})),fixtures:tests.passed, deploymentVerification:'not performed',publication:'not submitted'});
-    writeJson(path.join(stage,'portability.json'),portability);
-    writeText(path.join(stage,'README.md'),'# Clear-signing submission bundle\n\nDescriptors use the pinned ERC-7730 v2 schema. The testsv2 files contain unsigned sample transactions and expected signing output in the registry v2 test format, validated against its pinned schema. The fixtures and renderings directories retain the original local review examples. Read portability.json for known consumer limitations; a passing local test is not wallet certification. Copy descriptors and testsv2 into registry/<entity>/ when submitting.\n\nVerify deployed code and proxy mappings independently. Open a registry pull request with descriptors and examples: https://clearsigning.org/build/ . Registry review, attestations, and wallet availability are separate steps.\n');
+    lint = options.lint===false ? {ran:false, command:lintCommand(descriptorFiles).join(' '), reason:'skipped with --no-lint'} : runUpstreamLint(stage, descriptorFiles);
+    if(lint.ran && lint.exitCode!==0) throw new Failure('UPSTREAM_LINT_FAILED',`erc7730 lint rejected the exported descriptor(s).`,1,[{code:'UPSTREAM_LINT_FAILED',message:(lint.output??[]).join(' | '),remedy:`Fix the descriptor and export again, or reproduce with: ${lint.command}`}]);
+    writeJson(path.join(stage,'review','validation.json'),{engine:ENGINE, entity, contracts:selections.map(s=>({id:s.id,descriptor:`registry/${entity}/calldata-${getContract(state.project,s.id).name}.json`,exclusions:s.exclusions,hidden:s.hidden??{}})),fixtures:tests.passed, upstreamLint:lint, deploymentVerification:'not performed',publication:'not submitted'});
+    writeJson(path.join(stage,'review','portability.json'),portability);
+    const provenanceFile=safePath(state.project.root,provenanceName);
+    if(fs.existsSync(provenanceFile)) { const all=readJson<Record<string,unknown>>(provenanceFile); writeJson(path.join(stage,'review','provenance.json'),Object.fromEntries(selections.filter(s=>s.id in all).map(s=>[s.id,all[s.id]]))); }
+    writeText(path.join(stage,'README.md'),[`# Clear-signing submission bundle for ${entity}`,'',
+      `The \`registry/${entity}/\` directory is laid out exactly as the ERC-7730 registry expects: descriptors at the entity root and \`testsv2/*.tests.json\` beside them, with relative schema references. Copy it into a clone of https://github.com/ethereum/clear-signing-erc7730-registry :`,'',
+      '```sh',`cp -r registry/${entity}/. <registry-clone>/registry/${entity}/`,'```','',
+      `Upstream lint: ${lint.ran ? `ran (exit ${lint.exitCode}, ${lint.warnings} warning(s)). Output is recorded in review/validation.json.` : `not run (${lint.reason}). Run it yourself before opening a pull request:`}`,'',
+      ...(lint.ran ? [] : ['```sh',lint.command,'```','']),
+      'The `review/` directory holds the original fixtures, normalized renderings, the validation record and the portability report. Read `review/portability.json` for known consumer limitations; a passing local test is not wallet certification.','',
+      'Verify deployed code and proxy mappings independently. Open the pull request from an account tied to the contract owner; registry review, attestations and wallet availability are separate steps: https://clearsigning.org/build/',''].join('\n'));
     fs.renameSync(stage,target);
   } catch(e) {fs.rmSync(stage,{recursive:true,force:true});throw e;}
-  return {exported:out,descriptors:state.config.contracts.length,fixtures:tests.passed, deploymentVerification:'not performed',publication:'not submitted',portability};
+  return {exported:out,entity,registryPath:`${out}/registry/${entity}`,descriptors:selections.length,fixtures:tests.passed,lint,deploymentVerification:'not performed',publication:'not submitted',portability};
 }
