@@ -3,6 +3,7 @@ import { init, loadState, check, review, sync, preview, createFixture, runTests,
 import { Failure } from './io.js';
 import { servePreview } from './preview.js';
 import { displayText, humanOutput } from './output.js';
+import { addDeployment } from './registry-edit.js';
 import packageJson from '../package.json' with {type: 'json'};
 
 const program=new Command();
@@ -69,6 +70,19 @@ program.command('export').description('Validate and write a submission bundle; d
   .option('--inline-abi','Embed the compiled ABI in context.contract.abi (deprecated by the schema; off by default)')
   .option('--no-lint','Skip running the pinned upstream erc7730 lint')
   .action(async options=>output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,inlineAbi:options.inlineAbi===true,lint:options.lint!==false})));
+const registry=program.command('registry').description('Edit an existing registry clone; never commits or opens pull requests');
+registry.command('add-deployment').description('Add a verified deployment (and a rendered test case) to a descriptor already in the registry')
+  .requiredOption('--registry <directory>','Path to a clone of ethereum/clear-signing-erc7730-registry')
+  .requiredOption('--descriptor <path>','Descriptor path inside the clone, e.g. registry/uniswap/calldata-UniswapV3Router02.json')
+  .requiredOption('--chain-id <number>','Chain ID of the new deployment')
+  .requiredOption('--address <address>','Deployed address on that chain (a verified proxy is followed to its implementation)')
+  .option('--abi <file>','Trust this ABI file instead of fetching the verified one (recorded as unverified)')
+  .option('--token <address=SYMBOL:decimals>','Token metadata for the new chain, used by the rendered test (repeatable)',select,[])
+  .option('--address-name <address=Name>','Local address name for the new chain, used by the rendered test (repeatable)',select,[])
+  .option('--description <text>','Description for the new test case')
+  .option('--no-test','Add the deployment only; do not touch testsv2')
+  .option('--no-lint','Skip running the pinned upstream erc7730 lint')
+  .action(async options=>output(await addDeployment({registry:options.registry,descriptor:options.descriptor,chainId:Number(options.chainId),address:options.address,abiFile:options.abi,tokens:options.token,addressNames:options.addressName,description:options.description,test:options.test!==false,lint:options.lint!==false})));
 try {await program.parseAsync();} catch(e) {
   if(e instanceof CommanderError && e.exitCode===0) process.exitCode=0;
   else {

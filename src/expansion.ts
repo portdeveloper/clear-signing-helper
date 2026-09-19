@@ -7,7 +7,7 @@ import { fail } from './io.js';
 // and index visible. The portable descriptor on disk remains unchanged.
 export function expandNestedFields(fields: (Field | Group)[], fn: FunctionFragment, args: readonly unknown[]): (Field | Group)[] {
   const needsExpansion = (items: (Field | Group)[], grouped = false): boolean => items.some(item =>
-    'fields' in item ? grouped || needsExpansion(item.fields, true) : (item.path.match(/\[\]/g)?.length ?? 0) > (grouped ? 0 : 1));
+    'fields' in item ? grouped || needsExpansion(item.fields, true) : (typeof item.path === 'string' ? (item.path.match(/\[\]/g)?.length ?? 0) : 0) > (grouped ? 0 : 1));
   if (!needsExpansion(fields)) return fields;
   const arrays = new Map<string, number>();
   let nodes = 0;

@@ -101,7 +101,7 @@ The build already requests `devdoc` and `userdoc` and nothing reads them; `broad
 
 Phase 1 (items 1-6) shipped as 0.3.0-preview.1 on 2026-09-19. Phase 2 is ordered by what a Monad team actually needs first.
 
-### 7. Add a chain to an existing registry descriptor — `todo`
+### 7. Add a chain to an existing registry descriptor — `done` (2026-09-19)
 
 Most protocols a new chain cares about already have a registry descriptor; the PR that matters is one deployment line plus one test case. Today that is manual.
 
@@ -110,6 +110,7 @@ Most protocols a new chain cares about already have a registry descriptor; the P
 - Append the deployment, then add a `testsv2` case by rendering an existing case's calldata against the new chain and address through the pinned renderer, so expected values are computed rather than copied.
 - Run upstream lint and the tests-v2 schema on the modified files. Print the exact `git` commands; never open the PR.
 - Acceptance: adding Monad mainnet (143) to a real registry descriptor produces a diff that passes the registry's lint and schema checks without hand edits.
+- Result: `src/registry-edit.ts`, CLI `registry add-deployment`. Selector proof against the verified ABI (`ABI_MISMATCH` refuses and writes nothing); template test chosen from cases whose `to` is a known deployment and whose selector exists in the ABI; rendering runs before any write, so missing chain-specific metadata (`MISSING_METADATA`) also writes nothing; edits are positional insertions (`src/json-edit.ts`) that copy the neighbouring entry's formatting, so a compact one-line registry file gets a one-line diff. `--abi` allows a trusted local ABI, recorded as unverified. Live check used Base WETH (8453, Sourcify match) against the real `registry/weth/calldata-weth.json`. Finding: that file's only test case, "Wrap - chain 1", carries one byte beyond the ABI encoding in its calldata, so it cannot serve as a template under the canonical-calldata rule; the command reports why (`NO_RENDERABLE_TEMPLATE`) and the deployment can still be added with `--no-test`. Registry test data is not guaranteed canonical; a Monad mainnet case still needs a protocol with a Sourcify-verified 143 deployment and an existing registry descriptor.
 
 ### 8. Converge the agent skill on the CLI — `todo`
 
@@ -146,7 +147,7 @@ Upstream lint and the schemas run today; the Sourcify and Rust runners do not. T
 
 ## Decisions
 
-- Network access is limited to two explicit, user-requested moments: `init --address` (Sourcify, then Etherscan with a key) and upstream `erc7730 lint` during export (via `uvx`). Everything else stays offline. Record any new exception here.
+- Network access is limited to explicit, user-requested moments: `init --address` and `registry add-deployment` (Sourcify, then Etherscan with a key) and upstream `erc7730 lint` during export or add-deployment (via `uvx`). Everything else stays offline. Record any new exception here.
 
 - Calldata only for now. EIP-712 stays in the agent skill until the CLI path is solid.
 - Portability findings remain warnings by default and hard failures only under `--strict-portability`. They are evidence-backed and should not be removed, but they must not block ordinary authoring.

@@ -171,6 +171,21 @@ Imported ABIs are stored under `clear-signing/abi/<Name>.json` with a `<Name>.so
 
 Not available in ABI mode: Solidity enums, constructor constants, broadcast bindings and broadcast fixtures, since those come from the compiler AST and `forge script` records.
 
+## Add a chain to a descriptor already in the registry
+
+Most protocols a new chain cares about already have a registry descriptor. The pull request that adds the chain is one deployment entry plus one test case, and the tool produces both from a registry clone:
+
+```sh
+git clone https://github.com/ethereum/clear-signing-erc7730-registry.git
+clear-signing registry add-deployment \
+  --registry clear-signing-erc7730-registry \
+  --descriptor registry/weth/calldata-weth.json \
+  --chain-id 8453 --address 0x4200000000000000000000000000000000000006 \
+  --token 0x4200000000000000000000000000000000000006=WETH:18
+```
+
+The address is proven to be the same contract before anything changes: its verified ABI is fetched from Sourcify (Etherscan V2 with `ETHERSCAN_API_KEY` as fallback, a verified proxy followed to its implementation) and every function the descriptor formats must exist in it by selector. The deployment is appended, and a test case for the new chain is rendered from an existing case's calldata through the pinned renderer, so expected values are computed rather than copied. Token symbols and address names differ between chains and are never guessed; supply them with `--token <address>=<SYMBOL>:<decimals>` and `--address-name <address>=<Name>`, or pass `--no-test` to add the deployment alone. Edits are inserted into the existing file text, copying the formatting of the neighbouring entry, so the pull request diff is the added lines and nothing else. If no existing test case can be rendered on the new chain, the command says why for each one and leaves both files untouched. Upstream lint runs on the result, and the exact `git` and `gh` commands are printed; the tool never commits or opens the pull request.
+
 ## Files and commands
 
 ```text
@@ -199,6 +214,7 @@ Commit the TOML file and `clear-signing/`. Ignore `.clear-signing-cache/` and yo
 | `test` | Render all fixtures and compare saved expectations |
 | `test --update` | Accept expectations only if every fixture renders without blocking warnings; `--contract` narrows both |
 | `export --out <directory>` | Validate, write a registry-shaped bundle, and run upstream lint; `--contract` exports one contract; never publishes |
+| `registry add-deployment` | Add a verified deployment and a rendered test case to a descriptor in a registry clone; never commits |
 
 Global options: `--root <directory>`, `--profile <name>`, `--no-build`, and `--json`. Relative fixture/config paths resolve from the project root (the nearest `clear-signing.toml` or `foundry.toml`), including when invoked in a subdirectory. The saved profile is the default; an explicit flag or `FOUNDRY_PROFILE` overrides it.
 
@@ -286,7 +302,7 @@ Human previews escape terminal controls and bidirectional overrides as visible t
 
 Missing token metadata is visible as warnings and raw fallback in preview, and blocks test acceptance/export. Empty-array notices and unnamed `addressName` values are informational: the address renders in full, as wallets show it, and the warning remains in expectations. Dates beyond the renderer's supported range fail instead of being silently accepted. Registry test runners use their own chain tables; an `amount` field on a chain they do not know will render raw there.
 
-Unsupported features fail explicitly: EIP-712, nested transaction decoding, external includes/references, display definitions, constant-value fields, encryption, interpolated intents, factory bindings, and automatic registry access. Apart from `init --address` and the upstream lint run on export, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
+Unsupported features fail explicitly: EIP-712, nested transaction decoding, external includes/references, display definitions, constant-value fields, encryption, interpolated intents, factory bindings, and automatic registry access. Apart from `init --address`, `registry add-deployment`, and the upstream lint run on export, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
 
 ## Use with an agent
 
