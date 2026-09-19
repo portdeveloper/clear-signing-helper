@@ -1,5 +1,16 @@
 # Developer preview release handoff
 
+## 0.3.0-preview.1 (2026-09-19)
+
+- [x] Tag `v0.3.0-preview.1` on `main` at `7c14b70`; CI run [35440995617](https://github.com/portdeveloper/clear-signing-helper/actions/runs/35440995617) passed on Node 22.22.3 and 24.20.0, ubuntu-24.04 and macos-15.
+- [x] `npm run release:verify` produced `clear-signing-helper-0.3.0-preview.1.tgz`, SHA-256 `2619f5c1c2f11630f223e10586b8b2e0195828371d244d4546fcf269b747300e`, and `release-verification.json`.
+- [x] [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.3.0-preview.1) created with the tarball, checksum and verification record. The downloaded asset matched the checksum, installed with lifecycle scripts disabled, reported `0.3.0-preview.1`, and previewed the example fixture.
+- [ ] Publish the identical tarball to npm under the `preview` dist-tag: `npm publish release/clear-signing-helper-0.3.0-preview.1.tgz --tag preview --ignore-scripts`, then confirm with `npm view clear-signing-helper@0.3.0-preview.1 dist.shasum` and a fresh `npx --yes --ignore-scripts --package=clear-signing-helper@preview clear-signing --version`.
+- [ ] Update the README install section to point at the npm version once published.
+
+Earlier release below.
+
+
 Updated 2026-09-09. The owner selected an experimental developer preview, `0.2.0-preview.1`, for generating, previewing and regression-testing ERC-7730 calldata descriptors in Foundry. The selected scope retains strict portability checks. External review and physical-wallet acceptance remain pending production-readiness work and do not block preview distribution.
 
 Published on 2026-09-09: [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.2.0-preview.1). [PR #6](https://github.com/portdeveloper/clear-signing-helper/pull/6) is merged. The release tag points to tested source commit `78c963896a4be12180a554ce6c45d242be592cee`; subsequent documentation updates do not change that artifact.
