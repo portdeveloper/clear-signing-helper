@@ -295,6 +295,8 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         for (const leaf of leafMap.keys()) if (!displayedLeaves.has(leaf) && !hiddenHere[leaf]) add('UNDISPLAYED_ARGUMENT', `${sig} does not display ${leaf}. Signers will not see this argument.`, key, 'warning');
         if (spec.interpolatedIntent !== undefined) {
           if (typeof spec.interpolatedIntent !== 'string' || !spec.interpolatedIntent.trim()) fail('INVALID_INTERPOLATION', `${sig} interpolatedIntent must be a nonempty string.`);
+          // The registry linter applies its 30-character rule to the template text as well.
+          if (spec.interpolatedIntent.length > MAX_INTENT) add('INTENT_LENGTH', `${sig} interpolatedIntent "${spec.interpolatedIntent}" is ${spec.interpolatedIntent.length} characters; the registry linter warns above ${MAX_INTENT}.`, key, 'warning');
           // Every {placeholder} must name a displayed field, else the renderer falls back and warns.
           for (const ph of placeholders(spec.interpolatedIntent)) {
             const target = ph.replace(/^#\./, '');
