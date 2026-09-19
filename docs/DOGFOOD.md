@@ -41,6 +41,10 @@ What the tool derived: the ABI and NatSpec from the Sourcify match, the deployme
 5. **Verification itself.** Three `forge verify-contract` runs, plus the router diagnosis above.
 6. **Registry conventions the tool did not yet cover.** `erc7730 format` rewrote the pretty-printed descriptor into the registry's compact style; export now runs it. The registry's advisory script recommends `interpolatedIntent` on every format; the tool does not author or validate interpolated intents.
 
+## Replay through a decisions file (item 11)
+
+After `decisions`/`apply` landed, the same descriptor was reproduced from `init --address` plus one filled decisions file, with no descriptor JSON edited by hand: intents for the four user flows, `tokenAmount` with the LP token for `stake`/`withdraw`, six exclusions with one reason. The result is identical to the file in PR #3003. Provenance records 12 human decisions, 4 NatSpec-derived values and 1 registry prior. The six human steps above collapse to: fill one file, run three verifications.
+
 ## Registry submission
 
 - Branch `puddleswap-staking-rewards` on `portdeveloper/clear-signing-erc7730-registry`, one commit, two files under `registry/puddleswap/`. Registry-side checks run locally: index buildable, `erc7730 lint` clean apart from excluded-function warnings, both schemas, both runners.

@@ -297,3 +297,49 @@ await test('drafts use NatSpec, AST enums, broadcast constructor constants, ERC-
   assert.equal(r.fields[0].value,'1 USDC');assert.deepEqual(r.warnings,[]);
   assert.ok(codes(run(root,['fixture','--name','nope','--contract',vault,'--broadcast-tx','0x'+'ff'.repeat(32)],2)).includes('BROADCAST_TX_NOT_FOUND'));
 });
+
+await test('decisions template exposes the judgment slots with hints, and apply writes descriptor, exclusions, hidden reasons and provenance',t=>{
+  const root=project();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const router='src/SwapRouter.sol:SwapRouter';
+  run(root,['init','--contract',router,'--owner','Example']);
+  const created=run(root,['decisions','--contract',router]).result;
+  const dfile=path.join(root,created.created),dec=read(dfile);
+  const swap='swapExactTokensForTokens(uint256,uint256,address[],address,uint256)';
+  assert.equal(dec.author,null);assert.ok(dec.functions[swap]);
+  const fn=dec.functions[swap];
+  assert.equal(fn.decision,'describe');assert.equal(fn.intent,'Uniswap V2 style path swap','NatSpec intent carried into the template');
+  assert.ok(fn.hints.registryPriorCount>0,'registry priors for the V2 swap selector');assert.equal(fn.hints.intentLimit,30);
+  assert.ok(fn.fields['amountIn'].hints.denominations.some((x:string)=>x.includes('tokenPath path.[]')));
+  assert.deepEqual(Object.keys(fn.fields),['amountIn','amountOutMin','path.[]','to','deadline']);
+  // Apply without an author is refused.
+  assert.equal(run(root,['apply','--decisions',created.created],2).diagnostics[0].code,'DECISIONS_AUTHOR');
+  // Fill as an agent would.
+  dec.author='llm:test-model';dec.url='https://example.org';
+  fn.intent='Swap';
+  fn.fields['amountIn']={...fn.fields['amountIn'],label:'Amount to send',format:'tokenAmount',params:{tokenPath:'path.[0]'}};
+  fn.fields['amountOutMin']={...fn.fields['amountOutMin'],label:'Minimum to receive',format:'tokenAmount',params:{tokenPath:'path.[-1]'}};
+  fn.fields['path.[]']={...fn.fields['path.[]'],show:false,hideReason:'Route is implied by the token amounts'};
+  fn.fields['to']={...fn.fields['to'],label:'Recipient',format:'addressName',params:{types:['eoa','wallet']}};
+  fn.fields['deadline']={...fn.fields['deadline'],label:'Expires',format:'date',params:{encoding:'timestamp'}};
+  for(const [sig,f] of Object.entries<any>(dec.functions)) if(sig!==swap){f.decision='exclude';f.excludeReason='Outside this test';}
+  write(dfile,dec);
+  const applied=run(root,['apply','--decisions',created.created]).result;
+  assert.equal(applied.source,'llm');assert.equal(applied.hidden,1);assert.equal(applied.excluded,Object.keys(dec.functions).length-1);
+  const d=read(path.join(root,'clear-signing/descriptors',fs.readdirSync(path.join(root,'clear-signing/descriptors'))[0]));
+  assert.deepEqual(Object.keys(d.display.formats),['swapExactTokensForTokens(uint256 amountIn,uint256 amountOutMin,address[] path,address to,uint256 deadline)']);
+  const spec=Object.values<any>(d.display.formats)[0];
+  assert.equal(spec.intent,'Swap');assert.deepEqual(spec.fields.map((f:any)=>[f.path,f.format]),[['amountIn','tokenAmount'],['amountOutMin','tokenAmount'],['to','addressName'],['deadline','date']]);
+  assert.equal(d.metadata.info.url,'https://example.org');
+  const cfg=TOML.parse(fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8')) as any;
+  assert.equal(cfg.contracts[0].hidden[swap]['path.[]'],'Route is implied by the token amounts');assert.ok(cfg.contracts[0].exclusions['transferAdmin(address)']);
+  const prov=read(path.join(root,'clear-signing/provenance.json'))[router];
+  assert.ok(prov.some((p:any)=>p.source==='llm'&&p.detail==='intent: Swap'));assert.ok(prov.some((p:any)=>p.source==='llm'&&p.path==='path.[]'&&p.detail.startsWith('hidden:')));
+  // check is clean apart from review, and the decisions round-trip.
+  run(root,['review','--accept']);const checked=run(root,['check']).result;assert.deepEqual(checked.warnings,[]);
+  const again=read(path.join(root,run(root,['decisions','--contract',router,'--out','clear-signing/decisions/again.json']).result.created));
+  assert.equal(again.functions[swap].intent,'Swap');assert.equal(again.functions[swap].fields['path.[]'].show,false);assert.equal(again.functions[swap].fields['amountIn'].params.tokenPath,'path.[0]');
+  // A bad decision writes nothing.
+  dec.functions[swap].fields['deadline'].format='addressName';write(dfile,dec);
+  assert.ok(['FORMAT_TYPE','SCHEMA_INVALID'].includes(run(root,['apply','--decisions',created.created],1).diagnostics[0].code));
+  assert.equal(Object.values<any>(read(path.join(root,'clear-signing/descriptors',fs.readdirSync(path.join(root,'clear-signing/descriptors'))[0])).display.formats)[0].fields[3].format,'date');
+});

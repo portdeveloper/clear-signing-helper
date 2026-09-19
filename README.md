@@ -186,6 +186,18 @@ clear-signing registry add-deployment \
 
 The address is proven to be the same contract before anything changes: its verified ABI is fetched from Sourcify (Etherscan V2 with `ETHERSCAN_API_KEY` as fallback, a verified proxy followed to its implementation) and every function the descriptor formats must exist in it by selector. The deployment is appended, and a test case for the new chain is rendered from an existing case's calldata through the pinned renderer, so expected values are computed rather than copied. Token symbols and address names differ between chains and are never guessed; supply them with `--token <address>=<SYMBOL>:<decimals>` and `--address-name <address>=<Name>`, or pass `--no-test` to add the deployment alone. Edits are inserted into the existing file text, copying the formatting of the neighbouring entry, so the pull request diff is the added lines and nothing else. If no existing test case can be rendered on the new chain, the command says why for each one and leaves both files untouched. Upstream lint runs on the result, and the exact `git` and `gh` commands are printed; the tool never commits or opens the pull request.
 
+## Decisions: the slots only judgment can fill
+
+Everything the scaffold cannot prove is exposed as one editable file per contract, so a person or an agent fills it without touching descriptor JSON:
+
+```sh
+clear-signing decisions --contract src/Vault.sol:Vault      # writes clear-signing/decisions/Vault.json
+# fill intents, formats, denominations, show/hide with reasons, exclude with reasons; set "author"
+clear-signing apply --decisions clear-signing/decisions/Vault.json
+```
+
+The template lists every function and every argument leaf with its current value and read-only hints: the NatSpec text, the registry's formats for the same selector, candidate denominations for amounts (`@.to`, `$.metadata.constants.*`, address arguments, a literal token), and the formats valid for the type. `apply` validates the result before writing anything, then writes the descriptor, `exclusions` and `hidden` in `clear-signing.toml`, and records each decision in `clear-signing/provenance.json` as `human` or `llm` according to the file's `author`. Hidden native value and unsupported formats are refused. Running `decisions` again reproduces the current state, so the file round-trips.
+
 ## Files and commands
 
 ```text
@@ -195,7 +207,8 @@ clear-signing/
   fixtures/deposit.json
   expectations/deposit.json
   review.json
-  provenance.json        where each scaffolded intent, label and format came from
+  provenance.json        where each intent, label and format came from (natspec, ast, broadcast, convention, registry, human, llm)
+  decisions/<Name>.json  the judgment slots for one contract, filled by a person or an agent
   abi/<Name>.json        ABI mode only, with <Name>.source.json beside it
 .clear-signing-cache/build.json
 ```
@@ -206,6 +219,8 @@ Commit the TOML file and `clear-signing/`. Ignore `.clear-signing-cache/` and yo
 | --- | --- |
 | `init` | Scaffold selected contracts; existing descriptors are preserved. `--abi <file>` or `--address <addr> --chain-id <id>` starts ABI mode |
 | `upgrade` | Adopt a new engine version, preserve descriptors/expectations, and invalidate old review |
+| `decisions --contract <id>` | Write the judgment slots (intent, formats, denominations, show/hide, exclude) as a file with hints |
+| `apply --decisions <file>` | Validate a filled decisions file, then write descriptor, exclusions, hidden reasons and provenance |
 | `sync` | Add missing function formats; report obsolete references without deleting them |
 | `fixture` | Encode a sample call using the compiled ABI, or copy a recorded broadcast transaction with `--broadcast-tx <hash>` |
 | `preview --fixture <path>` | Render in the terminal; `--open` / `--serve` enables a browser preview |

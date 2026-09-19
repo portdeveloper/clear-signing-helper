@@ -3,7 +3,8 @@ import path from 'node:path';
 import TOML from '@iarna/toml';
 import { Interface } from 'ethers';
 import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
-import { ENGINE, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance } from './descriptors.js';
+import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, normalizePath, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group } from './descriptors.js';
+import { priorsFor, summarizePrior } from './priors.js';
 import { gatherEvidence } from './evidence.js';
 import {portabilityFindings, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
@@ -356,4 +357,123 @@ export async function exportBundle(state: State, out: string, strictPortability=
     fs.renameSync(stage,target);
   } catch(e) {fs.rmSync(stage,{recursive:true,force:true});throw e;}
   return {exported:out,entity,registryPath:`${out}/registry/${entity}`,descriptors:selections.length,fixtures:tests.passed,lint,registryRunners:options.registryRunners?runnerResults:null,deploymentVerification:'not performed',publication:'not submitted',portability};
+}
+
+// ---------------------------------------------------------------------------------------------
+// Decisions: the judgment slots the scaffold cannot fill, as a file any agent or person can edit.
+// `decisions` writes the template from the current descriptor plus every hint the tool has;
+// `apply` writes the descriptor, exclusions, hidden reasons and provenance from a filled file.
+export interface DecisionField {type: string; show: boolean; hideReason?: string | null; label: string; format: string; params?: Record<string, unknown> | null; hints?: Record<string, unknown>}
+export interface DecisionFunction {signature: string; decision: 'describe' | 'exclude'; excludeReason?: string | null; intent: string; fields: Record<string, DecisionField>; hints?: Record<string, unknown>}
+export interface Decisions {version: 1; contract: string; descriptor: string; author: string | null; generatedAt: string; owner: string; url: string | null; functions: Record<string, DecisionFunction>; guidance: string[]}
+const decisionsDir = 'clear-signing/decisions';
+export function writeDecisions(state: State, id: string, out?: string) {
+  const selection = selectContracts(state, [id])[0];
+  const c = getContract(state.project, id), d = state.descriptors.get(id)!, evidence = gatherEvidence(state.project, c);
+  const formats = new Map(Object.entries(d.display.formats).map(([k, v]) => [parseSignature(k).format('sighash'), {key: k, spec: v}]));
+  const constants = Object.keys(d.metadata.constants ?? {});
+  const functions: Record<string, DecisionFunction> = {};
+  for (const f of c.functions) {
+    const sig = f.format('sighash'), key = signature(f), existing = formats.get(sig);
+    const leafList = leaves(f.inputs);
+    const flat = new Map<string, Field>();
+    const walk = (items: (Field | Group)[], prefix = '') => { for (const item of items) { if ('fields' in item) walk(item.fields, prefix + item.path + '.'); else if (typeof item.path === 'string') flat.set(normalizePath(item.path.startsWith('@.') ? item.path : prefix + item.path), item); } };
+    if (existing) walk(existing.spec.fields);
+    const addressLeaves = leafList.filter(l => l.type === 'address').map(l => l.path);
+    const fields: Record<string, DecisionField> = {};
+    for (const leaf of leafList) {
+      const cur = flat.get(leaf.path);
+      const hidden = selection.hidden?.[sig]?.[leaf.path];
+      const humanized = (leaf.path.split('.').pop() ?? leaf.path).replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' ').trim().replace(/^./, x => x.toUpperCase());
+      const hints: Record<string, unknown> = {};
+      if (/^u?int\d*$/.test(leaf.type)) hints.denominations = ['@.to (the contract itself is the token)', ...constants.map(k => `$.metadata.constants.${k}`), ...addressLeaves.map(a => `tokenPath ${a}`), 'token <literal address>'];
+      if (evidence.paramDocs[sig]?.[leaf.path.split('.')[0]]) hints.natspec = evidence.paramDocs[sig][leaf.path.split('.')[0]];
+      const formatsForType = leaf.type === 'address' ? ['addressName', 'tokenTicker', 'raw'] : /^u?int\d*$/.test(leaf.type) ? ['tokenAmount', 'amount', 'date', 'duration', 'unit', 'enum', 'chainId', 'raw'] : leaf.type === 'bool' ? ['enum', 'raw'] : ['raw'];
+      hints.formatsForType = formatsForType;
+      fields[leaf.path] = {type: leaf.type, show: !!cur || !hidden, ...(hidden ? {hideReason: hidden} : {}), label: cur?.label ?? humanized, format: cur?.format ?? 'raw', params: cur?.params ?? null, hints};
+    }
+    if (f.stateMutability === 'payable') { const cur = flat.get('@.value'); fields['@.value'] = {type: 'uint256', show: true, label: cur?.label ?? 'Native amount', format: cur?.format ?? 'amount', params: cur?.params ?? null, hints: {note: 'Payable: must stay shown.'}}; }
+    const priors = priorsFor(f.selector);
+    functions[sig] = {signature: key, decision: existing ? 'describe' : selection.exclusions[sig] ? 'exclude' : 'describe', excludeReason: selection.exclusions[sig] ?? null,
+      intent: existing?.spec.intent ?? (f.name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/^./, x => x.toUpperCase())), fields,
+      hints: {...(evidence.notices[sig] ? {natspec: evidence.notices[sig]} : {}), ...(priors.length ? {registryPriors: priors.slice(0, 5).map(summarizePrior), registryPriorCount: priors.length} : {}), intentLimit: 30}};
+  }
+  const decisions: Decisions = {version: 1, contract: id, descriptor: selection.descriptor, author: null, generatedAt: new Date().toISOString().slice(0, 10), owner: d.metadata.owner, url: d.metadata.info?.url ?? null, functions,
+    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml.', 'Per field: show true/false (hideReason required when false), label, format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.']};
+  const file = out ?? `${decisionsDir}/${c.name}.json`;
+  writeJson(safePath(state.project.root, file), decisions);
+  return {created: file, functions: Object.keys(functions).length, next: `Fill intents, formats, denominations and show/hide reasons in ${file}, set author, then run apply --decisions ${file}.`};
+}
+export function applyDecisions(state: State, file: string) {
+  const dec = readJson<Decisions>(safePath(state.project.root, file));
+  assertKeys(dec, ['version', 'contract', 'descriptor', 'author', 'generatedAt', 'owner', 'url', 'functions', 'guidance'], 'decisions');
+  if (dec.version !== 1 || typeof dec.contract !== 'string' || !dec.functions || typeof dec.functions !== 'object') fail('INVALID_DECISIONS', 'decisions file must have version 1, a contract id and a functions map.', 2);
+  if (typeof dec.author !== 'string' || !dec.author.trim()) fail('DECISIONS_AUTHOR', 'Set "author" to "human" or "llm:<model>" so provenance records who decided.', 2);
+  const source: Provenance['source'] = /^llm\b/i.test(dec.author) ? 'llm' : 'human';
+  const selection = selectContracts(state, [dec.contract])[0];
+  const c = getContract(state.project, dec.contract), current = state.descriptors.get(dec.contract)!;
+  const d: Descriptor = structuredClone(current);
+  if (typeof dec.owner === 'string' && dec.owner.trim()) d.metadata.owner = dec.owner.trim();
+  if (typeof dec.url === 'string' && dec.url.trim()) d.metadata.info = {...(d.metadata.info ?? {}), url: dec.url.trim()};
+  const exclusions: Record<string, string> = {...selection.exclusions}, hidden: Record<string, Record<string, string>> = structuredClone(selection.hidden ?? {});
+  const provenance: (Provenance & {contract: string})[] = [];
+  const byKey = new Map(Object.keys(d.display.formats).map(k => [parseSignature(k).format('sighash'), k]));
+  for (const f of c.functions) {
+    const sig = f.format('sighash'), fd = dec.functions[sig];
+    if (!fd) continue;
+    const key = byKey.get(sig) ?? signature(f);
+    if (fd.decision === 'exclude') {
+      if (typeof fd.excludeReason !== 'string' || !fd.excludeReason.trim()) fail('DECISIONS_REASON', `${sig}: decision "exclude" needs an excludeReason.`, 2);
+      delete d.display.formats[key]; exclusions[sig] = fd.excludeReason.trim(); delete hidden[sig];
+      provenance.push({contract: dec.contract, signature: sig, source, detail: `excluded: ${fd.excludeReason.trim()}`});
+      continue;
+    }
+    if (fd.decision !== 'describe') fail('INVALID_DECISIONS', `${sig}: decision must be "describe" or "exclude".`, 2);
+    delete exclusions[sig];
+    if (typeof fd.intent !== 'string' || !fd.intent.trim()) fail('DECISIONS_INTENT', `${sig}: intent is required.`, 2);
+    const spec = d.display.formats[key] ?? scaffoldFormatWithProvenance(f).format;
+    spec.intent = fd.intent.trim();
+    provenance.push({contract: dec.contract, signature: sig, source, detail: `intent: ${spec.intent}`});
+    // Edit leaves in place to keep existing grouping; drop hidden ones; append newly shown ones flat.
+    const hiddenHere: Record<string, string> = {};
+    const present = new Set<string>();
+    const edit = (items: (Field | Group)[], prefix = ''): (Field | Group)[] => items.flatMap((item): (Field | Group)[] => {
+      if ('fields' in item) { const inner = edit(item.fields, prefix + item.path + '.'); return inner.length ? [{...item, fields: inner}] : []; }
+      if (typeof item.path !== 'string') return [item];
+      const full = item.path.startsWith('@.') ? item.path : normalizePath(prefix + item.path);
+      const decision = fd.fields?.[full];
+      if (!decision) return [item];
+      present.add(full);
+      if (decision.show === false) { if (full === '@.value') fail('DECISIONS_NATIVE_VALUE', `${sig}: @.value must stay shown.`, 2); if (!decision.hideReason?.trim()) fail('DECISIONS_REASON', `${sig} ${full}: show=false needs a hideReason.`, 2); hiddenHere[full] = decision.hideReason!.trim(); return []; }
+      const format = decision.format ?? 'raw';
+      if (!(SUPPORTED_FORMATS as readonly string[]).includes(format)) fail('UNSUPPORTED_FORMAT', `${sig} ${full}: ${format} is not a supported format.`, 2);
+      const next: Field = {...item, label: decision.label?.trim() || item.label, format};
+      if (decision.params && Object.keys(decision.params).length) next.params = decision.params as Record<string, any>; else delete next.params;
+      return [next];
+    });
+    spec.fields = edit(spec.fields);
+    for (const [full, decision] of Object.entries(fd.fields ?? {})) {
+      if (present.has(full)) continue;
+      if (decision.show === false) { if (!decision.hideReason?.trim()) fail('DECISIONS_REASON', `${sig} ${full}: show=false needs a hideReason.`, 2); hiddenHere[full] = decision.hideReason!.trim(); continue; }
+      const format = decision.format ?? 'raw';
+      if (!(SUPPORTED_FORMATS as readonly string[]).includes(format)) fail('UNSUPPORTED_FORMAT', `${sig} ${full}: ${format} is not a supported format.`, 2);
+      spec.fields.push({path: full, label: decision.label?.trim() || full, format, ...(decision.params && Object.keys(decision.params).length ? {params: decision.params as Record<string, any>} : {})});
+    }
+    for (const [full, decision] of Object.entries(fd.fields ?? {})) if (decision.show !== false) provenance.push({contract: dec.contract, signature: sig, path: full, source, detail: `${decision.format ?? 'raw'}${decision.params ? ` ${JSON.stringify(decision.params)}` : ''}, label "${decision.label}"`});
+    if (Object.keys(hiddenHere).length) hidden[sig] = hiddenHere; else delete hidden[sig];
+    for (const [full, reason] of Object.entries(hiddenHere)) provenance.push({contract: dec.contract, signature: sig, path: full, source, detail: `hidden: ${reason}`});
+    d.display.formats[key] = spec;
+  }
+  const nextSelection: Selection = {...selection, exclusions, ...(Object.keys(hidden).length ? {hidden} : {})};
+  if (!Object.keys(hidden).length) delete (nextSelection as any).hidden;
+  // Validate before writing anything.
+  const diagnostics = validateDescriptor(d, c, nextSelection);
+  const errors = errorsOf(diagnostics);
+  if (errors.length) throw new Failure('APPLY_INVALID', `${errors.length} issue(s) in the decisions; nothing was written.`, 1, errors);
+  writeJson(safePath(state.project.root, selection.descriptor), d);
+  const config = configFrom(state.project.root);
+  config.contracts = config.contracts.map(s => s.id === dec.contract ? nextSelection : s);
+  saveConfig(state.project, config);
+  recordProvenance(state.project.root, provenance, false);
+  return {applied: selection.descriptor, author: dec.author, source, functions: Object.keys(dec.functions).length, excluded: Object.keys(exclusions).length, hidden: Object.values(hidden).reduce((n, h) => n + Object.keys(h).length, 0), warnings: warningsOf(diagnostics), next: 'Run preview on your fixtures, then review --accept and test --update after inspecting them.'};
 }

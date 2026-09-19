@@ -19,6 +19,7 @@ function formatHumanOutput(data: any): string {
   }
   if (data.url) return `Preview: ${data.url}\nPress Ctrl+C to stop.\n\n${formatHumanOutput(data.rendering)}`;
   if (data.upgraded !== undefined) return data.note;
+  if (data.applied) return [`Applied decisions by ${data.author} to ${data.applied}: ${data.functions} function(s), ${data.excluded} excluded, ${data.hidden} hidden field(s).`,...(data.warnings??[]).map((w:any)=>`Warning ${w.code}${w.signature?` (${w.signature})`:''}: ${w.message}`),data.next].join('\n');
   if (data.runners && data.sourcify && data.rust) return `Registry runners ready under ${data.runners}\n  Sourcify: ${data.sourcify.cli} (${data.sourcify.ref.slice(0,8)})\n  Rust: ${data.rust.binary} (${data.rust.ref.slice(0,8)})`;
   if (data.deployment && data.next) return [
     `Added ${data.deployment.chainId}:${data.deployment.address} to ${data.descriptor}.`,
@@ -38,7 +39,7 @@ function formatHumanOutput(data: any): string {
     if (typeof data.created === 'string') return `Created ${data.created}${data.source?` from ${data.source}`:''}\n${data.next}`;
     const imports=(data.imports??[]).map((i:any)=>`  ${i.contract} from ${i.source}${i.match?` (${i.match})`:''}: ${i.origin}${i.proxy?`\n    proxy ${i.proxy.type??''} -> implementation ${i.proxy.implementation.address}${i.proxy.implementation.name?` (${i.proxy.implementation.name})`:''}; the descriptor binds the proxy address`:''}`);
     const bindings=(data.bindings??[]).map((b:any)=>`  ${b.contract} bound to ${b.chainId}:${b.address} (from ${b.source})`);
-    const label:Record<string,string>={natspec:'NatSpec',ast:'AST',broadcast:'broadcast',convention:'convention',registry:'registry prior'};
+    const label:Record<string,string>={natspec:'NatSpec',ast:'AST',broadcast:'broadcast',convention:'convention',registry:'registry prior',human:'human',llm:'LLM'};
     const evidence=(data.provenance??[]).map((p:any)=>`  [${label[p.source]??p.source}] ${p.contract} ${p.signature}${p.path?` ${p.path}`:''}: ${p.detail}`);
     const suggestions=(data.suggestions??[]).flatMap((s:any)=>[`  ${s.id}${s.ambiguous?' (name shared by several compiled contracts; bind manually)':''}`,...s.deployments.map((d:any)=>`    deployed at ${d.chainId}:${d.address} by ${d.script}`)]);
     return [`${data.created.length} descriptor(s) created.`, ...data.contracts.map((c:any)=>`  ${c.id}\n    ${c.descriptor}`),

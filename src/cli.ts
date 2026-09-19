@@ -1,5 +1,5 @@
 import { Command, CommanderError } from 'commander';
-import { init, loadState, check, review, sync, preview, createFixture, runTests, exportBundle, upgrade } from './app.js';
+import { init, loadState, check, review, sync, preview, createFixture, runTests, exportBundle, upgrade, writeDecisions, applyDecisions } from './app.js';
 import { Failure } from './io.js';
 import { servePreview } from './preview.js';
 import { displayText, humanOutput } from './output.js';
@@ -30,6 +30,13 @@ program.command('init').description('Discover contracts and create drafts withou
   .action(async options=>output(await init({...program.opts(),...options})));
 program.command('upgrade').description('Adopt this engine version and invalidate prior review; descriptors are preserved').action(()=>output(upgrade(program.opts())));
 program.command('sync').description('Add newly introduced functions while preserving existing formatting').action(()=>output(sync(state())));
+program.command('decisions').description('Write the judgment slots for one contract (intents, denominations, show/hide, exclude) as a file to fill')
+  .requiredOption('--contract <path:name>','Selected contract identity')
+  .option('--out <file>','Output path (default clear-signing/decisions/<Name>.json)')
+  .action(options=>output(writeDecisions(state(),options.contract,options.out)));
+program.command('apply').description('Write descriptor, exclusions and hidden reasons from a filled decisions file; validates first, records who decided')
+  .requiredOption('--decisions <file>','Decisions file written by the decisions command')
+  .action(options=>output(applyDecisions(state(),options.decisions)));
 program.command('check').description('Check schema, ABI coverage, and review freshness')
   .option('--contract <path:name>','Check only this selected contract (repeatable)',select,[])
   .option('--strict-portability','Fail on known consumer compatibility issues; does not certify wallet support')

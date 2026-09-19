@@ -67,7 +67,7 @@ export function leaves(params: readonly ParamType[], prefix = '', depth = 0): {p
 // A concrete index such as path.[0] or path.[-1] addresses the same ABI leaf as path.[].
 export const normalizePath = (p: string) => p.replace(/\.\[-?\d+\]/g, '.[]');
 // Where a scaffolded value came from, so reviewers can tell author text and proofs from conventions.
-export interface Provenance {signature: string; path?: string; source: 'natspec' | 'ast' | 'broadcast' | 'convention' | 'registry'; detail: string}
+export interface Provenance {signature: string; path?: string; source: 'natspec' | 'ast' | 'broadcast' | 'convention' | 'registry' | 'human' | 'llm'; detail: string}
 const firstSentence = (text: string) => text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, '').trim();
 // The registry linter warns above 30 characters because Ledger devices truncate longer intents.
 export const MAX_INTENT = 30, MAX_LABEL = 32;

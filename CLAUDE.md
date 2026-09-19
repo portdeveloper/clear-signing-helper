@@ -144,7 +144,7 @@ Upstream lint and the schemas run today; the Sourcify and Rust runners do not. T
 
 Principle, refined from phase 2: derive everything provable deterministically; let AI propose only what cannot be derived; verify everything verifiable against the registry's own tools; a human owns what cannot be verified. The model sits after the scaffold and fills only its judgment slots. It never generates the provable parts, and it never submits.
 
-### 11. Decisions template and `apply` — `todo` (do first)
+### 11. Decisions template and `apply` — `done` (2026-09-19)
 
 The six human steps in `docs/DOGFOOD.md` are all judgment slots the scaffold leaves raw. Make them an explicit interface any agent, or a person, can fill without touching descriptor JSON.
 
@@ -152,6 +152,7 @@ The six human steps in `docs/DOGFOOD.md` are all judgment slots the scaffold lea
 - `clear-signing apply --decisions <file>` writes the descriptor and `clear-signing.toml` from it, validates, and records `source: llm` or `source: human` in `clear-signing/provenance.json` per decision (the file carries an `author` field).
 - The LLM stays outside the CLI: no API keys or model calls in the tool. The skill instructs the agent to fill the decisions file.
 - Acceptance: the PuddleSwap StakingRewards authoring in `docs/DOGFOOD.md` is reproducible from a decisions file alone; provenance distinguishes agent-authored intents from NatSpec ones.
+- Result: `decisions --contract` writes `clear-signing/decisions/<Name>.json` with, per function, `decision`/`excludeReason`, `intent`, and per leaf `show`/`hideReason`/`label`/`format`/`params`, each carrying read-only `hints` (NatSpec, registry priors for the selector, candidate denominations, formats valid for the type, the 30-character intent limit). `apply --decisions` requires `author`, edits leaves in place to preserve grouping, drops hidden leaves and appends newly shown ones, refuses a hidden `@.value` or unsupported format, validates the whole descriptor before writing, then writes descriptor + `clear-signing.toml` + provenance tagged `human` or `llm`. The file round-trips. The skill now instructs agents to use it instead of editing JSON. Verified in tests on the example router, and live: the PuddleSwap StakingRewards descriptor in registry PR #3003 was reproduced exactly from `init --address` plus one decisions file (provenance: 12 human, 4 natspec, 1 registry prior).
 
 ### 12. Registry-corpus selector prior — `done` (2026-09-19)
 

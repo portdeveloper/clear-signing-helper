@@ -72,22 +72,23 @@ Read the `init` output. It lists every value it derived and its source: NatSpec 
 
 ## 3. Author what the tool cannot prove
 
-Open the descriptor JSON. For every function a user signs:
+Do not edit descriptor JSON by hand. Ask the tool for the judgment slots, fill them, and apply:
+
+```sh
+clear-signing decisions --contract <id>            # writes clear-signing/decisions/<Name>.json
+# edit that file, set "author": "llm:<your model>" (or "human" when the user decided)
+clear-signing apply --decisions clear-signing/decisions/<Name>.json
+```
+
+The file lists every function and argument with hints you must read before deciding: the NatSpec text, what other registry descriptors do with the same selector (`hints.registryPriors`), the candidate denominations for each amount, and the formats valid for the type. `apply` refuses invalid combinations and writes nothing on error; it records every decision in provenance under your author tag, so reviewers can see which choices were the model's. Where a hint does not settle a question, ask the user rather than choosing. The rules for each slot:
 
 - **Intent**: the action in plain words, 30 characters or fewer (Ledger truncates; the registry linter warns). "Approve USDC", "Supply collateral", "Swap". The CLI prefilled NatSpec `@notice` where it fit; keep it only if it reads as an action.
 - **Token amounts**: use `tokenAmount`. When the token is another argument, `"params": {"tokenPath": "path.[0]"}` (arrays may be indexed, `[-1]` is the last element). When it is the contract itself, `"tokenPath": "@.to"`. When it is a constructor constant the CLI extracted, `"token": "$.metadata.constants.<name>"`. When you cannot tell from the source which token an amount is in, ask; do not guess.
 - **Addresses**: `addressName` with `"params": {"types": ["eoa","wallet"]}` for recipients, `["contract"]` or `["token"]` where that is what it is.
 - **Native value**: payable functions must display `@.value`; the draft uses `amount`.
 - **Dates and enums**: `date` with `{"encoding": "timestamp"}`; enums are already wired to `metadata.enums` when the source declares them.
-- **Hide noise deliberately**: opaque `bytes` payloads, redundant routes, callback data. Remove the field and record why under the selection in `clear-signing.toml`:
-
-  ```toml
-  [contracts.hidden."swapExactTokensForTokens(uint256,uint256,address[],address,uint256)"]
-  "path.[]" = "Route is implied by the input and output token amounts"
-  ```
-
-  `check` warns on every undisplayed argument until a reason exists. Never hide a recipient, spender, amount or limit.
-- **Functions you will not cover** (multicall, `execute(bytes)`, admin flows): remove the format and add a reason under `[contracts.exclusions]`. Say plainly in the PR what is excluded. Never ship a descriptor that renders a half-empty screen.
+- **Hide noise deliberately**: opaque `bytes` payloads, redundant routes, callback data. Set `show: false` with a `hideReason`; `apply` records it under `hidden` in `clear-signing.toml` and `check` stops warning. Never hide a recipient, spender, amount or limit.
+- **Functions you will not cover** (multicall, `execute(bytes)`, admin flows): set `decision: "exclude"` with an `excludeReason`. Say plainly in the PR what is excluded. Never ship a descriptor that renders a half-empty screen.
 - **Nested calldata** cannot be decoded statically; exclude those functions.
 
 Base every label on the contract's semantics: parameter names, NatSpec, source. If a parameter's meaning is unclear, look at the source or ask.
