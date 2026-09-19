@@ -19,16 +19,19 @@ function formatHumanOutput(data: any): string {
   }
   if (data.url) return `Preview: ${data.url}\nPress Ctrl+C to stop.\n\n${formatHumanOutput(data.rendering)}`;
   if (data.upgraded !== undefined) return data.note;
+  if (data.runners && data.sourcify && data.rust) return `Registry runners ready under ${data.runners}\n  Sourcify: ${data.sourcify.cli} (${data.sourcify.ref.slice(0,8)})\n  Rust: ${data.rust.binary} (${data.rust.ref.slice(0,8)})`;
   if (data.deployment && data.next) return [
     `Added ${data.deployment.chainId}:${data.deployment.address} to ${data.descriptor}.`,
     `ABI verified via ${data.verification.source}${data.verification.match?` (${data.verification.match})`:''}; all ${data.selectorsChecked} described function(s) exist at that address.${data.verification.proxy?`\n  Proxy ${data.verification.proxy.type??''} -> implementation ${data.verification.proxy.implementation.address}`:''}`,
     data.test ? `Test case "${data.test.description}" rendered from "${data.test.template}" in ${data.test.file}:\n${data.test.expected.fields.map((f:any)=>`  ${f.label}: ${f.value}`).join('\n')}` : 'No test case added.',
     data.lint?.ran ? `Upstream erc7730 lint: exit ${data.lint.exitCode}, ${data.lint.warnings} warning(s).${data.lint.warnings ? '\n'+data.lint.output.map((l:string)=>`  ${l}`).join('\n') : ''}` : `Upstream erc7730 lint not run (${data.lint?.reason}). Run: ${data.lint?.command}`,
+    ...(data.registryRunners?data.registryRunners.map((r:any)=>`Registry ${r.name} runner (${r.implementation??r.ref.slice(0,8)}): ${r.passed?'all cases pass':'FAILED'} ${JSON.stringify(r.cases)}`):[]),
     '', data.note, '', 'Next, after reviewing the diff:', ...data.next.map((c:string)=>`  ${c}`)].join('\n');
   if (data.reviewed) return `Review recorded for ${data.reviewed.length} contract(s).\n${data.note}`;
   if (data.exported) return [`Exported ${data.descriptors} descriptor(s) and ${data.fixtures} fixture(s) to ${data.exported}.`,
     `Registry-ready files: ${data.registryPath}/ (copy into <registry-clone>/registry/${data.entity}/).`,
     data.lint?.ran ? [`Upstream erc7730 lint: exit ${data.lint.exitCode}, ${data.lint.warnings} warning(s).`,...(data.lint.warnings ? data.lint.output.map((l:string)=>`  ${l}`) : [])].join('\n') : `Upstream erc7730 lint not run (${data.lint?.reason}). Run: ${data.lint?.command}`,
+    ...(data.registryRunners?data.registryRunners.map((r:any)=>`Registry ${r.name} runner (${r.implementation??r.ref.slice(0,8)}) on ${r.testsFile}: ${r.passed?'all cases pass':'FAILED'} ${JSON.stringify(r.cases)}`):[]),
     ...portability,'See review/portability.json. Wallet/deployment verification and registry publication have not been performed.'].join('\n');
   if (data.passed !== undefined) return `${data.passed} signing test(s) passed.${data.updated ? ` ${data.updated} expectation(s) updated.` : ''}`;
   if (data.created) {

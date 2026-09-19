@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { FunctionFragment, Interface, Transaction, getAddress, isAddress } from 'ethers';
 import { parseSignature } from './descriptors.js';
@@ -6,6 +7,7 @@ import { renderFixture, blockingWarnings, type Fixture } from './fixtures.js';
 import { fetchVerifiedContract, type VerifiedContract } from './fetch.js';
 import { testCase, validateRegistryTests } from './registry.js';
 import { runUpstreamLint, lintCommand, type LintResult } from './lint.js';
+import { setupRunners, runRegistryRunners, pinsFromRegistry, type RunnerResult } from './runners.js';
 import { fail, readJson, readText, safePath, writeText, Failure } from './io.js';
 import type { Contract } from './foundry.js';
 import { appendToContainer, detectStep, scanJson, spanAt } from './json-edit.js';
@@ -15,7 +17,7 @@ import { appendToContainer, detectStep, scanJson, spanAt } from './json-edit.js'
 // verified ABI at that address. A matching test case is rendered, not copied. Nothing is committed.
 export interface AddDeploymentOptions {
   registry: string; descriptor: string; chainId: number; address: string;
-  abiFile?: string; tokens?: string[]; addressNames?: string[]; description?: string; test?: boolean; lint?: boolean;
+  abiFile?: string; tokens?: string[]; addressNames?: string[]; description?: string; test?: boolean; lint?: boolean; runners?: boolean; log?: (line: string) => void;
 }
 export async function addDeployment(o: AddDeploymentOptions) {
   const registry = fs.realpathSync(path.resolve(o.registry));
@@ -114,6 +116,15 @@ export async function addDeployment(o: AddDeploymentOptions) {
   if (testsOriginal !== undefined) writeText(testsFile, insertTest(testsOriginal, testsUpdated));
   const relDescriptor = path.relative(registry, descriptorFile);
   const lint: LintResult = o.lint === false ? {ran: false, command: lintCommand([relDescriptor]).join(' '), reason: 'skipped with --no-lint'} : runUpstreamLint(registry, [relDescriptor]);
+  // The registry's implementations, run in the clone itself with pins read from its CI definition.
+  let runners: RunnerResult[] | null = null;
+  if (o.runners && fs.existsSync(testsFile)) {
+    const tc = setupRunners(pinsFromRegistry(registry), o.log);
+    const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'csh-runners-'));
+    runners = runRegistryRunners(tc, testsFile, registry, outDir);
+    const failed = runners.filter(r => !r.passed);
+    if (failed.length) fail('REGISTRY_RUNNER_FAILED', `${failed.map(r => `${r.name} (${r.implementation ?? r.ref.slice(0, 8)}): ${r.reason ?? JSON.stringify(r.cases)}${r.failures.length ? `; ${r.failures.map(f => `"${f.description}" ${f.status}${f.message ? ` (${f.message})` : ''}`).join('; ')}` : ''}`).join('\n')}\nRendered output is under ${outDir}. The files in the clone were changed; revert them with git if you do not want to keep the edit.`, 1);
+  }
   const entity = path.basename(entityDir);
   const branch = `${entity}-chain-${o.chainId}`;
   const changed = [relDescriptor, ...(test ? [test.file] : [])];
@@ -123,7 +134,7 @@ export async function addDeployment(o: AddDeploymentOptions) {
     `git -C ${registry} commit -m "${entity}: add ${verification.name ?? name.replace(/^calldata-|\.json$/g, '')} deployment on chain ${o.chainId}"`,
     `gh pr create --repo ethereum/clear-signing-erc7730-registry --head ${branch} --title "${entity}: add chain ${o.chainId} deployment" --body "Adds ${o.chainId}:${address} to ${relDescriptor}${test ? ` with test case \\"${test.description}\\"` : ''}. ABI verified via ${verification.source}${verification.match ? ` (${verification.match})` : ''}."`
   ];
-  return {descriptor: relDescriptor, deployment: {chainId: o.chainId, address}, verification, selectorsChecked: formats.length, test: test ?? null, skippedTemplates: skippedTemplates, lint, changed, next, note: 'Files changed in the registry clone; nothing committed. Open the pull request from an account tied to the contract owner.'};
+  return {descriptor: relDescriptor, deployment: {chainId: o.chainId, address}, verification, selectorsChecked: formats.length, test: test ?? null, skippedTemplates, lint, registryRunners: runners, changed, next, note: 'Files changed in the registry clone; nothing committed. Open the pull request from an account tied to the contract owner.'};
 }
 // The new deployment copies the formatting of the last existing entry.
 function insertDeployment(original: string, chainId: number, address: string) {

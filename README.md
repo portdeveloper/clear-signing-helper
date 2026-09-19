@@ -214,7 +214,8 @@ Commit the TOML file and `clear-signing/`. Ignore `.clear-signing-cache/` and yo
 | `test` | Render all fixtures and compare saved expectations |
 | `test --update` | Accept expectations only if every fixture renders without blocking warnings; `--contract` narrows both |
 | `export --out <directory>` | Validate, write a registry-shaped bundle, and run upstream lint; `--contract` exports one contract; never publishes |
-| `registry add-deployment` | Add a verified deployment and a rendered test case to a descriptor in a registry clone; never commits |
+| `registry add-deployment` | Add a verified deployment and a rendered test case to a descriptor in a registry clone; `--runners` checks it with the registry's implementations; never commits |
+| `registry setup-runners` | Clone and build the registry CI's Sourcify and Rust implementations once |
 
 Global options: `--root <directory>`, `--profile <name>`, `--no-build`, and `--json`. Relative fixture/config paths resolve from the project root (the nearest `clear-signing.toml` or `foundry.toml`), including when invoked in a subdirectory. The saved profile is the default; an explicit flag or `FOUNDRY_PROFILE` overrides it.
 
@@ -267,6 +268,8 @@ Export requires a production binding, current review, and at least one passing f
 
 Export then runs the registry's own linter, `erc7730` pinned to the version its CI uses, through `uvx`. A lint error removes the bundle and fails the export; warnings are recorded in `review/validation.json`. Without `uvx` the exact command is printed instead, and `--no-lint` skips it. `check` already warns locally when an intent exceeds the linter's 30-character limit.
 
+Add `--registry-runners` to also run the two implementations the registry's CI tests every submission against: the Sourcify TypeScript runner and the Rust `cs-test` runner, at the revisions the registry pins. The first use clones and builds them under `~/.cache/clear-signing-helper/runners/` (needs `git`, `npm` and `cargo`; `clear-signing registry setup-runners` does this ahead of time). Every case must pass in both, or the export fails and the bundle is removed. Results and logs land in `review/runners/`. `--runner-pins <registry-clone>` reads the revisions from a clone's CI definition instead of the built-in pins. `registry add-deployment --runners` does the same for the test file it updates.
+
 Export refuses existing directories, escaping paths, two selected contracts with the same name, and conflicting metadata across fixtures for the same descriptor. Copy `registry/<entity>/` into a registry clone and open the pull request from an account tied to the contract owner. Deployed-code verification, registry review, attestations, and wallet distribution remain separate steps. [Submission guide](https://clearsigning.org/build/)
 
 ## CI
@@ -302,7 +305,7 @@ Human previews escape terminal controls and bidirectional overrides as visible t
 
 Missing token metadata is visible as warnings and raw fallback in preview, and blocks test acceptance/export. Empty-array notices and unnamed `addressName` values are informational: the address renders in full, as wallets show it, and the warning remains in expectations. Dates beyond the renderer's supported range fail instead of being silently accepted. Registry test runners use their own chain tables; an `amount` field on a chain they do not know will render raw there.
 
-Unsupported features fail explicitly: EIP-712, nested transaction decoding, external includes/references, display definitions, constant-value fields, encryption, interpolated intents, factory bindings, and automatic registry access. Apart from `init --address`, `registry add-deployment`, and the upstream lint run on export, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
+Unsupported features fail explicitly: EIP-712, nested transaction decoding, external includes/references, display definitions, constant-value fields, encryption, interpolated intents, factory bindings, and automatic registry access. Apart from `init --address`, `registry add-deployment`, the upstream lint run on export, and the one-time runner build behind `--registry-runners`, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
 
 ## Use with an agent
 

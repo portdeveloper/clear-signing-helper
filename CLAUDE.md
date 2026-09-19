@@ -119,12 +119,13 @@ Most protocols a new chain cares about already have a registry descriptor; the P
 - Acceptance: the skill's happy path for "here is an address on chain X" is `init --address`, edit, `fixture`, `preview`, `review --accept`, `test --update`, `export`, and for "protocol already in the registry" it is item 7.
 - Result: SKILL.md rewritten around the CLI. Kept: registry-first search (`find-in-registry.sh`), the judgment guidance (30-character intents, token relationships, hide-with-reason, exclusions stated in the PR), ownership gate before any PR, and `verify-address.sh` for the EIP-712 domain check the CLI does not cover. Dropped: `uvx erc7730 generate` and hand-written testsv2 for calldata. `docs/AGENT-SKILL.md` and the README agent section describe the same flow.
 
-### 9. Run the registry's test runners on export — `todo`
+### 9. Run the registry's test runners on export — `done` (2026-09-19)
 
 Upstream lint and the schemas run today; the Sourcify and Rust runners do not. They are the last difference between the tool's green and the registry's CI.
 
 - Optional `export --registry-runners <registry-clone>` that runs both runners on the bundle when their toolchains are present, records results in `review/validation.json`, and fails on any failed case.
 - Acceptance: the 0.2.0 Morpho exercise (23 cases) reproduces through the flag instead of `scripts/validate-morpho-registry.py`.
+- Result: `src/runners.ts` clones and builds the Sourcify runner and `cs-test` at the registry CI's pinned revisions (built-in pins, or `--runner-pins <clone>` / `registry add-deployment --runners` reading `.github/actions/run-*-tests/action.yml`), caches them under `~/.cache/clear-signing-helper/runners/`, runs both on each `testsv2` file with the bundle's `registry/` as registry root, and passes only when every case is `pass` and the count matches the fixture. Failures fail the export and remove the bundle; results and logs go to `review/runners/`. `registry setup-runners` pre-builds. Tests use stub executables via `CLEAR_SIGNING_RUNNERS_DIR`. The Morpho 23-case reproduction was not rerun; the real runners were exercised on the ABI-mode WETH bundle, the puddleswap StakingRewards bundle, and the registry's Morpho Blue test file with an added chain (see live results in the commit).
 
 ### 10. Dogfood a real submission — `todo`
 
@@ -148,7 +149,7 @@ Upstream lint and the schemas run today; the Sourcify and Rust runners do not. T
 
 ## Decisions
 
-- Network access is limited to explicit, user-requested moments: `init --address` and `registry add-deployment` (Sourcify, then Etherscan with a key) and upstream `erc7730 lint` during export or add-deployment (via `uvx`). Everything else stays offline. Record any new exception here.
+- Network access is limited to explicit, user-requested moments: `init --address` and `registry add-deployment` (Sourcify, then Etherscan with a key), upstream `erc7730 lint` during export or add-deployment (via `uvx`), and the one-time clone-and-build of the registry runners behind `--registry-runners` / `--runners` / `registry setup-runners`. Everything else stays offline. Record any new exception here.
 
 - Calldata only for now. EIP-712 stays in the agent skill until the CLI path is solid.
 - Portability findings remain warnings by default and hard failures only under `--strict-portability`. They are evidence-backed and should not be removed, but they must not block ordinary authoring.

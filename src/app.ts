@@ -10,6 +10,7 @@ import { canonical, hash, readJson, readText, safePath, writeJson, writeText, wa
 import { renderFixture, validateFixture, blockingWarnings, type Fixture, type Rendering } from './fixtures.js';
 import { registryTests } from './registry.js';
 import { runUpstreamLint, lintCommand, type LintResult } from './lint.js';
+import { setupRunners, runRegistryRunners, pinsFromRegistry, DEFAULT_PINS, type RunnerResult } from './runners.js';
 import { loadAbiProject, importAbiFile, importVerified, ABI_DIR } from './abi-project.js';
 import { fetchVerifiedContract } from './fetch.js';
 
@@ -274,7 +275,7 @@ export async function runTests(state: State, update=false, ids?: string[]) {
   for(const u of updates) writeJson(u.file,u.rendering);
   return {passed:renders.length, updated:updates.length, renders};
 }
-export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; inlineAbi?: boolean; lint?: boolean}
+export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; inlineAbi?: boolean; lint?: boolean; registryRunners?: boolean; runnerPins?: string; log?: (line: string) => void}
 // Registry entity folders are kebab-case slugs of the owner name, e.g. "Morpho DAO" -> "morpho-dao".
 export const entitySlug = (owner: string) => owner.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const REGISTRY_SCHEMA = '../../specs/erc7730-v2.schema.json';
@@ -303,6 +304,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
   if(fs.existsSync(stage)) fail('OUTPUT_EXISTS',`Staging directory already exists: ${stage}`,2);
   fs.mkdirSync(stage,{recursive:true});
   let lint: LintResult;
+  const runnerResults:(RunnerResult&{testsFile:string})[]=[];
   const registryDir=path.join(stage,'registry',entity), descriptorFiles:string[]=[];
   try {
     const names=new Set<string>();
@@ -326,7 +328,18 @@ export async function exportBundle(state: State, out: string, strictPortability=
     }
     lint = options.lint===false ? {ran:false, command:lintCommand(descriptorFiles).join(' '), reason:'skipped with --no-lint'} : runUpstreamLint(stage, descriptorFiles);
     if(lint.ran && lint.exitCode!==0) throw new Failure('UPSTREAM_LINT_FAILED',`erc7730 lint rejected the exported descriptor(s).`,1,[{code:'UPSTREAM_LINT_FAILED',message:(lint.output??[]).join(' | '),remedy:`Fix the descriptor and export again, or reproduce with: ${lint.command}`}]);
-    writeJson(path.join(stage,'review','validation.json'),{engine:ENGINE, entity, contracts:selections.map(s=>({id:s.id,descriptor:`registry/${entity}/calldata-${getContract(state.project,s.id).name}.json`,exclusions:s.exclusions,hidden:s.hidden??{}})),fixtures:tests.passed, upstreamLint:lint, deploymentVerification:'not performed',publication:'not submitted'});
+    // The registry's own implementations, when asked for. The bundle's registry/ directory is a registry root.
+    if(options.registryRunners) {
+      const tc=setupRunners(options.runnerPins?pinsFromRegistry(options.runnerPins):DEFAULT_PINS, options.log);
+      const failures:Diagnostic[]=[];
+      for(const file of fs.existsSync(path.join(registryDir,'testsv2'))?fs.readdirSync(path.join(registryDir,'testsv2')).filter(f=>f.endsWith('.tests.json')):[]) {
+        const results=runRegistryRunners(tc,path.join(registryDir,'testsv2',file),stage,path.join(stage,'review','runners',file.replace(/\.tests\.json$/,'')));
+        runnerResults.push(...results.map(r=>({testsFile:`registry/${entity}/testsv2/${file}`,...r,resultsFile:r.resultsFile?path.relative(stage,r.resultsFile):undefined})));
+        for(const r of results) if(!r.passed) failures.push({code:'REGISTRY_RUNNER_FAILED',message:`${r.name} runner (${r.implementation??r.ref.slice(0,8)}) on ${file}: ${r.reason??JSON.stringify(r.cases)}${r.failures.length?`; ${r.failures.map(f=>`"${f.description}" ${f.status}${f.message?` (${f.message})`:''}`).join('; ')}`:''}`,file:`registry/${entity}/testsv2/${file}`,remedy:'The registry CI runs these same implementations. Inspect review/runners/*/ for rendered output, then fix the descriptor or expectations.'});
+      }
+      if(failures.length) throw new Failure('REGISTRY_RUNNER_FAILED',`${failures.length} registry runner check(s) failed.`,1,failures);
+    }
+    writeJson(path.join(stage,'review','validation.json'),{engine:ENGINE, entity, contracts:selections.map(s=>({id:s.id,descriptor:`registry/${entity}/calldata-${getContract(state.project,s.id).name}.json`,exclusions:s.exclusions,hidden:s.hidden??{}})),fixtures:tests.passed, upstreamLint:lint, registryRunners:options.registryRunners?runnerResults:'not run', deploymentVerification:'not performed',publication:'not submitted'});
     writeJson(path.join(stage,'review','portability.json'),portability);
     const provenanceFile=safePath(state.project.root,provenanceName);
     if(fs.existsSync(provenanceFile)) { const all=readJson<Record<string,unknown>>(provenanceFile); writeJson(path.join(stage,'review','provenance.json'),Object.fromEntries(selections.filter(s=>s.id in all).map(s=>[s.id,all[s.id]]))); }
@@ -339,5 +352,5 @@ export async function exportBundle(state: State, out: string, strictPortability=
       'Verify deployed code and proxy mappings independently. Open the pull request from an account tied to the contract owner; registry review, attestations and wallet availability are separate steps: https://clearsigning.org/build/',''].join('\n'));
     fs.renameSync(stage,target);
   } catch(e) {fs.rmSync(stage,{recursive:true,force:true});throw e;}
-  return {exported:out,entity,registryPath:`${out}/registry/${entity}`,descriptors:selections.length,fixtures:tests.passed,lint,deploymentVerification:'not performed',publication:'not submitted',portability};
+  return {exported:out,entity,registryPath:`${out}/registry/${entity}`,descriptors:selections.length,fixtures:tests.passed,lint,registryRunners:options.registryRunners?runnerResults:null,deploymentVerification:'not performed',publication:'not submitted',portability};
 }
