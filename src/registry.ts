@@ -12,7 +12,7 @@ const flattenFields=(list:any[]):{label:string;value:string}[]=>list.flatMap(f=>
 // One registry v2 test case: the unsigned transaction plus the fields the renderer produced.
 export function testCase(description: string, f: Fixture, r: Rendering, owner: string) {
   const tx=Transaction.from({type:2,chainId:f.chainId,to:f.to,data:f.data,value:BigInt(f.value),nonce:0,gasLimit:1_000_000n,maxFeePerGas:0,maxPriorityFeePerGas:0});
-  return {description,rawTx:tx.unsignedSerialized,...(f.from?{from:f.from}:{}),expected:{intent:r.intent,owner,fields:flattenFields(r.fields)}};
+  return {description,rawTx:tx.unsignedSerialized,...(f.from?{from:f.from}:{}),expected:{intent:r.intent,...(r.interpolatedIntent!==undefined?{interpolatedIntent:r.interpolatedIntent}:{}),owner,fields:flattenFields(r.fields)}};
 }
 export function registryTests(descriptorName: string, descriptor: Descriptor, fixtures: {name:string;fixture:Fixture;rendering:Rendering}[]) {
   const tokens: Record<string,unknown>={}, addressNames: Record<string,string>={}, ensNames: Record<string,string>={}, nftCollectionNames: Record<string,string>={}, blockTimestamps: Record<string,number>={};

@@ -16,7 +16,7 @@ export type Descriptor = {
   $schema: string;
   context: {contract: {deployments: {chainId: number; address: string}[]; abi?: unknown[]}};
   metadata: {owner: string; contractName?: string; info?: {url?: string; deploymentDate?: string}; token?: {name: string; ticker: string; decimals: number}; constants?: Record<string, unknown>; enums?: Record<string, Record<string, string>>};
-  display: {formats: Record<string, {intent: string; fields: (Field | Group)[]}>};
+  display: {formats: Record<string, {intent: string; interpolatedIntent?: string; fields: (Field | Group)[]}>};
 };
 // hidden: sighash -> normalized leaf path -> reason. Records a deliberate decision not to display an argument.
 export interface Selection {id: string; descriptor: string; exclusions: Record<string, string>; hidden?: Record<string, Record<string, string>>}
@@ -64,6 +64,12 @@ export function leaves(params: readonly ParamType[], prefix = '', depth = 0): {p
   };
   return params.flatMap((p, i) => expand(p, prefix + (p.name || `arg${i}`), depth));
 }
+// {path} placeholders of an interpolated intent; {{ and }} are literal braces.
+export function placeholders(template: string): string[] {
+  const out: string[] = [];
+  for (const m of template.replace(/\{\{|\}\}/g, '').matchAll(/\{([^{}]*)\}/g)) { const k = m[1].trim(); if (k) out.push(k); }
+  return out;
+}
 // A concrete index such as path.[0] or path.[-1] addresses the same ABI leaf as path.[].
 export const normalizePath = (p: string) => p.replace(/\.\[-?\d+\]/g, '.[]');
 // Where a scaffolded value came from, so reviewers can tell author text and proofs from conventions.
@@ -71,21 +77,21 @@ export interface Provenance {signature: string; path?: string; source: 'natspec'
 const firstSentence = (text: string) => text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, '').trim();
 // The registry linter warns above 30 characters because Ledger devices truncate longer intents.
 export const MAX_INTENT = 30, MAX_LABEL = 32;
-const ERC20_CONVENTIONS: Record<string, (params: string[]) => {intent: string; fields: Field[]}> = {
-  'approve(address,uint256)': ([spender, amount]) => ({intent: 'Approve', fields: [
+const ERC20_CONVENTIONS: Record<string, (params: string[]) => {intent: string; interpolatedIntent?: string; fields: Field[]}> = {
+  'approve(address,uint256)': ([spender, amount]) => ({intent: 'Approve', interpolatedIntent: `Allow {${spender}} to spend {${amount}}`, fields: [
     {path: spender, label: 'Spender', format: 'addressName', params: {types: ['eoa', 'contract']}},
     {path: amount, label: 'Amount', format: 'tokenAmount', params: {tokenPath: '@.to', threshold: '0x8000000000000000000000000000000000000000000000000000000000000000', message: 'Unlimited'}}]}),
-  'transfer(address,uint256)': ([to, amount]) => ({intent: 'Send', fields: [
+  'transfer(address,uint256)': ([to, amount]) => ({intent: 'Send', interpolatedIntent: `Send {${amount}} to {${to}}`, fields: [
     {path: to, label: 'To', format: 'addressName', params: {types: ['eoa', 'wallet']}},
     {path: amount, label: 'Amount', format: 'tokenAmount', params: {tokenPath: '@.to'}}]}),
-  'transferFrom(address,address,uint256)': ([from, to, amount]) => ({intent: 'Send from', fields: [
+  'transferFrom(address,address,uint256)': ([from, to, amount]) => ({intent: 'Send from', interpolatedIntent: `Send {${amount}} from {${from}} to {${to}}`, fields: [
     {path: from, label: 'From', format: 'addressName', params: {types: ['eoa', 'wallet']}},
     {path: to, label: 'To', format: 'addressName', params: {types: ['eoa', 'wallet']}},
     {path: amount, label: 'Amount', format: 'tokenAmount', params: {tokenPath: '@.to'}}]})
 };
-const WETH_CONVENTIONS: Record<string, (params: string[]) => {intent: string; fields: Field[]}> = {
-  'deposit()': () => ({intent: 'Wrap', fields: [{path: '@.value', label: 'Amount', format: 'amount'}]}),
-  'withdraw(uint256)': ([amount]) => ({intent: 'Unwrap', fields: [{path: amount, label: 'Amount', format: 'tokenAmount', params: {tokenPath: '@.to'}}]})
+const WETH_CONVENTIONS: Record<string, (params: string[]) => {intent: string; interpolatedIntent?: string; fields: Field[]}> = {
+  'deposit()': () => ({intent: 'Wrap', interpolatedIntent: 'Wrap {@.value}', fields: [{path: '@.value', label: 'Amount', format: 'amount'}]}),
+  'withdraw(uint256)': ([amount]) => ({intent: 'Unwrap', interpolatedIntent: `Unwrap {${amount}}`, fields: [{path: amount, label: 'Amount', format: 'tokenAmount', params: {tokenPath: '@.to'}}]})
 };
 export function scaffoldFormat(f: FunctionFragment, evidence?: Evidence, enumKeys?: Map<string, string>) {
   return scaffoldFormatWithProvenance(f, evidence, enumKeys).format;
@@ -223,7 +229,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         if (f.format('full') !== parseSignature(signature(actual)).format('full')) fail('SIGNATURE_NAMES', `${key} must use the compiler argument names: ${signature(actual)}.`);
         if (covered.has(sig)) fail('DUPLICATE_FORMAT', `More than one format describes ${sig}.`);
         covered.add(sig);
-        assertKeys(spec, ['intent', 'fields'], `formats.${key}`);
+        assertKeys(spec, ['intent', 'interpolatedIntent', 'fields'], `formats.${key}`);
         if (typeof spec.intent !== 'string' || !spec.intent.trim()) fail('MISSING_INTENT', `${sig} requires a nonempty intent.`);
         if (spec.intent.length > MAX_INTENT) add('INTENT_LENGTH', `${sig} intent "${spec.intent}" is ${spec.intent.length} characters; the registry linter warns above ${MAX_INTENT} because Ledger devices truncate it.`, key, 'warning');
         if (!Array.isArray(spec.fields)) fail('INVALID_FIELDS', `${sig} requires a fields array.`);
@@ -287,6 +293,14 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           if (typeof reason !== 'string' || !reason.trim()) add('HIDDEN_REASON', `${sig} hidden path ${leaf} needs a reason.`, key);
         }
         for (const leaf of leafMap.keys()) if (!displayedLeaves.has(leaf) && !hiddenHere[leaf]) add('UNDISPLAYED_ARGUMENT', `${sig} does not display ${leaf}. Signers will not see this argument.`, key, 'warning');
+        if (spec.interpolatedIntent !== undefined) {
+          if (typeof spec.interpolatedIntent !== 'string' || !spec.interpolatedIntent.trim()) fail('INVALID_INTERPOLATION', `${sig} interpolatedIntent must be a nonempty string.`);
+          // Every {placeholder} must name a displayed field, else the renderer falls back and warns.
+          for (const ph of placeholders(spec.interpolatedIntent)) {
+            const target = ph.replace(/^#\./, '');
+            if (!seen.has(target) && !seen.has(normalizePath(target))) fail('INVALID_INTERPOLATION', `${sig} interpolatedIntent references {${ph}}, which is not a displayed field path. Use the exact path of a shown field, or @.value.`);
+          }
+        }
         for (const dis of disagreements(key, spec.fields)) add('CORPUS_DISAGREEMENT', `${sig} shows ${dis.path} as ${dis.ours}, but all ${dis.among} registry format(s) for this selector have it ${dis.prior}. See the priors listed by init, or accept the difference.`, key, 'warning');
         if (actual.stateMutability === 'payable' && !seen.has('@.value')) fail('UNDISPLAYED_NATIVE_VALUE', `${sig} can transfer native currency and must display @.value.`);
       } catch(e) { if (e instanceof Failure) add(e.code, e.message, key); else throw e; }

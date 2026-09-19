@@ -364,7 +364,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
 // `decisions` writes the template from the current descriptor plus every hint the tool has;
 // `apply` writes the descriptor, exclusions, hidden reasons and provenance from a filled file.
 export interface DecisionField {type: string; show: boolean; hideReason?: string | null; label: string; format: string; params?: Record<string, unknown> | null; hints?: Record<string, unknown>}
-export interface DecisionFunction {signature: string; decision: 'describe' | 'exclude'; excludeReason?: string | null; intent: string; fields: Record<string, DecisionField>; hints?: Record<string, unknown>}
+export interface DecisionFunction {signature: string; decision: 'describe' | 'exclude'; excludeReason?: string | null; intent: string; interpolatedIntent?: string | null; fields: Record<string, DecisionField>; hints?: Record<string, unknown>}
 export interface Decisions {version: 1; contract: string; descriptor: string; author: string | null; generatedAt: string; owner: string; url: string | null; functions: Record<string, DecisionFunction>; guidance: string[]}
 const decisionsDir = 'clear-signing/decisions';
 export function writeDecisions(state: State, id: string, out?: string) {
@@ -394,12 +394,13 @@ export function writeDecisions(state: State, id: string, out?: string) {
     }
     if (f.stateMutability === 'payable') { const cur = flat.get('@.value'); fields['@.value'] = {type: 'uint256', show: true, label: cur?.label ?? 'Native amount', format: cur?.format ?? 'amount', params: cur?.params ?? null, hints: {note: 'Payable: must stay shown.'}}; }
     const priors = priorsFor(f.selector);
+    const priorInterpolations = priors.map(p => p.interpolatedIntent).filter((x): x is string => typeof x === 'string').slice(0, 5);
     functions[sig] = {signature: key, decision: existing ? 'describe' : selection.exclusions[sig] ? 'exclude' : 'describe', excludeReason: selection.exclusions[sig] ?? null,
-      intent: existing?.spec.intent ?? (f.name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/^./, x => x.toUpperCase())), fields,
-      hints: {...(evidence.notices[sig] ? {natspec: evidence.notices[sig]} : {}), ...(priors.length ? {registryPriors: priors.slice(0, 5).map(summarizePrior), registryPriorCount: priors.length} : {}), intentLimit: 30}};
+      intent: existing?.spec.intent ?? (f.name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/^./, x => x.toUpperCase())), interpolatedIntent: existing?.spec.interpolatedIntent ?? null, fields,
+      hints: {...(evidence.notices[sig] ? {natspec: evidence.notices[sig]} : {}), ...(priors.length ? {registryPriors: priors.slice(0, 5).map(summarizePrior), registryPriorCount: priors.length} : {}), ...(priorInterpolations.length ? {registryInterpolatedIntents: priorInterpolations} : {}), intentLimit: 30, interpolatedIntent: 'Optional sentence with {path} placeholders naming shown fields (e.g. "Stake {amount}", "Send {amount} to {to}"). Wallets prefer it; the registry recommends one on every format.'}};
   }
   const decisions: Decisions = {version: 1, contract: id, descriptor: selection.descriptor, author: null, generatedAt: new Date().toISOString().slice(0, 10), owner: d.metadata.owner, url: d.metadata.info?.url ?? null, functions,
-    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml.', 'Per field: show true/false (hideReason required when false), label, format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.']};
+    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml.', 'Per field: show true/false (hideReason required when false), label, format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'interpolatedIntent is optional but recommended by the registry: a sentence embedding shown field values with {path}; set null to omit.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.']};
   const file = out ?? `${decisionsDir}/${c.name}.json`;
   writeJson(safePath(state.project.root, file), decisions);
   return {created: file, functions: Object.keys(functions).length, next: `Fill intents, formats, denominations and show/hide reasons in ${file}, set author, then run apply --decisions ${file}.`};
@@ -434,6 +435,8 @@ export function applyDecisions(state: State, file: string) {
     const spec = d.display.formats[key] ?? scaffoldFormatWithProvenance(f).format;
     spec.intent = fd.intent.trim();
     provenance.push({contract: dec.contract, signature: sig, source, detail: `intent: ${spec.intent}`});
+    if (typeof fd.interpolatedIntent === 'string' && fd.interpolatedIntent.trim()) { spec.interpolatedIntent = fd.interpolatedIntent.trim(); provenance.push({contract: dec.contract, signature: sig, source, detail: `interpolatedIntent: ${spec.interpolatedIntent}`}); }
+    else delete spec.interpolatedIntent;
     // Edit leaves in place to keep existing grouping; drop hidden ones; append newly shown ones flat.
     const hiddenHere: Record<string, string> = {};
     const present = new Set<string>();

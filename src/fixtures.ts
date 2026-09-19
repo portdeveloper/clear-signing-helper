@@ -19,7 +19,7 @@ export interface Fixture {
 }
 export interface Rendering {
   engine: typeof ENGINE; contract: string; signature: string; chainId: number; to: string; value: string; from?: string;
-  localBinding: boolean; intent: string; fields: any[]; warnings: {code: string; message: string}[];
+  localBinding: boolean; intent: string; interpolatedIntent?: string; fields: any[]; warnings: {code: string; message: string}[];
 }
 export function validateFixture(f: Fixture) {
   assertTreeBudget(f);
@@ -113,7 +113,7 @@ export async function renderFixture(f: Fixture, d: Descriptor, contract: Contrac
   collect(result.fields ?? []);
   if (result.rawCalldataFallback || !result.intent) fail('RENDER_FAILED', `Descriptor could not render this transaction: ${warnings.map(w => `${w.code}: ${w.message}`).join('; ')}`);
   return {engine: ENGINE, contract: contract.id, signature: fn.format('sighash'), chainId: f.chainId, to: f.to.toLowerCase(), value: f.value, ...(f.from ? {from: f.from.toLowerCase()} : {}),
-    localBinding: f.localBinding === true, intent: String(result.intent), fields: result.fields ?? [], warnings: [...new Map(warnings.map(w => [w.code + w.message, w])).values()]};
+    localBinding: f.localBinding === true, intent: String(result.intent), ...(typeof result.interpolatedIntent === 'string' ? {interpolatedIntent: result.interpolatedIntent} : {}), fields: result.fields ?? [], warnings: [...new Map(warnings.map(w => [w.code + w.message, w])).values()]};
 }
 // An unnamed address renders as its checksummed value, which is what wallets show; that is not a defect.
 export const INFORMATIONAL_WARNINGS = new Set(['EMPTY_ARRAY', 'UNKNOWN_ADDRESS']);

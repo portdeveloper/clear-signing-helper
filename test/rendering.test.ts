@@ -111,3 +111,21 @@ await test('terminal preview prints unlabeled groups flat and does not repeat a 
   assert.ok(text.includes('  Path 0: '+address),text);
   assert.ok(text.includes('  Legs\n    A: 1\n    B: 2')||text.includes('Legs'),text);
 });
+
+await test('interpolated intents render, flow into registry expectations, and must reference shown fields',async()=>{
+  const {testCase}=await import('../src/registry.js');
+  const c=contract('stake(uint256 amount)');
+  const d=scaffold(c,'Example');const key='stake(uint256 amount)';
+  d.display.formats[key]={intent:'Stake LP tokens',interpolatedIntent:'Stake {amount}',fields:[{path:'amount',label:'Amount',format:'tokenAmount',params:{token:other}}]};
+  const selection={id:c.id,descriptor:'s.json',exclusions:{}};
+  assert.deepEqual(validateDescriptor(d,c,selection).filter(x=>x.severity!=='warning'),[]);
+  const fixture={contract:c.id,chainId:1,to:address,data:new Interface(c.abi).encodeFunctionData('stake',[1500000n]),value:'0',localBinding:true,tokens:{[other]:{name:'LP',symbol:'UNI-V2',decimals:6}}};
+  const r=await renderFixture(fixture,d,c);
+  assert.equal(r.interpolatedIntent,'Stake 1.5 UNI-V2');assert.deepEqual(r.warnings,[]);
+  assert.equal(testCase('stake - chain 1',fixture,r,'Example').expected.interpolatedIntent,'Stake 1.5 UNI-V2');
+  d.display.formats[key].interpolatedIntent='Stake {amount} for {who}';
+  assert.ok(validateDescriptor(d,c,selection).some(x=>x.code==='INVALID_INTERPOLATION'&&/who/.test(x.message)));
+  // A hidden field cannot be interpolated either.
+  d.display.formats[key]={intent:'Stake',interpolatedIntent:'Stake {amount}',fields:[]};
+  assert.ok(validateDescriptor(d,c,{...selection,hidden:{'stake(uint256)':{amount:'test'}}}).some(x=>x.code==='INVALID_INTERPOLATION'));
+});

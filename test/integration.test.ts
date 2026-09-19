@@ -315,7 +315,7 @@ await test('decisions template exposes the judgment slots with hints, and apply 
   assert.equal(run(root,['apply','--decisions',created.created],2).diagnostics[0].code,'DECISIONS_AUTHOR');
   // Fill as an agent would.
   dec.author='llm:test-model';dec.url='https://example.org';
-  fn.intent='Swap';
+  fn.intent='Swap';fn.interpolatedIntent='Swap {amountIn} for at least {amountOutMin}';
   fn.fields['amountIn']={...fn.fields['amountIn'],label:'Amount to send',format:'tokenAmount',params:{tokenPath:'path.[0]'}};
   fn.fields['amountOutMin']={...fn.fields['amountOutMin'],label:'Minimum to receive',format:'tokenAmount',params:{tokenPath:'path.[-1]'}};
   fn.fields['path.[]']={...fn.fields['path.[]'],show:false,hideReason:'Route is implied by the token amounts'};
@@ -328,7 +328,7 @@ await test('decisions template exposes the judgment slots with hints, and apply 
   const d=read(path.join(root,'clear-signing/descriptors',fs.readdirSync(path.join(root,'clear-signing/descriptors'))[0]));
   assert.deepEqual(Object.keys(d.display.formats),['swapExactTokensForTokens(uint256 amountIn,uint256 amountOutMin,address[] path,address to,uint256 deadline)']);
   const spec=Object.values<any>(d.display.formats)[0];
-  assert.equal(spec.intent,'Swap');assert.deepEqual(spec.fields.map((f:any)=>[f.path,f.format]),[['amountIn','tokenAmount'],['amountOutMin','tokenAmount'],['to','addressName'],['deadline','date']]);
+  assert.equal(spec.intent,'Swap');assert.equal(spec.interpolatedIntent,'Swap {amountIn} for at least {amountOutMin}');assert.deepEqual(spec.fields.map((f:any)=>[f.path,f.format]),[['amountIn','tokenAmount'],['amountOutMin','tokenAmount'],['to','addressName'],['deadline','date']]);
   assert.equal(d.metadata.info.url,'https://example.org');
   const cfg=TOML.parse(fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8')) as any;
   assert.equal(cfg.contracts[0].hidden[swap]['path.[]'],'Route is implied by the token amounts');assert.ok(cfg.contracts[0].exclusions['transferAdmin(address)']);
@@ -337,7 +337,7 @@ await test('decisions template exposes the judgment slots with hints, and apply 
   // check is clean apart from review, and the decisions round-trip.
   run(root,['review','--accept']);const checked=run(root,['check']).result;assert.deepEqual(checked.warnings,[]);
   const again=read(path.join(root,run(root,['decisions','--contract',router,'--out','clear-signing/decisions/again.json']).result.created));
-  assert.equal(again.functions[swap].intent,'Swap');assert.equal(again.functions[swap].fields['path.[]'].show,false);assert.equal(again.functions[swap].fields['amountIn'].params.tokenPath,'path.[0]');
+  assert.equal(again.functions[swap].intent,'Swap');assert.equal(again.functions[swap].interpolatedIntent,'Swap {amountIn} for at least {amountOutMin}');assert.equal(again.functions[swap].fields['path.[]'].show,false);assert.equal(again.functions[swap].fields['amountIn'].params.tokenPath,'path.[0]');
   // A bad decision writes nothing.
   dec.functions[swap].fields['deadline'].format='addressName';write(dfile,dec);
   assert.ok(['FORMAT_TYPE','SCHEMA_INVALID'].includes(run(root,['apply','--decisions',created.created],1).diagnostics[0].code));

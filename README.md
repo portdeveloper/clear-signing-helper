@@ -308,7 +308,8 @@ The CLI pins ERC-7730 v2 schema 2.0.0 and Sourcify renderer 0.2.2 with a reprodu
 
 - Formats: `raw`, `amount`, `tokenAmount`, `addressName`, `nftName`, `date`, `duration`, `unit`, `enum`, `tokenTicker`, `chainId`, with the parameters the schema defines for each. `calldata` (nested calls) and `interoperableAddressName` are rejected explicitly. `tokenPath`, `collectionPath` and `nativeCurrencyAddress` may point at `@.to`, a literal address, `$.metadata.token`, or any address argument, including array elements such as `path.[0]` and `path.[-1]`.
 - Calldata write functions, overloads, inherited functions, tuples, fixed/dynamic nested arrays, and sequential groups that keep tuple members paired. Nested groups are expanded to concrete indexed paths for each local preview; exported descriptors retain standard nested groups, whose support varies across wallets.
-- Argument leaf paths and `@.to`, `@.from`, `@.value`. Payable functions must display `@.value`; drafts use the `amount` format for it. An argument left out of a format is reported as a warning. Record the reason under the selection's `hidden` table in `clear-signing.toml` to acknowledge it:
+- Argument leaf paths and `@.to`, `@.from`, `@.value`. Payable functions must display `@.value`; drafts use the `amount` format for it.
+- `interpolatedIntent`: an optional sentence with `{path}` placeholders naming shown fields, e.g. `"Stake {amount}"`. Wallets prefer it over `intent` and the registry recommends one on every format. Placeholders must name displayed fields (or `@.value`); the rendered sentence is checked into expectations and into `testsv2`, where the registry's runners compare it. An argument left out of a format is reported as a warning. Record the reason under the selection's `hidden` table in `clear-signing.toml` to acknowledge it:
 
 ```toml
 [contracts.hidden."swapExactTokensForTokens(uint256,uint256,address[],address,uint256)"]

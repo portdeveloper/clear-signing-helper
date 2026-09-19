@@ -15,7 +15,7 @@ function formatHumanOutput(data: any): string {
       return [`${indent}${head}: ${f.value}`, ...(f.rawAddress && f.rawAddress !== f.value ? [`${indent}  Address: ${f.rawAddress}`] : [])];
     };
     const rows = (fields: any[], indent = '  '): string[] => fields.flatMap(f => f.fields ? (f.label ? [`${indent}${f.label}`, ...rows(f.fields, indent + '  ')] : rows(f.fields, indent)) : leaf(f, indent));
-    return [`${data.intent}${data.localBinding ? ' (local draft)' : ''}`, `Chain ${data.chainId} · ${data.to}`, `Native value: ${data.value} wei`, ...rows(data.fields), ...data.warnings.map((w:any)=>`Warning ${w.code}: ${w.message}`), '\nReference rendering; wallet presentation may differ.'].join('\n');
+    return [`${data.intent}${data.localBinding ? ' (local draft)' : ''}`, ...(data.interpolatedIntent ? [`"${data.interpolatedIntent}"`] : []), `Chain ${data.chainId} · ${data.to}`, `Native value: ${data.value} wei`, ...rows(data.fields), ...data.warnings.map((w:any)=>`Warning ${w.code}: ${w.message}`), '\nReference rendering; wallet presentation may differ.'].join('\n');
   }
   if (data.url) return `Preview: ${data.url}\nPress Ctrl+C to stop.\n\n${formatHumanOutput(data.rendering)}`;
   if (data.upgraded !== undefined) return data.note;
