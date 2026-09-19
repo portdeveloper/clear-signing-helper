@@ -306,13 +306,13 @@ Unsupported features fail explicitly: EIP-712, nested transaction decoding, exte
 
 ## Use with an agent
 
-The repository also includes an [agent skill](docs/AGENT-SKILL.md) for working from a deployed contract address:
+The repository also includes an [agent skill](docs/AGENT-SKILL.md) that drives this CLI end to end: registry search, `registry add-deployment` when the protocol is already listed, otherwise `init` from a Foundry build or a verified address, then the judgment steps (intent wording, token relationships, what to hide), fixtures, tests, export and a PR draft.
 
 ```sh
 npx skills add portdeveloper/clear-signing-helper
 ```
 
-The skill lives under `.claude/skills/clear-signing-helper/`. Installing the standalone CLI above is sufficient for the Foundry workflow in this README.
+The skill lives under `.claude/skills/clear-signing-helper/` and expects the CLI installed as above.
 
 ## Install from source
 

@@ -23,7 +23,7 @@ A Node 22+ CLI (`clear-signing`) that works inside a Foundry repo:
 - `export` writes the descriptor plus a `testsv2/*.tests.json` file in the registry's v2 test format.
 - `check --strict-portability` flags ABI shapes with recorded wallet failures: signed ints, nested arrays, multi-field tuple arrays.
 
-It never signs, sends, publishes, or verifies deployed bytecode. There is also a separate agent skill under `.claude/skills/clear-signing-helper/` for the "I only have an address" path; it shares no code with the CLI.
+It never signs, sends, publishes, or verifies deployed bytecode beyond a Sourcify match. The agent skill under `.claude/skills/clear-signing-helper/` is a playbook over the CLI; only EIP-712 work still falls back to the upstream Python tool.
 
 **What is genuinely good and must be preserved:** fixture encoding, canonical-calldata rejection, exact expected-value generation for `testsv2`, snapshot regression in CI, the hash-pinned vendored renderer with the signed-int fix, and the path/symlink/size hardening in `src/io.ts`.
 
@@ -112,11 +112,12 @@ Most protocols a new chain cares about already have a registry descriptor; the P
 - Acceptance: adding Monad mainnet (143) to a real registry descriptor produces a diff that passes the registry's lint and schema checks without hand edits.
 - Result: `src/registry-edit.ts`, CLI `registry add-deployment`. Selector proof against the verified ABI (`ABI_MISMATCH` refuses and writes nothing); template test chosen from cases whose `to` is a known deployment and whose selector exists in the ABI; rendering runs before any write, so missing chain-specific metadata (`MISSING_METADATA`) also writes nothing; edits are positional insertions (`src/json-edit.ts`) that copy the neighbouring entry's formatting, so a compact one-line registry file gets a one-line diff. `--abi` allows a trusted local ABI, recorded as unverified. Live check used Base WETH (8453, Sourcify match) against the real `registry/weth/calldata-weth.json`. Finding: that file's only test case, "Wrap - chain 1", carries one byte beyond the ABI encoding in its calldata, so it cannot serve as a template under the canonical-calldata rule; the command reports why (`NO_RENDERABLE_TEMPLATE`) and the deployment can still be added with `--no-test`. Registry test data is not guaranteed canonical; a Monad mainnet case still needs a protocol with a Sourcify-verified 143 deployment and an existing registry descriptor.
 
-### 8. Converge the agent skill on the CLI — `todo`
+### 8. Converge the agent skill on the CLI — `done` (2026-09-19)
 
 `.claude/skills/clear-signing-helper/SKILL.md` still drives `uvx erc7730 generate` and hand-written tests. With ABI mode and item 7, the skill should call the CLI for generation, fixtures, tests and export, and keep only the judgment steps (registry search first, intent wording, what to hide, ownership before PR).
 
 - Acceptance: the skill's happy path for "here is an address on chain X" is `init --address`, edit, `fixture`, `preview`, `review --accept`, `test --update`, `export`, and for "protocol already in the registry" it is item 7.
+- Result: SKILL.md rewritten around the CLI. Kept: registry-first search (`find-in-registry.sh`), the judgment guidance (30-character intents, token relationships, hide-with-reason, exclusions stated in the PR), ownership gate before any PR, and `verify-address.sh` for the EIP-712 domain check the CLI does not cover. Dropped: `uvx erc7730 generate` and hand-written testsv2 for calldata. `docs/AGENT-SKILL.md` and the README agent section describe the same flow.
 
 ### 9. Run the registry's test runners on export — `todo`
 

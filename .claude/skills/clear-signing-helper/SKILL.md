@@ -1,95 +1,126 @@
 ---
 name: clear-signing-helper
-description: Create or extend an ERC-7730 clear-signing descriptor for a smart contract on any EVM chain, verify it on-chain, validate it, and prepare a PR to the ethereum/clear-signing-erc7730-registry. Use when someone wants their contract's transactions or signed messages to render as human-readable text in wallets (Ledger and others) instead of raw hex, wants to add clear signing, write an ERC-7730 descriptor, or add their chain or contract to the clear signing registry.
+description: Create or extend an ERC-7730 clear-signing descriptor for a smart contract on any EVM chain and prepare a PR to the ethereum/clear-signing-erc7730-registry, using the clear-signing CLI for everything that can be derived and reserving human judgment for intents, token relationships and what to hide. Use when someone wants their contract's transactions to render as human-readable text in wallets (Ledger and others), wants to add clear signing, write an ERC-7730 descriptor, or add their chain or contract to the clear signing registry.
 ---
 
 # Clear signing descriptor (ERC-7730)
 
-Turn a smart contract into a reviewed, validated ERC-7730 descriptor plus a ready-to-open PR to the registry, so its calls and signed messages render as plain language in supporting wallets instead of a wall of hex.
+Turn a contract into a reviewed, validated ERC-7730 descriptor plus a ready-to-open registry PR. ERC-7730 is chain-agnostic: any EVM chain, any contract.
 
-ERC-7730 is chain-agnostic. This works for any EVM chain and any contract, not just one project.
+The spec and build guide are https://clearsigning.org/build/ and the EIP. Defer to them for schema questions. This skill is the workflow on top, and the `clear-signing` CLI does the mechanical part: it generates everything the ABI, compiler output, deployment records and verified source prove, renders test expectations, and runs the registry's own linter. You supply what only a human can: the wording of intents, which token an amount is in when the ABI cannot say, and which arguments a signer does not need to see. Never guess those; ask.
 
-The authoritative spec and build guide is the Ethereum Foundation's https://clearsigning.org/build/ and the ERC-7730 EIP. Defer to them for schema questions; this skill is the agent-runnable workflow on top of that standard.
+## Setup
+
+```sh
+npm install --global --ignore-scripts clear-signing-helper@preview   # Node 22+
+clear-signing --version
+uv --version   # optional; lets the CLI run the registry's erc7730 lint via uvx
+```
+
+Add `--json` to any CLI command for machine-readable output with stable diagnostic codes.
 
 ## Inputs to collect first
 
-Ask for whatever is missing before starting:
-- Contract address and chain id.
-- Owner / protocol name (used in `metadata.owner` and the registry folder).
-- An RPC URL for the chain (for on-chain verification).
-- The ABI, or a way to get it: a verified contract on the chain's explorer, or the project's source.
-- Whether to open the PR or stop at a draft. Default is to stop at a draft (see step 9).
+- Contract address and chain id, or a path to the project's Foundry repository.
+- Owner / protocol name (`metadata.owner`, and the registry folder).
+- Whether to open the PR or stop at a draft. Default: stop at a draft (step 5).
 
-## Procedure
+## 1. Check the registry first (highest leverage)
 
-### 1. Check the registry FIRST (the highest-leverage step)
-Most well-known protocols already have a descriptor and are only missing a chain. When that is the case the change is one line, not a new file, and it merges easily.
-- Search for the contract address and the protocol name: `scripts/find-in-registry.sh <address-or-name> <path-to-registry-clone>`. No local clone? Use the GitHub contents API to list `registry/` and grep the raw files for the address (`gh api ...`). Unauthenticated GitHub code search is blocked, so use the contents API or an authenticated `gh search code`, not a plain `curl` to the search endpoint.
-- If a descriptor exists and only the chain is missing, add `{ "chainId": <id>, "address": "<addr>" }` to that file's `context.contract.deployments` array and stop. The display formats are chain-agnostic and carry over unchanged. This is exactly how Permit2 and Morpho reached new chains.
-- Only author a new descriptor if none exists.
+Most well-known protocols already have a descriptor and only lack a chain. That PR is one deployment line plus one test case.
 
-### 2. Verify the address on-chain (never trust an address you were handed)
-- First get the candidate address from the protocol's own deployment source: their docs, an addresses file in their GitHub, or their API. Do not assume a same-address-on-every-chain vanity address is deployed on your chain; it often is not.
-- `scripts/verify-address.sh <chainId> <address> <rpcUrl> [eip712Name] [eip712Version]`.
-- It confirms there is bytecode at the address, then matches the live `DOMAIN_SEPARATOR()` against the EIP-712 domain shapes in use (2-field with no name like Morpho, 3-field with a name like Permit2, 4-field with name and version like most tokens) and reports which matched. The 2-field check runs even with no name, so pass the name and version when you have them. A match is proof the address is the contract you think it is.
-- Many contracts (routers, factories) have no `DOMAIN_SEPARATOR()`. Then confirm identity by calling a known view function from the ABI and checking it returns a sane value: a router's `factory()` or `WETH9()`, or an `owner()`. Bytecode present plus a sensible view response is enough.
-
-### 3. Generate (only when authoring from scratch)
-First get the ABI. From Etherscan's V2 multichain API, addressed by chain id (works for any supported chain, needs `ETHERSCAN_API_KEY`):
+```sh
+git clone --depth 1 https://github.com/ethereum/clear-signing-erc7730-registry.git registry-clone
+scripts/find-in-registry.sh <address-or-protocol-name> registry-clone
 ```
-export ETHERSCAN_API_KEY=<your key>   # export it; an inline KEY=val prefix won't expand inside the URL
-curl -s "https://api.etherscan.io/v2/api?chainid=<id>&module=contract&action=getsourcecode&address=<addr>&apikey=$ETHERSCAN_API_KEY" | jq -r '.result[0].ABI' > abi.json
+
+If a `calldata-*.json` matched and only the chain is missing:
+
+```sh
+clear-signing registry add-deployment --registry registry-clone \
+  --descriptor registry/<entity>/calldata-<Name>.json \
+  --chain-id <id> --address <addr> \
+  [--token <tokenAddr>=<SYMBOL>:<decimals>] [--address-name <addr>=<Name>]
 ```
-Confirm it is verified (`status:1`); if `getsourcecode` shows a proxy, fetch the implementation's ABI. Etherscan V2 does not serve every chain and may reject newer ones with "Missing/Invalid API Key"; if the contract is unverified or the chain is not covered, get the ABI from the project's verified source or repo instead.
 
-Then generate, minding two traps:
+The CLI fetches the verified ABI at the address (Sourcify, then Etherscan with `ETHERSCAN_API_KEY`), proves every function the descriptor formats exists there, appends the deployment, renders a test case for the new chain from an existing one, runs lint, and prints the `git`/`gh` commands. It refuses and changes nothing if the address is a different contract, if the address is unverified, or if a test cannot be rendered; read the reason. Token symbols differ per chain, so when it asks for `--token`, look the token up and pass it. `--no-test` adds the deployment alone when no existing case is usable. Then go to step 5.
+
+Only author a new descriptor if nothing matched.
+
+## 2. Generate the draft
+
+Pick the input you have. Each writes `clear-signing.toml`, `clear-signing/descriptors/calldata-<Name>-<hash>.json`, and `clear-signing/provenance.json`.
+
+**Foundry repository** (best evidence: NatSpec, enums, constructor constants, broadcast deployments and transactions):
+
+```sh
+cd <repo> && forge build            # once, so compilers are cached
+clear-signing init --owner "<Owner>"                     # production contracts under src/
+clear-signing init --contract <path>:<Name> --owner "<Owner>"   # a dependency, e.g. a router under lib/
 ```
-COLUMNS=10000 uvx erc7730 generate --chain-id <id> --address <addr> --abi ./abi.json --owner "<Owner>" > calldata-<Name>.json
+
+**Deployed address** (needs verified source on Sourcify, or Etherscan with a key):
+
+```sh
+mkdir <name>-clear-signing && cd <name>-clear-signing
+clear-signing init --address <addr> --chain-id <id> --owner "<Owner>"
 ```
-- `COLUMNS=10000` is required. `generate` pretty-prints and wraps long lines, which corrupts the JSON it writes; a wide terminal prevents it. Then confirm it parses (`jq . calldata-<Name>.json`); if it still does not, the wrapping bit anyway, so widen `COLUMNS` further or strip the stray newlines inside string values.
-- Name the file with the `calldata-` (or `eip712-`) prefix from the start, or `lint` will refuse it.
-- `--owner` may not fill `metadata.owner`, and `$schema` may come out null. Set both yourself. The owner picks the registry folder `registry/<owner>/`, so identify the real protocol from the verified source on the explorer (contract name, NatSpec `@title`, imported packages) or the project's site, not from the contract's code style. If you add `metadata.info`, it requires a `url` (keep it short, Ledger truncates past ~26 chars).
 
-### 4. Write human-readable intents and labels (the part that needs judgment)
-This is what makes a descriptor good. For each function or signed message:
-- `intent`: the action in plain language, like "Approve USDC", "Supply collateral", "Swap exact tokens". Keep it 30 characters or fewer; Ledger devices truncate longer text.
-- Label every field a user should see: which parameter is the token, the amount, the spender, the recipient, the deadline.
-- Pick the right format: `tokenAmount` for amounts (set `tokenPath` when the token address is another field in the same call), `addressName` for addresses (it needs `params`, e.g. `{ "types": ["token"] }`; a bare `addressName` fails lint), `amount` for native value, a percentage for rates, `raw` only as a last resort.
-- You do not have to render every field. To omit an opaque one (callback `data`, fee tiers, `sqrtPriceLimit`), just leave it out of `fields`. In v2 a left-out field is a lint *warning*, not an error, so it does not block. Do NOT add an `excluded` key: that is a v1 concept and the v2 schema rejects unknown keys, which is a hard lint error.
-- Mark the fields that matter `"visible": "always"`.
-Base every label on real contract semantics. Read the ABI parameter names and any NatSpec. If a parameter's meaning is unclear, look at the source or ask. Do not guess.
+A verified proxy is followed to its implementation and the proxy address is bound. If the address is unverified the CLI says so; get the deployer to verify on https://sourcify.dev, or use the ABI you trust with `clear-signing init --abi <file> --name <Name>` and say in the PR that it was not source-verified.
 
-### 5. Know the gotchas
-- Inline ABI: embed `context.contract.abi` to make the descriptor self-contained. The lint "could not fetch ABI" warning (no `ETHERSCAN_API_KEY`) is harmless and appears on any chain.
-- EIP-712 domains vary: read the exact domain from the contract. Most use `name, version, chainId, verifyingContract`; some omit `version` (Permit2) or `name` (Morpho). Get it right or the signed message will not match.
-- Nested or arbitrary calldata cannot be statically decoded: multicall, `batch`, router `execute`, connector `call`/`batch`, permit-with-`data`. Cover the functions that decode cleanly and state plainly which you left out. Never ship a descriptor that renders a half-empty screen and call it done.
+Read the `init` output. It lists every value it derived and its source: NatSpec (author text), AST (enums), broadcast (deployments, constructor constants), convention (ERC-20/WETH defaults). Deployment bindings appear only when the repository proves them; otherwise add `{ "chainId", "address" }` to `context.contract.deployments` yourself, from the protocol's own deployment record.
 
-### 6. Validate
-`uvx erc7730 lint <file>` (the file needs the `calldata-`/`eip712-` prefix or lint refuses it). What counts as an error vs noise: "could not fetch ABI" (no `ETHERSCAN_API_KEY`) and "Missing display field" / "Missing display format" are warnings, not errors. The last two just mean you chose not to render a field or a whole function (fine for opaque params and nested-calldata functions you bounded out); silence them by leaving the field out, never by adding an `excluded` key. Setting `ETHERSCAN_API_KEY` clears the fetch warning and lets lint validate your fields against the ABI. Re-check that every intent is 30 characters or fewer.
+## 3. Author what the tool cannot prove
 
-### 7. Add reference tests (v2 format)
-Tests let wallet vendors verify the descriptor renders correctly, and registry CI runs them against both the TypeScript and Rust libraries. Use the v2 format only. The old `tests/` folder with an `expectedTexts` array is deprecated, and maintainers will ask you to convert it before they review (this is exactly what happened on the Permit2-on-Monad PR).
-- Location: `registry/<owner>/testsv2/<descriptor-name>.tests.json`, mirroring the descriptor filename with a `.tests.json` suffix. NOT the old `tests/` folder.
-- Header: `"$schema": "../../../specs/erc7730-tests-v2.schema.json"` and `"descriptor": "../<descriptor-name>.json"`.
-- `dataProvider.tokens` maps each token address a test touches (LOWERCASED) to `{ "decimals", "name", "symbol" }`, so `tokenAmount` fields resolve to a symbol instead of `???`.
-- Each test needs a unique `description`; for EIP-712 the full `data` typed-data object (`types`, `primaryType`, `domain`, `message`); for calldata an unsigned `rawTx` plus optional `txHash`; and an `expected` block.
-- `expected` is `{ "intent", "owner", "fields": [{ "label", "value" }] }`. The `value`s are the exact rendered strings the runner compares against, so they must match precisely: amounts formatted by the token's decimals (e.g. `2500000000` at 6 decimals renders as `2500 USDC`), dates as `YYYY-MM-DD HH:MM:SSZ` in UTC, addresses in full checksummed form. A `tokenAmount` only renders "Unlimited" when the descriptor field sets both `threshold` and `message`; without them a max value renders as its full (huge) number, so pick a realistic amount for the test.
-- Fastest way to get the `value`s right without a device: copy an existing passing test for the same message or function type in the registry and change only the domain/message data. The rendering is format-driven, so identical formats plus identical amount/decimals produce identical output regardless of chain or address. Adding a chain to an existing descriptor is usually one new test case alongside the existing ones.
-- Validate: the file must pass `specs/erc7730-tests-v2.schema.json` (e.g. a quick `jsonschema` check). Delete any old-format `tests/<descriptor-name>.tests.json` you are replacing.
+Open the descriptor JSON. For every function a user signs:
 
-### 8. Preview (optional)
-`lint` is the real gate. To eyeball the render, use the Sourcify live preview. (`uvx erc7730 calldata` needs real sample calldata bytes as input, so skip it unless you have an actual transaction to decode.)
+- **Intent**: the action in plain words, 30 characters or fewer (Ledger truncates; the registry linter warns). "Approve USDC", "Supply collateral", "Swap". The CLI prefilled NatSpec `@notice` where it fit; keep it only if it reads as an action.
+- **Token amounts**: use `tokenAmount`. When the token is another argument, `"params": {"tokenPath": "path.[0]"}` (arrays may be indexed, `[-1]` is the last element). When it is the contract itself, `"tokenPath": "@.to"`. When it is a constructor constant the CLI extracted, `"token": "$.metadata.constants.<name>"`. When you cannot tell from the source which token an amount is in, ask; do not guess.
+- **Addresses**: `addressName` with `"params": {"types": ["eoa","wallet"]}` for recipients, `["contract"]` or `["token"]` where that is what it is.
+- **Native value**: payable functions must display `@.value`; the draft uses `amount`.
+- **Dates and enums**: `date` with `{"encoding": "timestamp"}`; enums are already wired to `metadata.enums` when the source declares them.
+- **Hide noise deliberately**: opaque `bytes` payloads, redundant routes, callback data. Remove the field and record why under the selection in `clear-signing.toml`:
 
-### 9. PR step (default: stop at a draft)
-- The file belongs at `registry/<owner>/<calldata|eip712>-<Name>.json`.
-- DEFAULT: do NOT open the PR. Output the validated file, the target path, and the exact `git`/`gh` commands, and tell the user to open the PR from an account tied to the contract owner (maintainers may ask for proof of ownership).
-- Only if the user explicitly opts in to opening the PR: show the full diff, confirm, then open it.
-- Why: descriptors are owned by the protocol, ownership is checked at review, and auto-opening agent PRs burdens registry maintainers. A human gate and quality beat speed here.
+  ```toml
+  [contracts.hidden."swapExactTokensForTokens(uint256,uint256,address[],address,uint256)"]
+  "path.[]" = "Route is implied by the input and output token amounts"
+  ```
+
+  `check` warns on every undisplayed argument until a reason exists. Never hide a recipient, spender, amount or limit.
+- **Functions you will not cover** (multicall, `execute(bytes)`, admin flows): remove the format and add a reason under `[contracts.exclusions]`. Say plainly in the PR what is excluded. Never ship a descriptor that renders a half-empty screen.
+- **Nested calldata** cannot be decoded statically; exclude those functions.
+
+Base every label on the contract's semantics: parameter names, NatSpec, source. If a parameter's meaning is unclear, look at the source or ask.
+
+## 4. Fixtures, preview, review, test, export
+
+```sh
+clear-signing fixture --name <n> --contract <id> --function '<sig>' --args '[...]' --chain-id <id> --to <deployed>
+clear-signing fixture --name <n> --contract <id> --broadcast-tx <hash>     # Foundry: a real recorded transaction
+clear-signing preview --fixture clear-signing/fixtures/<n>.json           # add tokens/addressNames to the fixture until it renders cleanly
+clear-signing check --contract <id>
+clear-signing review --accept --contract <id>
+clear-signing test --update --contract <id>
+clear-signing export --contract <id> --strict-portability --out bundle [--entity <registry-folder>]
+```
+
+Every function you kept needs at least one passing fixture. Fixture metadata (`tokens`, `addressNames`, `chain`) is local and never fetched; put the real symbol and decimals in. `export` writes `bundle/registry/<entity>/calldata-<Name>.json` and `testsv2/` exactly as the registry wants them, runs `erc7730 lint`, and records everything under `bundle/review/`. `--strict-portability` rejects ABI shapes with recorded wallet failures (signed ints, nested arrays, multi-field tuple arrays); if it fires, exclude that function or drop strict mode and say so in the PR.
+
+`review --accept` and `test --update` are the human's acknowledgement; run them only after you have looked at the preview.
+
+## 5. PR step (default: stop at a draft)
+
+- Copy `bundle/registry/<entity>/` into the registry clone at `registry/<entity>/`, or use the files `registry add-deployment` already changed there.
+- DEFAULT: do NOT open the PR. Show the diff, the target path, the lint output, what was excluded or hidden and why, and the exact `git`/`gh` commands (the CLI prints them). Tell the user to open the PR from an account tied to the contract owner; maintainers check ownership.
+- Only if the user explicitly opts in: confirm the diff, then open it.
+
+## EIP-712 signed messages
+
+The CLI does not author EIP-712 descriptors. Follow https://clearsigning.org/build/ by hand: read the exact domain from the contract, confirm the address with `scripts/verify-address.sh <chainId> <address> <rpcUrl> [name] [version]` (matches the live `DOMAIN_SEPARATOR()` against the 2-, 3- and 4-field domain shapes), write `eip712-<Name>.json` with the `$schema` of the folder you write into, add a `testsv2` case, and run `uvx erc7730 lint <file>`. Do not add an `excluded` key; it is a v1 concept the v2 schema rejects.
 
 ## Quality bar
-- Prefer the minimal change: adding a chain to an existing descriptor beats a new file every time.
-- One descriptor reviewed by someone who knows the contract beats ten machine-guessed ones.
-- If you bounded coverage (skipped nested calldata, omitted a function), say so out loud.
 
-## Reference examples
-The registry is the best reference. Look at `registry/uniswap/` for EIP-712 and multi-chain deployments, `registry/morpho/` for a calldata descriptor with nested structs, and any `eip712-*.json` for signed-message descriptors. Match the conventions and the `$schema` path of the folder you write into.
+- Adding a chain to an existing descriptor beats a new file every time.
+- One descriptor reviewed by someone who knows the contract beats ten machine-guessed ones. The CLI records what it derived and from where; the PR should say what a human decided.
+- If you bounded coverage, say so out loud.
+- Never re-encode or trim calldata, never bind an address on name alone, never silence a `check` warning without recording a reason.

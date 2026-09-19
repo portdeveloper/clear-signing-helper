@@ -10,25 +10,25 @@ Paste this into your coding agent (Claude Code, Cursor, and others):
 read https://github.com/portdeveloper/clear-signing-helper and use it to make my contract clear-signable: <address> on <chain>
 ```
 
-It checks the registry, drafts the descriptor, verifies the address on-chain, and preps the PR for you to review.
+It checks the registry, generates the draft from verified source or your Foundry build, asks only for the decisions a human must make, and preps the PR for you to review.
 
 Prefer it as a standing skill? Install with `npx skills add portdeveloper/clear-signing-helper`.
 
 ## What it does
 
-Point it at a contract (address + chain) and it will:
+Point it at a contract (address + chain) or a Foundry repository and it will:
 
-- check whether the registry already has a descriptor, since often you only need to add your chain (a one-line change)
-- verify the contract address on-chain before trusting it
-- generate and label a descriptor so calls render as plain language like "Approve 1,000 USDC to ..." instead of a wall of hex
-- lint and preview the result
+- check whether the registry already has a descriptor, since often you only need to add your chain; then `clear-signing registry add-deployment` proves the address is the same contract, appends the deployment and renders the test case
+- otherwise generate a draft with `clear-signing init`, from Foundry artifacts (NatSpec, enums, constructor constants, broadcast deployments) or from the verified source at an address (Sourcify, proxies resolved)
+- ask you only for what the ABI cannot prove: intent wording, which token an amount is in, which arguments to hide, and record those decisions
+- encode fixtures, preview the rendering, snapshot expectations, and export a bundle laid out for the registry and checked by the registry's own linter
 - prepare the PR, stopping at a reviewed draft by default (opening the PR is opt-in)
 
 ERC-7730 is chain-agnostic, so this is not specific to any one chain or project. It works for any EVM chain and any contract.
 
 ## Beyond Claude Code
 
-The skill is a plain playbook plus two bash scripts (`verify-address.sh`, `find-in-registry.sh`), so the logic carries over to any agent or to a human following along by hand.
+The skill is a plain playbook over the `clear-signing` CLI, plus two bash scripts: `find-in-registry.sh` to search a registry clone, and `verify-address.sh` to match a live `DOMAIN_SEPARATOR()` for EIP-712 work the CLI does not cover. The logic carries over to any agent or to a human following along by hand.
 
 ## Links
 
