@@ -140,6 +140,39 @@ Upstream lint and the schemas run today; the Sourcify and Rust runners do not. T
 - Physical-device acceptance and independent human review, still open from the 0.2.0 tracker.
 - Persisting provenance into the review record so `review --accept` acknowledges sources explicitly.
 
+## Roadmap, phase 3: the LLM's place in the pipeline
+
+Principle, refined from phase 2: derive everything provable deterministically; let AI propose only what cannot be derived; verify everything verifiable against the registry's own tools; a human owns what cannot be verified. The model sits after the scaffold and fills only its judgment slots. It never generates the provable parts, and it never submits.
+
+### 11. Decisions template and `apply` — `todo` (do first)
+
+The six human steps in `docs/DOGFOOD.md` are all judgment slots the scaffold leaves raw. Make them an explicit interface any agent, or a person, can fill without touching descriptor JSON.
+
+- `clear-signing decisions --contract <id>` writes `clear-signing/decisions/<Name>.json`: per function, the slots that need judgment (intent, label per field, denomination for each amount with the candidate references the tool can offer such as `@.to`, `$.metadata.constants.*`, address arguments; hide-with-reason; exclude-with-reason), pre-filled with whatever evidence provided and its source.
+- `clear-signing apply --decisions <file>` writes the descriptor and `clear-signing.toml` from it, validates, and records `source: llm` or `source: human` in `clear-signing/provenance.json` per decision (the file carries an `author` field).
+- The LLM stays outside the CLI: no API keys or model calls in the tool. The skill instructs the agent to fill the decisions file.
+- Acceptance: the PuddleSwap StakingRewards authoring in `docs/DOGFOOD.md` is reproducible from a decisions file alone; provenance distinguishes agent-authored intents from NatSpec ones.
+
+### 12. Registry-corpus selector prior — `todo` (cheap, deterministic)
+
+If another registry descriptor already formats the same selector, that format is the strongest available hint and disagreement is worth a warning; no model needed.
+
+- Index `test/fixtures/registry/corpus.json` (already pinned) by selector to the formats other entities use for it, plus the entity name.
+- `init` pre-fills the decisions template with the prior and its source (`registry:<entity>/<file>`); `check` warns `CORPUS_DISAGREEMENT` when a format's field formats differ in kind (raw vs tokenAmount, hidden vs shown) from every prior for that selector.
+- Keep the corpus snapshot date visible; add `registry:snapshot` refresh to the release checklist.
+- Acceptance: an ERC-20 `approve` or a Uniswap V2 `swapExactTokensForTokens` draft shows the prior; a deliberately raw amount on a selector the corpus formats as `tokenAmount` warns.
+
+### 13. Advisory semantic verifier — `todo` (do last; treat as a hypothesis)
+
+An LLM reading source and judging whether each intent and denomination matches is a plausibility opinion, the same thing a registry reviewer does. It may catch the obvious mismatch and will pass subtle ones.
+
+- Output per format: `agree | disagree | unsure` with one sentence of reasoning, written to `review/semantic.json`; never a gate. `unsure` and `disagree` are listed for the human before `review --accept`.
+- Measure before trusting: run it over the pinned corpus, whose intents are already accepted, and record the disagreement rate. If it flags accepted descriptors at a real rate, the pass is noise and is dropped.
+- Same boundary as item 11: the CLI defines the prompt and the result schema; the agent runs the model.
+- Acceptance: a disagreement rate on the corpus low enough that a flag is worth a human minute, documented with the model and date.
+
+Not doing: "generate first with AI" (the model would regenerate the provable parts the scaffold gets right for free), auto-submitting PRs (ownership gate; maintainers check submitter ties to the owner), or an in-CLI model call.
+
 ## Working conventions
 
 - Build and test: `npm ci`, `npm run build`, `npx tsx --test test/*.test.ts` (or `npm test`). Tests compile the Foundry projects under `examples/` and drive the built `dist/cli.js`. Anvil is required for `test/anvil.test.ts`.
