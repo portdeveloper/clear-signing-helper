@@ -30,7 +30,7 @@ function formatHumanOutput(data: any): string {
   if (data.reviewed) return `Review recorded for ${data.reviewed.length} contract(s).\n${data.note}`;
   if (data.exported) return [`Exported ${data.descriptors} descriptor(s) and ${data.fixtures} fixture(s) to ${data.exported}.`,
     `Registry-ready files: ${data.registryPath}/ (copy into <registry-clone>/registry/${data.entity}/).`,
-    data.lint?.ran ? [`Upstream erc7730 lint: exit ${data.lint.exitCode}, ${data.lint.warnings} warning(s).`,...(data.lint.warnings ? data.lint.output.map((l:string)=>`  ${l}`) : [])].join('\n') : `Upstream erc7730 lint not run (${data.lint?.reason}). Run: ${data.lint?.command}`,
+    data.lint?.ran ? [`Upstream erc7730 format: ${data.lint.formatted?.ran?'applied':`not applied (${data.lint.formatted?.reason})`}; lint: exit ${data.lint.exitCode}, ${data.lint.warnings} warning(s).`,...(data.lint.warnings ? data.lint.output.map((l:string)=>`  ${l}`) : [])].join('\n') : `Upstream erc7730 lint not run (${data.lint?.reason}). Run: ${data.lint?.command}`,
     ...(data.registryRunners?data.registryRunners.map((r:any)=>`Registry ${r.name} runner (${r.implementation??r.ref.slice(0,8)}) on ${r.testsFile}: ${r.passed?'all cases pass':'FAILED'} ${JSON.stringify(r.cases)}`):[]),
     ...portability,'See review/portability.json. Wallet/deployment verification and registry publication have not been performed.'].join('\n');
   if (data.passed !== undefined) return `${data.passed} signing test(s) passed.${data.updated ? ` ${data.updated} expectation(s) updated.` : ''}`;

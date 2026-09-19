@@ -9,7 +9,7 @@ import {portabilityFindings, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
 import { renderFixture, validateFixture, blockingWarnings, type Fixture, type Rendering } from './fixtures.js';
 import { registryTests } from './registry.js';
-import { runUpstreamLint, lintCommand, type LintResult } from './lint.js';
+import { runUpstreamLint, runUpstreamFormat, lintCommand, type LintResult } from './lint.js';
 import { setupRunners, runRegistryRunners, pinsFromRegistry, DEFAULT_PINS, type RunnerResult } from './runners.js';
 import { loadAbiProject, importAbiFile, importVerified, ABI_DIR } from './abi-project.js';
 import { fetchVerifiedContract } from './fetch.js';
@@ -326,7 +326,10 @@ export async function exportBundle(state: State, out: string, strictPortability=
       writeJson(path.join(stage,'review','fixtures',name),readJson(safePath(state.project.root,r.file)));
       writeJson(path.join(stage,'review','renderings',name),r.rendering);
     }
+    // Canonical registry formatting first, so lint and the runners see exactly what the PR will contain.
+    const formatted = options.lint===false ? {ran:false, reason:'skipped with --no-lint'} : runUpstreamFormat(stage, descriptorFiles);
     lint = options.lint===false ? {ran:false, command:lintCommand(descriptorFiles).join(' '), reason:'skipped with --no-lint'} : runUpstreamLint(stage, descriptorFiles);
+    (lint as LintResult & {formatted?: typeof formatted}).formatted = formatted;
     if(lint.ran && lint.exitCode!==0) throw new Failure('UPSTREAM_LINT_FAILED',`erc7730 lint rejected the exported descriptor(s).`,1,[{code:'UPSTREAM_LINT_FAILED',message:(lint.output??[]).join(' | '),remedy:`Fix the descriptor and export again, or reproduce with: ${lint.command}`}]);
     // The registry's own implementations, when asked for. The bundle's registry/ directory is a registry root.
     if(options.registryRunners) {

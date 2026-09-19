@@ -72,6 +72,7 @@ The build already requests `devdoc` and `userdoc` and nothing reads them; `broad
 - **Standard interfaces.** For ERC-20, ERC-4626 and WETH selectors, apply the settled registry convention as a visible default in the draft. This is a convention, so it stays editable and is marked as such.
 - **Broadcast CALL records.** `FundStakingRewards.s.sol` recorded real `notifyRewardAmount` calldata against the deployed StakingRewards. Offer `fixture --from-broadcast` to seed fixtures from those transactions.
 - Later, lower certainty: seed fixtures from `forge test` traces.
+- `interpolatedIntent`: the registry's advisory script recommends it on every format; the tool neither authors nor validates it (surfaced by item 10).
 - Acceptance: on puddleswap, `init` yields StakingRewards with NatSpec intents, `stake` denominated in the staking token from the broadcast, TokenRegistry levels as an enum, and the router bound to `0x430c…` on 10143 without hand editing.
 - Result: `src/ast.ts` indexes `forge build --ast` output (selectors, enums through structs and arrays, constructor assignments to immutables, literal address constants). `src/evidence.ts` gathers NatSpec, enums, broadcast-resolved constants and ERC-20/WETH surface detection; `scaffoldWithProvenance` in `src/descriptors.ts` consumes it and returns a provenance list that `init` prints. `fixture --broadcast-tx <hash>` copies a recorded CALL. `UNKNOWN_ADDRESS` is informational. Verified on puddleswap: NatSpec intents on StakingRewards, `metadata.constants.rewardsToken/stakingToken` from the deploy broadcast, `TokenLevel` enum on TokenRegistry, WMON `Wrap`/`Unwrap`, and the recorded `notifyRewardAmount` transaction rendered as a fixture. Denominating `stake` in `stakingToken` stays a one-line human edit (`"token": "$.metadata.constants.stakingToken"`) because the ABI cannot prove which amount is in which token; the router binding stays manual because puddleswap deployed it outside `forge script`.
 
@@ -127,10 +128,11 @@ Upstream lint and the schemas run today; the Sourcify and Rust runners do not. T
 - Acceptance: the 0.2.0 Morpho exercise (23 cases) reproduces through the flag instead of `scripts/validate-morpho-registry.py`.
 - Result: `src/runners.ts` clones and builds the Sourcify runner and `cs-test` at the registry CI's pinned revisions (built-in pins, or `--runner-pins <clone>` / `registry add-deployment --runners` reading `.github/actions/run-*-tests/action.yml`), caches them under `~/.cache/clear-signing-helper/runners/`, runs both on each `testsv2` file with the bundle's `registry/` as registry root, and passes only when every case is `pass` and the count matches the fixture. Failures fail the export and remove the bundle; results and logs go to `review/runners/`. `registry setup-runners` pre-builds. Tests use stub executables via `CLEAR_SIGNING_RUNNERS_DIR`. The Morpho 23-case reproduction was not rerun; the real runners were exercised on the ABI-mode WETH bundle, the puddleswap StakingRewards bundle, and the registry's Morpho Blue test file with an added chain (see live results in the commit).
 
-### 10. Dogfood a real submission — `todo`
+### 10. Dogfood a real submission — `in progress` (bundle ready, PR pending owner)
 
 - Verify the puddleswap router on Sourcify (deployer side), import it with `init --address`, and take one contract through review, export and an actual registry PR opened by the owner. Record what still needed a human.
 - Acceptance: a merged registry PR whose files came out of `export` unchanged, or a written list of what the maintainers asked to change.
+- Progress (2026-09-19): StakingRewards, WMON and StableFaucet verified on Sourcify from the repo build; router and TokenRegistry source no longer match their deployments (router: pair init code hash constant; details in `docs/DOGFOOD.md`). StakingRewards taken from `init --address` to an exported bundle that passes format, lint, both schemas and both runners; staged as branch `puddleswap-staking-rewards` on the owner's fork. Export now runs `erc7730 format` so the registry's format bot leaves the PR alone. Human steps recorded in `docs/DOGFOOD.md`.
 
 ### Later
 
