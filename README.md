@@ -10,7 +10,7 @@ Use it to turn compiled contract functions into editable ERC-7730 JSON drafts, i
 
 ## Install the developer preview
 
-Requires Node.js 22+ and Foundry. Until `0.3.0-preview.1` reaches npm, install it from the [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.3.0-preview.1) tarball as described in [distribution](docs/DISTRIBUTION.md#build-and-verify-a-release). Once published, the npm preview is:
+Requires Node.js 22+ and Foundry (or a verified contract address for [ABI mode](#use-without-foundry-abi-mode)). Install the [npm preview](https://www.npmjs.com/package/clear-signing-helper/v/0.3.0-preview.1):
 
 ```sh
 npm install --global --ignore-scripts clear-signing-helper@preview
@@ -315,7 +315,7 @@ Forge builds have a ten-minute timeout to accommodate large optimized protocol r
 
 ## Release status and evidence
 
-`0.3.0-preview.1` is published as a [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.3.0-preview.1) with its checksum and verification record; npm publication of this version is pending. The previous preview, `0.2.0-preview.1`, remains on [npm](https://www.npmjs.com/package/clear-signing-helper/v/0.2.0-preview.1). The GitHub assets contain the package checksum and local, CI, GitHub-download and npm-install verification records. All four Linux/macOS Node 22/24 CI packages matched the released tarball. See the [release handoff](docs/RELEASE-HANDOFF.md) for exact inputs and remaining distribution work.
+`0.3.0-preview.1` is published on [npm](https://www.npmjs.com/package/clear-signing-helper/v/0.3.0-preview.1) under both the `preview` and `latest` tags, and as a [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.3.0-preview.1) with its checksum and verification record. The npm tarball's integrity hash matches the GitHub asset byte for byte. The GitHub assets contain the package checksum and local, CI, GitHub-download and npm-install verification records. All four Linux/macOS Node 22/24 CI packages matched the released tarball. See the [release handoff](docs/RELEASE-HANDOFF.md) for exact inputs and remaining distribution work.
 
 [Validation evidence](docs/VALIDATION.md) records automated tests, real-source exercises and emulator results. The [production readiness checklist](docs/PRODUCTION-READINESS.md) retains pending human and physical-device validation. Those results are not prerequisites for distributing this experimental CLI. No descriptor has been submitted to a registry by this project.
 
