@@ -136,7 +136,7 @@ Upstream lint and the schemas run today; the Sourcify and Rust runners do not. T
 
 ### Later
 
-- EIP-712 descriptors (104 in the registry corpus): a separate decoding and review model.
+- EIP-712 descriptors (104 in the registry corpus): a separate decoding and review model. The Permit2 rebase (`docs/DOGFOOD.md`) shows the concrete need: `registry add-deployment` for `eip712-*.json`, proving the address by `DOMAIN_SEPARATOR()` instead of selectors.
 - Physical-device acceptance and independent human review, still open from the 0.2.0 tracker.
 - Persisting provenance into the review record so `review --accept` acknowledges sources explicitly.
 
