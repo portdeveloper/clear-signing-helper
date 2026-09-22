@@ -49,25 +49,31 @@
 </header>
 
 
-<h2>What this tool does, in RFC 2119 terms</h2>
-<p class="legend">The key words MUST, MUST NOT, SHOULD and MAY are used as in <a href="https://www.rfc-editor.org/rfc/rfc2119">RFC 2119</a>. Each statement links to the code that enforces it.</p>
+<h2>What this tool does, and does not do</h2>
+<p class="legend">Each statement links to the code that enforces it.</p>
 <div class="grid rfc">
   <div class="card">
-    <h3>The tool MUST</h3>
+    <h3>The tool DOES</h3>
     <ul>
-      <li>Derive functions, argument paths, types and selectors from the ABI and reject a descriptor whose paths do not exist (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">descriptors.ts</a>).</li>
+      <li>Derive functions, argument paths, types and selectors from the ABI, and reject a descriptor whose paths do not exist (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">descriptors.ts</a>).</li>
       <li>Render every example transaction through the pinned Sourcify renderer and write the rendered text, not typed text, into the registry test file (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fixtures.ts">fixtures.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/registry.ts">registry.ts</a>).</li>
       <li>Reject calldata that does not re-encode byte for byte, so appended or malformed bytes never pass (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fixtures.ts">NONCANONICAL_CALLDATA</a>).</li>
       <li>Require a payable function to display its native value (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">UNDISPLAYED_NATIVE_VALUE</a>).</li>
       <li>Verify the vendored renderer's hash on every build (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/scripts/verify-renderer.mjs">verify-renderer.mjs</a>).</li>
-      <li>Run the registry's formatter and linter on an export when <code>uvx</code> is present, and refuse to produce a bundle when lint reports an error (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/lint.ts">lint.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">exportBundle</a>).</li>
+      <li>Run the registry's formatter and linter on export when <code>uvx</code> is present, and produce no bundle when lint reports an error (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/lint.ts">lint.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">exportBundle</a>).</li>
+      <li>Run the registry CI's Sourcify and Rust implementations on the exported tests when asked, and fail the export if any case fails (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/runners.ts">runners.ts</a>).</li>
       <li>Prove an address is the same contract, by selectors against the verified ABI, before adding it to an existing descriptor (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/registry-edit.ts">ABI_MISMATCH</a>).</li>
       <li>Record where every generated value came from: NatSpec, AST, broadcast, convention, registry prior, human or model (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">provenance</a>).</li>
       <li>Invalidate a recorded review when source, ABI, descriptor, exclusions or build settings change (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">reviewFingerprint</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/foundry.ts">build fingerprint</a>).</li>
+      <li>Prefill intents and labels from NatSpec when they fit a device screen, and say when they did not (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">scaffoldFormatWithProvenance</a>).</li>
+      <li>Apply the registry's conventional formats to ERC-20 and WETH-shaped contracts, marked as conventions and editable (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">ERC20_CONVENTIONS</a>).</li>
+      <li>Warn, rather than fail, where the renderer itself only warns: an undisplayed argument, an intent over 30 characters, a type mismatch, a disagreement with every registry descriptor for the same selector (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">warnings</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/priors.ts">priors.ts</a>).</li>
+      <li>Reject known wallet incompatibilities under <code>--strict-portability</code>: signed integers, nested arrays, multi-field tuple arrays (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/portability.ts">portability.ts</a>).</li>
+      <li>Embed the compiled ABI in the descriptor on request; off by default because the schema deprecates it (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">--inline-abi</a>).</li>
     </ul>
   </div>
   <div class="card">
-    <h3>The tool MUST NOT</h3>
+    <h3>The tool does NOT</h3>
     <ul>
       <li>Guess what a function does, which token an amount is denominated in, or which arguments to hide; those are left raw or asked for (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">writeDecisions</a>).</li>
       <li>Bind a deployment on a contract name alone; bindings come from broadcast records, from verified source, or from the author (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/foundry.ts">deployedContracts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fetch.ts">fetch.ts</a>).</li>
@@ -76,27 +82,6 @@
       <li>Write a descriptor, test file or configuration when validation fails; failures leave files untouched (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">applyDecisions</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/registry-edit.ts">registry-edit.ts</a>).</li>
       <li>Sign, send or simulate transactions, hold keys, or open pull requests (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/README.md">README</a>).</li>
       <li>Touch the network except for <code>init --address</code>, <code>registry add-deployment</code>, the upstream lint and format run, and the one-time runner build (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/CLAUDE.md">recorded decision</a>).</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3>The tool SHOULD</h3>
-    <ul>
-      <li>Warn, not fail, where the renderer itself only warns: an undisplayed argument, an intent over 30 characters, a type mismatch, a disagreement with every registry descriptor for the same selector (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">warnings</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/priors.ts">priors.ts</a>).</li>
-      <li>Prefill intents and labels from NatSpec when they fit a device screen, and say when they did not (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">scaffoldFormatWithProvenance</a>).</li>
-      <li>Reject known wallet incompatibilities under <code>--strict-portability</code>: signed integers, nested arrays, multi-field tuple arrays (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/portability.ts">portability.ts</a>).</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3>The tool MAY</h3>
-    <ul>
-      <li>Apply the registry's conventional formats to ERC-20 and WETH-shaped contracts, marked as conventions and editable (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">ERC20_CONVENTIONS</a>).</li>
-      <li>Run the registry CI's Sourcify and Rust implementations on the exported tests when asked, failing the export if any case fails (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/runners.ts">runners.ts</a>).</li>
-      <li>Embed the compiled ABI in the descriptor on request; off by default because the schema deprecates it (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">--inline-abi</a>).</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3>The tool does NOT</h3>
-    <ul>
       <li>Author EIP-712 descriptors, or add a chain to one.</li>
       <li>Decode nested calls (the <code>calldata</code> format) or encrypted fields; both are rejected explicitly (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">UNSUPPORTED_FORMAT</a>).</li>
       <li>Verify deployed bytecode beyond a Sourcify match, or discover proxies beyond what Sourcify resolves.</li>
