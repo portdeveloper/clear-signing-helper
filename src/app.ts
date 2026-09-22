@@ -3,7 +3,7 @@ import path from 'node:path';
 import TOML from '@iarna/toml';
 import { Interface } from 'ethers';
 import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
-import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, normalizePath, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group } from './descriptors.js';
+import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, normalizePath, stripRoot, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group } from './descriptors.js';
 import { priorsFor, summarizePrior } from './priors.js';
 import { gatherEvidence } from './evidence.js';
 import {portabilityFindings, PORTABILITY_REFERENCE} from './portability.js';
@@ -377,7 +377,7 @@ export function writeDecisions(state: State, id: string, out?: string) {
     const sig = f.format('sighash'), key = signature(f), existing = formats.get(sig);
     const leafList = leaves(f.inputs);
     const flat = new Map<string, Field>();
-    const walk = (items: (Field | Group)[], prefix = '') => { for (const item of items) { if ('fields' in item) walk(item.fields, prefix + item.path + '.'); else if (typeof item.path === 'string') flat.set(normalizePath(item.path.startsWith('@.') ? item.path : prefix + item.path), item); } };
+    const walk = (items: (Field | Group)[], prefix = '') => { for (const item of items) { if ('fields' in item) walk(item.fields, prefix + stripRoot(item.path) + '.'); else if (typeof item.path === 'string') flat.set(normalizePath(item.path.startsWith('@.') ? item.path : prefix + stripRoot(item.path)), item); } };
     if (existing) walk(existing.spec.fields);
     const addressLeaves = leafList.filter(l => l.type === 'address').map(l => l.path);
     const fields: Record<string, DecisionField> = {};
@@ -441,9 +441,9 @@ export function applyDecisions(state: State, file: string) {
     const hiddenHere: Record<string, string> = {};
     const present = new Set<string>();
     const edit = (items: (Field | Group)[], prefix = ''): (Field | Group)[] => items.flatMap((item): (Field | Group)[] => {
-      if ('fields' in item) { const inner = edit(item.fields, prefix + item.path + '.'); return inner.length ? [{...item, fields: inner}] : []; }
+      if ('fields' in item) { const inner = edit(item.fields, prefix + stripRoot(item.path) + '.'); return inner.length ? [{...item, fields: inner}] : []; }
       if (typeof item.path !== 'string') return [item];
-      const full = item.path.startsWith('@.') ? item.path : normalizePath(prefix + item.path);
+      const full = item.path.startsWith('@.') ? item.path : normalizePath(prefix + stripRoot(item.path));
       const decision = fd.fields?.[full];
       if (!decision) return [item];
       present.add(full);

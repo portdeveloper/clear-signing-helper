@@ -1,11 +1,16 @@
 import type { FunctionFragment, ParamType } from 'ethers';
 import type { Field, Group } from './descriptors.js';
 import { fail } from './io.js';
+import { stripRoot, PATH_PARAMS } from './descriptors.js';
+import { isAddress } from 'ethers';
 
 // The upstream renderer only iterates one array level. Lower standard nested
 // groups into concrete indexed paths for this transaction, keeping every leaf
 // and index visible. The portable descriptor on disk remains unchanged.
-export function expandNestedFields(fields: (Field | Group)[], fn: FunctionFragment, args: readonly unknown[]): (Field | Group)[] {
+export function expandNestedFields(input: (Field | Group)[], fn: FunctionFragment, args: readonly unknown[]): (Field | Group)[] {
+  // Normalize "#." roots first so lookups against decoded arguments line up; the renderer strips them too.
+  const strip = (items: (Field | Group)[]): (Field | Group)[] => items.map(item => 'fields' in item ? {...item, path: stripRoot(item.path), fields: strip(item.fields)} : {...item, ...(typeof item.path === 'string' ? {path: stripRoot(item.path)} : {})});
+  const fields = strip(input);
   const needsExpansion = (items: (Field | Group)[], grouped = false): boolean => items.some(item =>
     'fields' in item ? grouped || needsExpansion(item.fields, true) : (typeof item.path === 'string' ? (item.path.match(/\[\]/g)?.length ?? 0) : 0) > (grouped ? 0 : 1));
   if (!needsExpansion(fields)) return fields;
@@ -52,12 +57,16 @@ export function expandNestedFields(fields: (Field | Group)[], fn: FunctionFragme
   };
   // prefix is the concrete path chosen so far; wild is the same prefix as written in the descriptor.
   const lower = (items: (Field | Group)[], prefix = '', wild = ''): (Field | Group)[] => items.flatMap(item => {
+    if (typeof item.path !== 'string') return [item];
     const fullPath = item.path.startsWith('@.') ? item.path : prefix + item.path;
     const wildPath = item.path.startsWith('@.') ? item.path : wild + item.path;
     return contexts(fullPath).flatMap(context => {
       if (context.empty) return [{path:context.path,label:`${context.path}: empty`,fields:[]} as Group];
       if ('fields' in item) return lower(item.fields, context.path + '.', wildPath + '.');
-      const params = substituteParams((item as Field).params, indexSubstitutions(wildPath, context.path));
+      // Inside a group the renderer scopes relative parameter paths to the group; after lowering there is no
+      // group left, so scope them to the concrete element prefix here.
+      const scoped = (item as Field).params && prefix ? Object.fromEntries(Object.entries((item as Field).params!).map(([k, v]) => [k, PATH_PARAMS.has(k) && typeof v === 'string' && !v.startsWith('@.') && !v.startsWith('$.') && !isAddress(v) ? prefix + stripRoot(v) : v])) : (item as Field).params;
+      const params = substituteParams(scoped, indexSubstitutions(wildPath, context.path));
       return [{...item,path:context.path, ...(params ? {params} : {}), ...(context.path.includes('.[') ? {separator:context.path} : {})} as Field];
     });
   });

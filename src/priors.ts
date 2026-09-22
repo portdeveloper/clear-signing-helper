@@ -1,6 +1,6 @@
 import { FunctionFragment, ParamType } from 'ethers';
 import priors from './data/registry-priors.json' with {type: 'json'};
-import { leaves, parseSignature, normalizePath, type Field, type Group } from './descriptors.js';
+import { leaves, parseSignature, normalizePath, stripRoot, type Field, type Group } from './descriptors.js';
 
 // What other registry descriptors do with the same function selector. Advisory only: it never
 // changes a draft, it pre-fills suggestions and warns when a draft disagrees in kind with every prior.
@@ -17,10 +17,10 @@ export function leafViews(key: string, fields: (Field | Group)[]): LeafView[] | 
   const shown = new Map<string, Field>();
   const walk = (items: any[], prefix = '') => { for (const item of items ?? []) {
     if (!item || typeof item !== 'object') continue;
-    if ('fields' in item) { walk(item.fields, typeof item.path === 'string' ? prefix + item.path + '.' : prefix); continue; }
+    if ('fields' in item) { walk(item.fields, typeof item.path === 'string' ? prefix + stripRoot(item.path) + '.' : prefix); continue; }
     if (typeof item.path !== 'string' || item.path.startsWith('@.')) continue;
     if (item.visible === 'never') continue;
-    shown.set(normalizePath(prefix + item.path).replace(/^#\./, ''), item);
+    shown.set(normalizePath(stripRoot(prefix + stripRoot(item.path))), item);
   } };
   walk(fields);
   return leaves(fn.inputs).map(leaf => {

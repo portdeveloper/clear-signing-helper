@@ -140,6 +140,10 @@ Upstream lint and the schemas run today; the Sourcify and Rust runners do not. T
 - Physical-device acceptance and independent human review, still open from the 0.2.0 tracker.
 - Persisting provenance into the review record so `review --accept` acknowledges sources explicitly.
 
+## Acceptance metric: does the validator accept what the registry merged?
+
+`npm run registry:acceptance -- <registry clone>` runs `validateDescriptor` over every merged calldata descriptor (includes resolved). 2026-09-22 at registry `9f37816`: **261 of 284 accepted**; the 23 rejections are the `calldata` format (32 fields across 22 files; nested-call resolution is out of scope) and one encrypted field. Before this pass the number was 11 of 284: the validator rejected `#.` root prefixes, `$id`, `$ref` definitions, constant-value fields, `visible: never/optional` and rule objects, byte slices, group-scoped parameter paths, token references to integer leaves, and treated type mismatches and a missing intent or owner as errors where the renderer only warns. All of those now follow the renderer's semantics. Re-run this after any validator change; a new rejection class is a regression against the registry.
+
 ## Roadmap, phase 3: the LLM's place in the pipeline
 
 Principle, refined from phase 2: derive everything provable deterministically; let AI propose only what cannot be derived; verify everything verifiable against the registry's own tools; a human owns what cannot be verified. The model sits after the scaffold and fills only its judgment slots. It never generates the provable parts, and it never submits.

@@ -89,11 +89,11 @@ await test('registry-style swap descriptor: typed addressName, tokenPath into pa
   assert.deepEqual(r.fields.map((f:any)=>[f.label,f.value]),[['Send','2 MON'],['Receive at least','0.99 USDC'],['Recipient','burn.eth'],['Expires','2026-09-21 14:13:20Z']]);
 });
 
-await test('tokenPath inside a tuple array follows the element it is expanded with',async()=>{
+await test('a relative tokenPath inside a tuple array group follows the element it is expanded with',async()=>{
   const c=contract('batch((address token,uint256 amount)[][] rows)');
   const d=scaffold(c,'Example');
   const key=Object.keys(d.display.formats)[0];
-  d.display.formats[key]={intent:'Batch',fields:[{path:'rows.[]',label:'Row',iteration:'sequential',fields:[{path:'[]',label:'Item',iteration:'sequential',fields:[{path:'token',label:'Token',format:'raw'},{path:'amount',label:'Amount',format:'tokenAmount',params:{tokenPath:'rows.[].[].token'}}]}]}]};
+  d.display.formats[key]={intent:'Batch',fields:[{path:'rows.[]',label:'Row',iteration:'sequential',fields:[{path:'[]',label:'Item',iteration:'sequential',fields:[{path:'token',label:'Token',format:'raw'},{path:'amount',label:'Amount',format:'tokenAmount',params:{tokenPath:'token'}}]}]}]};
   assert.deepEqual(validateDescriptor(d,c,{id:c.id,descriptor:'b.json',exclusions:{}}),[]);
   const r=await renderFixture({contract:c.id,chainId:1,to:address,data:new Interface(c.abi).encodeFunctionData('batch',[[[[address,1000000n]],[[other,5n]]]]),value:'0',localBinding:true,
     tokens:{[address]:{name:'A',symbol:'AAA',decimals:6},[other]:{name:'B',symbol:'BBB',decimals:0}}},d,c);
@@ -128,4 +128,27 @@ await test('interpolated intents render, flow into registry expectations, and mu
   // A hidden field cannot be interpolated either.
   d.display.formats[key]={intent:'Stake',interpolatedIntent:'Stake {amount}',fields:[]};
   assert.ok(validateDescriptor(d,c,{...selection,hidden:{'stake(uint256)':{amount:'test'}}}).some(x=>x.code==='INVALID_INTERPOLATION'));
+});
+
+await test('registry idioms validate and render: #. roots, $id, $ref definitions, constant values, visible never on a struct',async()=>{
+  const c=contract('createSession(address delegate,uint48 validUntil,(address token,uint256 cap)[] limits) payable');
+  const key='createSession(address delegate,uint48 validUntil,(address token,uint256 cap)[] limits)';
+  const d:any=scaffold(c,'Example');
+  d.context.$id='session-manager';
+  d.metadata.constants={vaultTicker:'sMON'};
+  d.display.definitions={who:{label:'Delegate',format:'addressName',params:{types:['eoa','wallet']}}};
+  d.display.formats[key]={$id:'create',intent:'Create session',fields:[
+    {$ref:'$.display.definitions.who',path:'#.delegate'},
+    {path:'#.validUntil',label:'Valid until',format:'date',params:{encoding:'timestamp'},$id:'until'},
+    {path:'#.limits.[]',label:'Limits',visible:'never'},
+    {value:'$.metadata.constants.vaultTicker',label:'Share ticker',format:'raw'},
+    {path:'@.value',label:'Deposit',format:'amount'}]};
+  const diags=validateDescriptor(d,c,{id:c.id,descriptor:'s.json',exclusions:{}});
+  assert.deepEqual(diags.filter(x=>x.severity!=='warning'),[],JSON.stringify(diags));
+  assert.ok(!diags.some(x=>x.code==='UNDISPLAYED_ARGUMENT'),'a struct hidden with visible:never is a recorded decision, not a warning');
+  const data=new Interface(c.abi).encodeFunctionData('createSession',[other,1790000000n,[[address,5n]]]);
+  const r=await renderFixture({contract:c.id,chainId:1,to:address,data,value:'1000000000000000000',localBinding:true,addressNames:{[other]:'Alice'}},d,c);
+  assert.deepEqual(r.fields.map((f:any)=>[f.label,f.value]),[['Delegate','Alice'],['Valid until','2026-09-21 14:13:20Z'],['Share ticker','sMON'],['Deposit','1 ETH']]);
+  d.display.formats[key].fields[0]={$ref:'$.display.definitions.nope',path:'#.delegate'};
+  assert.ok(validateDescriptor(d,c,{id:c.id,descriptor:'s.json',exclusions:{}}).some(x=>x.code==='UNKNOWN_DEFINITION'));
 });

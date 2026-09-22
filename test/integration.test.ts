@@ -126,7 +126,7 @@ await test('descriptor validation rejects unknown features and invalid formatter
   for(const [name,mutate,code] of [
     ['unsupported format',(d:any)=>d.display.formats['deposit(uint256 assets,address receiver)'].fields[0].format='calldata','UNSUPPORTED_FORMAT'],
     ['wrong path',(d:any)=>d.display.formats['deposit(uint256 assets,address receiver)'].fields[0].path='missing','INVALID_PATH'],
-    ['wrong type',(d:any)=>d.display.formats['deposit(uint256 assets,address receiver)'].fields[0].format='addressName','FORMAT_TYPE'],
+    ['unknown definition',(d:any)=>{d.display.formats['deposit(uint256 assets,address receiver)'].fields[0]={$ref:'$.display.definitions.missing',path:'assets'};},'UNKNOWN_DEFINITION'],
     ['includes',(d:any)=>d.includes='https://example.invalid/file.json','UNSUPPORTED_FEATURE'],
     ['missing function',(d:any)=>delete d.display.formats['deposit(uint256 assets,address receiver)'],'MISSING_COVERAGE']
   ] as const) {const d=structuredClone(original);mutate(d);write(file,d);assert.ok(codes(run(root,['check'],1)).includes(code),name);}

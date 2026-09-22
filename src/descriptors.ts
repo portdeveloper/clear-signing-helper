@@ -10,13 +10,13 @@ import { assertKeys, assertTreeBudget, Diagnostic, fail, Failure, hash } from '.
 
 export const SCHEMA_URL = 'https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json';
 export const ENGINE = {tool: packageJson.version, renderer: '@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1', schema: hash(schema), subset: 3};
-export type Field = {path: string; label: string; format: string; params?: Record<string, any>; separator?: string; visible?: unknown};
-export type Group = {path: string; label?: string; fields: (Field | Group)[]; iteration?: 'sequential'};
+export type Field = {path?: string; value?: unknown; label?: string; format?: string; params?: Record<string, any>; separator?: string; visible?: unknown; $id?: string; $ref?: string};
+export type Group = {path: string; label?: string; fields: (Field | Group)[]; iteration?: 'sequential'; $id?: string};
 export type Descriptor = {
   $schema: string;
-  context: {contract: {deployments: {chainId: number; address: string}[]; abi?: unknown[]}};
+  context: {contract: {deployments: {chainId: number; address: string}[]; abi?: unknown[]}; $id?: string};
   metadata: {owner: string; contractName?: string; info?: {url?: string; deploymentDate?: string}; token?: {name: string; ticker: string; decimals: number}; constants?: Record<string, unknown>; enums?: Record<string, Record<string, string>>};
-  display: {formats: Record<string, {intent: string; interpolatedIntent?: string; fields: (Field | Group)[]}>};
+  display: {formats: Record<string, {intent?: string; interpolatedIntent?: string; fields: (Field | Group)[]; $id?: string}>; definitions?: Record<string, Field>};
 };
 // hidden: sighash -> normalized leaf path -> reason. Records a deliberate decision not to display an argument.
 export interface Selection {id: string; descriptor: string; exclusions: Record<string, string>; hidden?: Record<string, Record<string, string>>}
@@ -31,6 +31,8 @@ const UNSUPPORTED_FORMAT_REASON: Record<string, string> = {
 const ADDRESS_FORMATS = new Set(['addressName', 'tokenTicker']);
 const INTEGER_FORMATS = new Set(['amount', 'tokenAmount', 'date', 'duration', 'unit', 'nftName', 'chainId']);
 const TRANSACTION_FIELDS: Record<string, string> = {'@.to': 'address', '@.from': 'address', '@.value': 'uint256'};
+// Parameters whose string values are paths into the arguments (scoped inside groups).
+export const PATH_PARAMS = new Set(['tokenPath', 'collectionPath', 'calleePath', 'amountPath', 'chainIdPath', 'nativeCurrencyAddress', 'threshold']);
 
 const ajv = new Ajv2020({allErrors: true, strict: false, validateFormats: true});
 (addFormats as any)(ajv);
@@ -68,6 +70,23 @@ export function leaves(params: readonly ParamType[], prefix = '', depth = 0): {p
 export function placeholders(template: string): string[] {
   const out: string[] = [];
   for (const m of template.replace(/\{\{|\}\}/g, '').matchAll(/\{([^{}]*)\}/g)) { const k = m[1].trim(); if (k) out.push(k); }
+  return out;
+}
+// Visibility rules the renderer evaluates: hide unless the value is in ifNotIn, or require a mustMatch value.
+const isVisibilityRule = (v: unknown) => !!v && typeof v === 'object' && !Array.isArray(v) && (Array.isArray((v as any).ifNotIn) || Array.isArray((v as any).mustMatch)) && Object.keys(v as object).every(k => ['ifNotIn', 'mustMatch'].includes(k));
+// "#." names the structured root in ERC-7730 paths; the renderer strips it and so do we.
+export const stripRoot = (p: string) => p.replace(/^#\./, '');
+// Field over definition, key by key, params merged; mirrors the renderer's mergeDefinitions.
+export function mergeDefinition(field: Field, definitions: Record<string, Field>): Field {
+  if (typeof field.$ref !== 'string') return field;
+  const name = /^\$\.display\.definitions\.(.+)$/.exec(field.$ref)?.[1];
+  if (!name) fail('UNKNOWN_DEFINITION', `Unsupported display definition reference ${field.$ref}.`);
+  const def = definitions[name];
+  if (!def) fail('UNKNOWN_DEFINITION', `${field.$ref} is not defined under display.definitions.`);
+  const {$ref, ...rest} = field;
+  const out: Field = {...rest};
+  for (const k of ['path', 'value', 'label', 'format', 'visible', 'separator'] as const) if (out[k] === undefined && def[k] !== undefined) (out as any)[k] = def[k];
+  if (def.params || rest.params) out.params = {...(def.params ?? {}), ...(rest.params ?? {})};
   return out;
 }
 // A concrete index such as path.[0] or path.[-1] addresses the same ABI leaf as path.[].
@@ -196,7 +215,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
   try {
     assertKeys(d, ['$schema', 'context', 'metadata', 'display'], 'descriptor');
     if (d.$schema !== SCHEMA_URL) fail('SCHEMA_VERSION', `Use the pinned schema ${SCHEMA_URL}.`);
-    assertKeys(d.context, ['contract'], 'context');
+    assertKeys(d.context, ['contract', '$id'], 'context');
     assertKeys(d.context.contract, ['deployments', 'abi'], 'context.contract');
     if (!Array.isArray(d.context.contract.deployments)) fail('INVALID_BINDING', 'context.contract.deployments must be an array (empty for local drafts).');
     if (d.context.contract.abi !== undefined && !Array.isArray(d.context.contract.abi)) fail('INVALID_BINDING', 'context.contract.abi must be an ABI array when present.');
@@ -205,12 +224,13 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
       assertKeys(dep, ['chainId', 'address'], 'deployment');
       if (!Number.isSafeInteger(dep.chainId) || dep.chainId <= 0 || !isAddress(dep.address) || /^0x0{40}$/i.test(dep.address)) fail('INVALID_BINDING', 'Deployments require a positive safe chainId and nonzero address.');
       const key = `${dep.chainId}:${dep.address.toLowerCase()}`;
-      if (bindings.has(key)) fail('INVALID_BINDING', `Duplicate deployment ${key}.`);
+      if (bindings.has(key)) add('INVALID_BINDING', `Duplicate deployment ${key}.`, undefined, 'warning');
       bindings.add(key);
     }
     assertKeys(d.metadata, ['owner', 'contractName', 'info', 'token', 'constants', 'enums'], 'metadata');
-    if (!d.metadata.owner?.trim()) fail('MISSING_METADATA', 'metadata.owner must name the project owner.');
-    assertKeys(d.display, ['formats'], 'display');
+    if (!d.metadata.owner?.trim()) add('MISSING_METADATA', 'metadata.owner is empty; the registry expects the project owner here.', undefined, 'warning');
+    assertKeys(d.display, ['formats', 'definitions'], 'display');
+    const definitions: Record<string, Field> = d.display.definitions ?? {};
     assertKeys(d.display.formats, Object.keys(d.display.formats ?? {}), 'display.formats');
     const available = new Map(c.functions.map(f => [f.format('sighash'), f]));
     const covered = new Set<string>();
@@ -229,41 +249,67 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         if (f.format('full') !== parseSignature(signature(actual)).format('full')) fail('SIGNATURE_NAMES', `${key} must use the compiler argument names: ${signature(actual)}.`);
         if (covered.has(sig)) fail('DUPLICATE_FORMAT', `More than one format describes ${sig}.`);
         covered.add(sig);
-        assertKeys(spec, ['intent', 'interpolatedIntent', 'fields'], `formats.${key}`);
-        if (typeof spec.intent !== 'string' || !spec.intent.trim()) fail('MISSING_INTENT', `${sig} requires a nonempty intent.`);
-        if (spec.intent.length > MAX_INTENT) add('INTENT_LENGTH', `${sig} intent "${spec.intent}" is ${spec.intent.length} characters; the registry linter warns above ${MAX_INTENT} because Ledger devices truncate it.`, key, 'warning');
-        if (!Array.isArray(spec.fields)) fail('INVALID_FIELDS', `${sig} requires a fields array.`);
+        assertKeys(spec, ['intent', 'interpolatedIntent', 'fields', '$id'], `formats.${key}`);
+        // The registry has merged formats without an intent; the renderer falls back to the function name.
+        if (typeof spec.intent !== 'string' || !spec.intent.trim()) add('MISSING_INTENT', `${sig} has no intent; a signer would see the function name.`, key, 'warning');
+        if (typeof spec.intent === 'string' && spec.intent.length > MAX_INTENT) add('INTENT_LENGTH', `${sig} intent "${spec.intent}" is ${spec.intent.length} characters; the registry linter warns above ${MAX_INTENT} because Ledger devices truncate it.`, key, 'warning');
+        if (spec.fields === undefined) spec.fields = [];
+        if (!Array.isArray(spec.fields)) fail('INVALID_FIELDS', `${sig} fields must be an array.`);
         const leafMap = new Map(leaves(f.inputs).map(x => [x.path, x.type]));
-        const typeOf = (p: string) => leafMap.get(normalizePath(p)) ?? TRANSACTION_FIELDS[p];
-        const seen = new Set<string>(), displayedLeaves = new Set<string>();
+        // A trailing byte slice such as .[-20:] or .[0:4] addresses part of a leaf; the renderer slices the bytes.
+        const sliceBase = (p: string) => p.replace(/\.\[-?\d*:-?\d*\]$/, '');
+        const typeOf = (p: string) => leafMap.get(normalizePath(stripRoot(sliceBase(p)))) ?? TRANSACTION_FIELDS[p];
+        const seen = new Set<string>(), displayedLeaves = new Set<string>(), declaredHidden = new Set<string>();
+        const join = (prefix: string, p: string) => p.startsWith('@.') ? p : prefix + stripRoot(p);
         const flatten = (items: (Field | Group)[], prefix = '', depth = 0): Field[] => {
           if (depth > 32) fail('UNSUPPORTED_FEATURE', 'Field grouping exceeds the supported depth.');
           return items.flatMap(item => {
             if (!item || typeof item !== 'object') fail('INVALID_FIELDS', 'Fields must be objects.');
             if ('fields' in item) {
-              assertKeys(item, ['path','label','fields','iteration'], `group in ${sig}`);
+              assertKeys(item, ['path','label','fields','iteration','$id'], `group in ${sig}`);
               if (typeof item.path !== 'string' || !item.path || !Array.isArray(item.fields)) fail('INVALID_PATH', 'Groups require a path and fields array.');
               if (item.iteration && item.iteration !== 'sequential') fail('UNSUPPORTED_FEATURE', 'Only sequential group iteration is supported.');
-              return flatten(item.fields, prefix + item.path + '.', depth + 1);
+              return flatten(item.fields, join(prefix, item.path) + '.', depth + 1);
             }
-            return [{...item, path: typeof item.path === 'string' && item.path.startsWith('@.') ? item.path : prefix + item.path}];
+            // $ref merges the field over its display definition, key by key, as the renderer does.
+            const merged = mergeDefinition(item, definitions);
+            // Inside a group, relative parameter paths are scoped to the group, exactly like field paths.
+            const params = merged.params && prefix ? Object.fromEntries(Object.entries(merged.params).map(([k, v]) => [k, PATH_PARAMS.has(k) && typeof v === 'string' && !v.startsWith('@.') && !v.startsWith('$.') && !isAddress(v) ? join(prefix, v) : v])) : merged.params;
+            return [{...merged, ...(params ? {params} : {}), ...(typeof merged.path === 'string' ? {path: join(prefix, merged.path)} : {})}];
           });
         };
         for (const field of flatten(spec.fields)) {
-          assertKeys(field, ['path', 'label', 'format', 'params', 'separator', 'visible'], `field in ${sig}`);
-          if (typeof field.path !== 'string') fail('INVALID_PATH', 'Every field requires a path. Constant value fields are not supported.');
+          assertKeys(field, ['path', 'value', 'label', 'format', 'params', 'separator', 'visible', '$id', '$ref'], `field in ${sig}`);
+          if (field.visible !== undefined && !['always', 'never', 'default', 'optional'].includes(String(field.visible)) && !isVisibilityRule(field.visible)) fail('UNSUPPORTED_FEATURE', `visible must be "always", "never", "optional", "default", or a rule object with ifNotIn or mustMatch.`);
+          if (typeof field.label !== 'string' || !field.label.trim()) fail('MISSING_LABEL', `${field.path ?? field.value} requires a label.`);
+          if (field.value !== undefined) {
+            // Constant-value field: shown as-is, or resolved from metadata; it displays no argument.
+            if (field.path !== undefined) fail('INVALID_FIELDS', `A field has both path and value in ${sig}.`);
+            if (typeof field.value === 'string' && field.value.startsWith('$.metadata.')) { const ref = /^\$\.metadata\.constants\.([A-Za-z0-9_]+)$/.exec(field.value); if (!ref || d.metadata.constants?.[ref[1]] === undefined) fail('TOKEN_MAPPING', `${field.value} is not a defined metadata constant.`); }
+            continue;
+          }
+          if (typeof field.path !== 'string') fail('INVALID_PATH', 'Every field requires a path or a value.');
+          if (field.visible === 'never') {
+            // Hidden in the descriptor itself. A whole struct or array may be hidden this way.
+            const base = normalizePath(stripRoot(field.path));
+            const covered = [...leafMap.keys()].filter(l => l === base || l.startsWith(base + '.'));
+            if (!covered.length && !TRANSACTION_FIELDS[field.path]) fail('INVALID_PATH', `${field.path} is not an argument of ${sig}.`);
+            covered.forEach(l => declaredHidden.add(l));
+            continue;
+          }
           const type = typeOf(field.path);
           if (!type) fail('INVALID_PATH', `${field.path} is not a leaf argument or supported transaction field of ${sig}.`);
           if (seen.has(field.path)) fail('DUPLICATE_FIELD', `${field.path} is displayed more than once.`);
           seen.add(field.path); displayedLeaves.add(normalizePath(field.path));
-          if (typeof field.label !== 'string' || !field.label.trim()) fail('MISSING_LABEL', `${field.path} requires a label.`);
+          if (field.format === undefined) fail('UNSUPPORTED_FORMAT', `${field.path} has no format; the pinned renderer needs one (use raw).`);
           const params = field.params ?? {};
           if (field.format in UNSUPPORTED_FORMAT_REASON) fail('UNSUPPORTED_FORMAT', `${field.format} on ${field.path}: ${UNSUPPORTED_FORMAT_REASON[field.format]}.`);
           if (!(SUPPORTED_FORMATS as readonly string[]).includes(field.format)) fail('UNSUPPORTED_FORMAT', `${field.format} is not a format the pinned renderer implements.`);
-          if (ADDRESS_FORMATS.has(field.format) && type !== 'address') fail('FORMAT_TYPE', `${field.path} must be an address for ${field.format}.`);
-          if (INTEGER_FORMATS.has(field.format) && !/^u?int\d*$/.test(type)) fail('FORMAT_TYPE', `${field.format} on ${field.path} requires an integer argument.`);
+          // The renderer reads addresses out of address, bytes and integer values; other mismatches render raw with a warning.
+          if (ADDRESS_FORMATS.has(field.format) && !/^(address|bytes\d*|u?int\d*)$/.test(type)) add('FORMAT_TYPE', `${field.format} on ${field.path} (${type}) cannot yield an address; it will render raw with a warning.`, key, 'warning');
+          if (INTEGER_FORMATS.has(field.format) && !/^u?int\d*$/.test(type) && !/\.\[-?\d*:-?\d*\]$/.test(field.path)) add('FORMAT_TYPE', `${field.format} on ${field.path} (${type}) expects an integer; it will render raw with a warning.`, key, 'warning');
           if (field.format === 'enum') {
-            if (!/^u?int\d*$|^bool$/.test(type)) fail('FORMAT_TYPE', `enum on ${field.path} requires an integer or bool argument.`);
+            if (!/^u?int\d*$|^bool$/.test(type) && !/\.\[-?\d*:-?\d*\]$/.test(field.path)) add('FORMAT_TYPE', `enum on ${field.path} (${type}) expects an integer or bool; it will render raw with a warning.`, key, 'warning');
             const ref = /^\$\.metadata\.enums\.([A-Za-z0-9_]+)$/.exec(String(params.$ref ?? ''));
             if (!ref || !d.metadata.enums?.[ref[1]]) fail('ENUM_REFERENCE', `${field.path} enum $ref must name an entry in metadata.enums.`);
           }
@@ -274,11 +320,14 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
             if (value === '$.metadata.token') { if (!d.metadata.token) fail('TOKEN_MAPPING', `${field.path} references $.metadata.token but metadata.token is absent.`); return; }
             const constant = /^\$\.metadata\.constants\.([A-Za-z0-9_]+)$/.exec(value);
             if (constant) { const v = d.metadata.constants?.[constant[1]]; if (typeof v !== 'string' || !isAddress(v)) fail('TOKEN_MAPPING', `${field.path} references ${value}, which is not an address in metadata.constants.`); return; }
-            if (typeOf(value) !== 'address') fail('TOKEN_MAPPING', `Invalid ${what} ${value} for ${field.path}: it must be a literal address, @.to, or a path to an address argument such as path.[0].`);
+            // Any argument leaf may serve: the renderer reads an address out of address, bytes and integer values, and out of byte slices.
+            if (!typeOf(value)) fail('TOKEN_MAPPING', `Invalid ${what} ${value} for ${field.path}: it must be a literal address, @.to, a metadata reference, or a path to an argument such as path.[0].`);
           };
           if (field.format === 'tokenAmount') {
-            if (!!params.token === !!params.tokenPath) fail('TOKEN_MAPPING', `tokenAmount on ${field.path} requires exactly one of token or tokenPath.`);
-            addressReference(params.token ?? params.tokenPath, params.token ? 'token' : 'tokenPath');
+            if (params.token && params.tokenPath) fail('TOKEN_MAPPING', `tokenAmount on ${field.path} sets both token and tokenPath.`);
+            // Without a token the renderer shows the raw integer and warns; the registry has merged such fields, so this is a warning here too.
+            if (!params.token && !params.tokenPath) add('TOKEN_MAPPING', `tokenAmount on ${field.path} has neither token nor tokenPath; it will render as a raw integer with a warning.`, key, 'warning');
+            else addressReference(params.token ?? params.tokenPath, params.token ? 'token' : 'tokenPath');
             if (params.nativeCurrencyAddress !== undefined) for (const v of Array.isArray(params.nativeCurrencyAddress) ? params.nativeCurrencyAddress : [params.nativeCurrencyAddress]) addressReference(v, 'nativeCurrencyAddress');
           }
           if (field.format === 'nftName') {
@@ -292,15 +341,15 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           else if (displayedLeaves.has(leaf)) add('HIDDEN_AND_DISPLAYED', `${sig} displays ${leaf} but also lists it under hidden.`, key);
           if (typeof reason !== 'string' || !reason.trim()) add('HIDDEN_REASON', `${sig} hidden path ${leaf} needs a reason.`, key);
         }
-        for (const leaf of leafMap.keys()) if (!displayedLeaves.has(leaf) && !hiddenHere[leaf]) add('UNDISPLAYED_ARGUMENT', `${sig} does not display ${leaf}. Signers will not see this argument.`, key, 'warning');
+        for (const leaf of leafMap.keys()) if (!displayedLeaves.has(leaf) && !hiddenHere[leaf] && !declaredHidden.has(leaf)) add('UNDISPLAYED_ARGUMENT', `${sig} does not display ${leaf}. Signers will not see this argument.`, key, 'warning');
         if (spec.interpolatedIntent !== undefined) {
           if (typeof spec.interpolatedIntent !== 'string' || !spec.interpolatedIntent.trim()) fail('INVALID_INTERPOLATION', `${sig} interpolatedIntent must be a nonempty string.`);
           // The registry linter applies its 30-character rule to the template text as well.
           if (spec.interpolatedIntent.length > MAX_INTENT) add('INTENT_LENGTH', `${sig} interpolatedIntent "${spec.interpolatedIntent}" is ${spec.interpolatedIntent.length} characters; the registry linter warns above ${MAX_INTENT}.`, key, 'warning');
           // Every {placeholder} must name a displayed field, else the renderer falls back and warns.
           for (const ph of placeholders(spec.interpolatedIntent)) {
-            const target = ph.replace(/^#\./, '');
-            if (!seen.has(target) && !seen.has(normalizePath(target))) fail('INVALID_INTERPOLATION', `${sig} interpolatedIntent references {${ph}}, which is not a displayed field path. Use the exact path of a shown field, or @.value.`);
+            const target = stripRoot(ph);
+            if (!seen.has(target) && !seen.has(normalizePath(target)) && !TRANSACTION_FIELDS[target]) add('INVALID_INTERPOLATION', `${sig} interpolatedIntent references {${ph}}, which is not a displayed field; the renderer will fall back to the plain intent.`, key, 'warning');
           }
         }
         for (const dis of disagreements(key, spec.fields)) add('CORPUS_DISAGREEMENT', `${sig} shows ${dis.path} as ${dis.ours}, but all ${dis.among} registry format(s) for this selector have it ${dis.prior}. See the priors listed by init, or accept the difference.`, key, 'warning');
