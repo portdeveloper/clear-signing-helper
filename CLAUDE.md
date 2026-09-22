@@ -179,6 +179,10 @@ An LLM reading source and judging whether each intent and denomination matches i
 
 Not doing: "generate first with AI" (the model would regenerate the provable parts the scaffold gets right for free), auto-submitting PRs (ownership gate; maintainers check submitter ties to the owner), or an in-CLI model call.
 
+## Public overview page
+
+https://portdeveloper.github.io/clear-signing-helper/ is built from `site/index.html` by `.github/workflows/pages.yml` on every push to `main` that touches `site/`. It carries the pipeline diagram, the operating principle, the comparison with `erc7730`, Ledger's JSON Builder and Cyfrin's `clearsig`, and the status list. Keep the status list and the acceptance number there in step with this file.
+
 ## Working conventions
 
 - Build and test: `npm ci`, `npm run build`, `npx tsx --test test/*.test.ts` (or `npm test`). Tests compile the Foundry projects under `examples/` and drive the built `dist/cli.js`. Anvil is required for `test/anvil.test.ts`.

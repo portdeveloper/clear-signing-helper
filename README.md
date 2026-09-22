@@ -6,7 +6,7 @@ Use it to turn compiled contract functions into editable ERC-7730 JSON drafts, i
 
 **Developer preview: `0.3.0-preview.1`.** Drafts are built from what the repository proves (ABI, NatSpec, compiler AST, broadcast records, verified source), accept every format the registry does, and export registry-shaped bundles checked by the registry's own linter. Works with Foundry projects or from a verified address. Generated labels, units and intent require developer review. Independent human review, protocol-maintainer assessment, physical-device testing and production wallet delivery remain pending. The CLI does not sign or send transactions.
 
-[Install](#install-the-developer-preview) · [Try an example](#try-the-included-example) · [Use your own project](#add-clear-signing-to-your-foundry-repository) · [Commands](#files-and-commands)
+[Overview site](https://portdeveloper.github.io/clear-signing-helper/) · [Install](#install-the-developer-preview) · [Try an example](#try-the-included-example) · [Use your own project](#add-clear-signing-to-your-foundry-repository) · [Commands](#files-and-commands)
 
 ## Install the developer preview
 
