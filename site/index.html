@@ -111,9 +111,7 @@ flowchart TD
     F --> R["Vendored Sourcify renderer<br/>exact wallet text → snapshot expectations"]
     R --> X["export<br/>registry/(entity)/ layout · erc7730 format + lint ·<br/>Sourcify runner + Rust runner at the registry's pins ·<br/>any failure ⇒ no bundle"]
     X --> PR["A human opens the PR<br/>(ownership gate; the tool prints the commands)"]
-    subgraph ALT["Protocol already in the registry, new chain"]
-        AD["registry add-deployment<br/>prove same contract by selectors → append deployment →<br/>render test case → lint and runners → two-line diff"]
-    end
+    AD["Protocol already in the registry, new chain:<br/><b>registry add-deployment</b><br/>prove same contract by selectors → append deployment →<br/>render test case → lint and runners → two-line diff"]
     A2 -.-> AD --> PR
 </pre>
 </div>
