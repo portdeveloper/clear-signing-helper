@@ -29,7 +29,6 @@
   .tablewrap{overflow-x:auto}
   .pill{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:.1rem .6rem;font-size:.8rem;font-weight:600;margin-right:.4rem}
   .diagram{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem;overflow-x:auto}
-  .principle{border-left:4px solid var(--accent);padding:.6rem 1rem;background:var(--accent-soft);border-radius:0 10px 10px 0;margin:1.2rem 0}
   footer{margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
   a{color:var(--accent)}
   ul{padding-left:1.2rem}
@@ -44,13 +43,12 @@
 <main>
 <header>
   <h1>Clear Signing Helper</h1>
-  <p class="lead">From a deployed contract to a registry pull request that passes the registry's own checks. It derives everything the ABI, compiler output, deployment records and verified source can prove, asks a human only for what they cannot, and never guesses. Every claim on this page links to the code behind it.</p>
+  <p class="lead">Wallets show raw hex unless a protocol has published an <a href="https://eips.ethereum.org/EIPS/eip-7730">ERC-7730 descriptor</a> in the Ethereum Foundation's registry. This tool takes a contract to that registry submission: it derives what the ABI, compiler output, deployment records and verified source prove, asks a human only for what they cannot, and runs the registry's own checks before you open the pull request. Every claim on this page links to the code behind it.</p>
   <p><span class="pill">0.3.0-preview.1</span><span class="pill">npm</span><span class="pill">MIT</span> <a href="https://github.com/portdeveloper/clear-signing-helper">GitHub</a> · <a href="https://www.npmjs.com/package/clear-signing-helper">npm</a> · <a href="https://github.com/ethereum/clear-signing-erc7730-registry">the registry</a></p>
 </header>
 
 
 <h2>What this tool does, and does not do</h2>
-<p class="legend">Each statement links to the code that enforces it.</p>
 <div class="grid rfc">
   <div class="card">
     <h3>The tool DOES</h3>
@@ -90,9 +88,6 @@
   </div>
 </div>
 
-<h2>The problem</h2>
-<p>A hardware wallet shows raw hex for a transaction unless the protocol has published an <a href="https://eips.ethereum.org/EIPS/eip-7730">ERC-7730 descriptor</a> in the Ethereum Foundation's registry. Getting one accepted means writing JSON by hand, writing a test file whose expected text must match a wallet renderer to the character, and learning whether it was right after opening the pull request.</p>
-
 <h2>How it works</h2>
 <div class="diagram">
 <pre class="mermaid">
@@ -116,20 +111,6 @@ flowchart TD
 </pre>
 </div>
 <p class="legend"><strong>Where each stage lives:</strong> inputs <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/foundry.ts">foundry.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/abi-project.ts">abi-project.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fetch.ts">fetch.ts</a> · scaffold <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">descriptors.ts</a> with evidence from <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/evidence.ts">evidence.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/ast.ts">ast.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/broadcast.ts">broadcast.ts</a> · decisions and apply in <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">app.ts</a> · validator <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">descriptors.ts</a> and priors <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/priors.ts">priors.ts</a> · fixtures and rendering <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fixtures.ts">fixtures.ts</a> over the <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/vendor/clear-signing/PROVENANCE.md">vendored renderer</a> · export, lint and runners <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">app.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/lint.ts">lint.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/runners.ts">runners.ts</a> · add-deployment <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/registry-edit.ts">registry-edit.ts</a>.</p>
-
-<div class="principle">
-<strong>Operating principle</strong> (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/CLAUDE.md">CLAUDE.md</a>). Derive everything provable deterministically. Let a person or an AI propose only what cannot be derived, and record who decided. Verify everything verifiable against the registry's own tools. Never re-encode calldata, never bind an address on its name alone, never submit on the owner's behalf.
-</div>
-
-<h2>What it does</h2>
-<div class="grid">
-  <div class="card"><h3>Drafts from evidence</h3><p>Functions, argument paths and types from the ABI (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">scaffold</a>). Intents and labels from NatSpec, enums from the compiler AST, token constants from constructor arguments recorded in broadcasts (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/evidence.ts">evidence.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/ast.ts">ast.ts</a>). Deployment bindings from broadcasts (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/broadcast.ts">broadcast.ts</a>) or from the verified source at an address with proxies resolved (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fetch.ts">fetch.ts</a>). Every value carries its source (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">provenance</a>).</p></div>
-  <div class="card"><h3>A file for the judgment calls</h3><p><code>decisions</code> writes one file per contract with the slots only a human can fill: intent wording, which token an amount is in, what to hide and why, what to exclude and why (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">writeDecisions</a>). Each slot shows hints: NatSpec, what other registry descriptors do with the same selector (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/priors.ts">priors.ts</a>), candidate denominations. <code>apply</code> validates and writes everything back (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">applyDecisions</a>).</p></div>
-  <div class="card"><h3>Exact test expectations</h3><p>Example transactions are rendered through the same Sourcify renderer wallets use (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fixtures.ts">fixtures.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/vendor/clear-signing/PROVENANCE.md">renderer provenance</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/scripts/verify-renderer.mjs">hash check</a>). The rendered text becomes the registry test file (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/registry.ts">registry.ts</a>) and a snapshot your CI checks on every change (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">runTests</a>). Recorded broadcast transactions can be fixtures directly (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/broadcast.ts">broadcast.ts</a>).</p></div>
-  <div class="card"><h3>The registry's checks, locally</h3><p>Export lays the bundle out as the registry expects (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">exportBundle</a>), runs the registry's formatter and linter (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/lint.ts">lint.ts</a>), then both implementations its CI tests against, at the versions it pins (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/runners.ts">runners.ts</a>). If anything fails, there is no bundle.</p></div>
-  <div class="card"><h3>Add a chain in one command</h3><p>For a protocol already in the registry, <code>registry add-deployment</code> fetches the verified ABI at the new address, proves every described function exists there, appends the deployment, renders a test case for the new chain (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/registry-edit.ts">registry-edit.ts</a>), and leaves a two-line diff by inserting into the existing text (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/json-edit.ts">json-edit.ts</a>).</p></div>
-  <div class="card"><h3>Refuses to guess</h3><p>An unverified address (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fetch.ts">SOURCE_UNVERIFIED</a>), a different contract at an address (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/registry-edit.ts">ABI_MISMATCH</a>), a token whose symbol is unknown on the new chain (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/registry-edit.ts">NO_RENDERABLE_TEMPLATE</a>), a hidden native value (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">UNDISPLAYED_NATIVE_VALUE</a>): each is refused with the reason and nothing is written. The decisions stay with the owner.</p></div>
-</div>
 
 <h2>Get started</h2>
 <pre><code># Node 22+. Foundry only for Foundry projects. uv enables the registry's linter.
@@ -165,7 +146,7 @@ clear-signing registry add-deployment --registry ./registry-clone \
 <tr><td>EIP-712 authoring</td><td>yes</td><td>no</td><td>partly</td><td>no</td></tr>
 </table>
 </div>
-<p>Each of these solves a different slice. Reach for Cyfrin's tool to read what a transaction does or to compute Safe and ERC-8213 hashes; for Ledger's builder when you want a device-shaped preview in a browser; for <code>erc7730</code> to author EIP-712 descriptors. This tool's job is the last mile the others stop before: the test file, the registry's own checks before the PR, and the one-command chain addition.</p>
+<p>Use Cyfrin's tool to read what a transaction does or to compute Safe and ERC-8213 hashes, Ledger's builder for a device-shaped preview in a browser, <code>erc7730</code> to author EIP-712 descriptors, and this tool for the last mile the others stop before: the test file, the registry's own checks before the PR, and the one-command chain addition.</p>
 
 <h2>Status</h2>
 <ul class="status">
