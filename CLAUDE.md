@@ -14,7 +14,7 @@ Make it easy for a team to go from a deployed contract to a descriptor and test 
 
 The success test is simple: a team with a real project (reference case: the sibling repo `../puddleswap`, a Uniswap V2 fork on Monad testnet, chain 10143) runs the tool, edits labels, and ends with files the registry maintainers would merge. Anything that makes them leave the tool to finish, or that rejects a descriptor the registry would accept, is a defect against this purpose. So is asking a human for something the repository already proves (see roadmap item 3).
 
-## What the tool is today (main; last release 0.3.0-preview.1)
+## What the tool is today (main; last release 0.4.0-preview.1)
 
 A Node 22+ CLI, `clear-signing`, that works from a Foundry repo, an ABI file, or a verified address (`mode = "abi"` in `clear-signing.toml`).
 
@@ -109,7 +109,7 @@ The build already requests `devdoc` and `userdoc` and nothing reads them; `broad
 
 ## Roadmap, phase 2
 
-Phase 1 (items 1-6) shipped as 0.3.0-preview.1 on 2026-09-19. Items 7-12, 14 and the validator parity pass are on `main`, unreleased; bump to 0.4.0-preview.1 before the next publish. `ENGINE` no longer includes the tool version (2026-09-23), so 0.4.0 forces one last `upgrade`, re-review and `test --update`; releases after it that keep renderer, schema and subset force none. Phase 2 is ordered by what a Monad team actually needs first.
+Phase 1 (items 1-6) shipped as 0.3.0-preview.1 on 2026-09-19. Items 7-12, 14, the validator parity pass and the 2026-09-23 architecture fixes shipped as 0.4.0-preview.1 on 2026-09-23. `ENGINE` no longer includes the tool version, so 0.4.0 forced one last `upgrade`, re-review and `test --update`; releases after it that keep renderer, schema and subset force none. Phase 2 is ordered by what a Monad team actually needs first.
 
 ### 7. Add a chain to an existing registry descriptor — `done` (2026-09-19)
 
@@ -182,7 +182,7 @@ If another registry descriptor already formats the same selector, that format is
 - `init` pre-fills the decisions template with the prior and its source (`registry:<entity>/<file>`); `check` warns `CORPUS_DISAGREEMENT` when a format's field formats differ in kind (raw vs tokenAmount, hidden vs shown) from every prior for that selector.
 - Keep the corpus snapshot date visible; add `registry:snapshot` refresh to the release checklist.
 - Acceptance: an ERC-20 `approve` or a Uniswap V2 `swapExactTokensForTokens` draft shows the prior; a deliberately raw amount on a selector the corpus formats as `tokenAmount` warns.
-- Result: `scripts/snapshot-priors.ts` writes `src/data/registry-priors.json` (includes and `$ref` definitions resolved, keyed by selector; 283 descriptors, 1450 formats, 550 selectors at registry `9f37816`, ~800 KB bundled). `src/priors.ts` aligns leaves by ABI position so differing parameter names still compare, classifies each leaf as hidden/raw/typed, and reports `CORPUS_DISAGREEMENT` only when every prior agrees and the draft differs. `init` lists priors under evidence as `[registry prior]`. Separate from `corpus.json`, which stays format-free for the compatibility tests. Release checklist gained a refresh step.
+- Result: `scripts/snapshot-priors.ts` writes `src/data/registry-priors.json` (includes and `$ref` definitions resolved, keyed by selector; 283 descriptors, 1450 formats, 550 selectors at registry `9f37816`, ~800 KB bundled; refreshed for 0.4.0 at `8f56072`: 280 descriptors, 1419 formats, 533 selectors). `src/priors.ts` aligns leaves by ABI position so differing parameter names still compare, classifies each leaf as hidden/raw/typed, and reports `CORPUS_DISAGREEMENT` only when every prior agrees and the draft differs. `init` lists priors under evidence as `[registry prior]`. Separate from `corpus.json`, which stays format-free for the compatibility tests. Release checklist gained a refresh step.
 
 ### 13. Advisory semantic verifier — `todo` (do last; treat as a hypothesis)
 

@@ -1,3 +1,63 @@
+# Clear Signing Helper 0.4.0-preview.1 — developer preview
+
+Adds a chain to a protocol that is already in the ERC-7730 registry with one command, puts the judgment calls in a file a person or an agent fills, and checks exports with the registry CI's own linter and test runners. Works inside a Foundry project or from a verified contract address.
+
+## Upgrade from 0.3.0-preview.1
+
+The engine fingerprint no longer includes the tool version, so this release changes it once. Every existing project runs:
+
+```sh
+clear-signing upgrade
+clear-signing check
+# inspect previews, then renew review and expectations deliberately
+clear-signing review --accept
+clear-signing test --update
+```
+
+Descriptors and fixtures are preserved; expectations change only in their `engine` block. From here on, a release that keeps the renderer, schema and validator subset does not force this step. `export --runner-pins` is now `--ci-pins`.
+
+## What changed
+
+**Add a chain to an existing registry descriptor.** `clear-signing registry add-deployment --registry <clone> --descriptor <path> --chain-id <id> --address <addr>` edits a registry clone in place. A calldata address is proven by requiring every selector the descriptor formats to exist in its Sourcify-verified ABI (a verified proxy is followed to its implementation). An EIP-712 address is proven over a read-only `--rpc-url` by matching its live `DOMAIN_SEPARATOR()` against the domains the descriptor and its tests record; `includes` are followed to the shared deployments file. A test case for the new chain is rendered through the pinned renderer, not copied, and the diff is positional (chain-id order, the file's own formatting). Lint runs on every affected descriptor; a lint error or a failed registry runner restores every edited file. It never commits or opens a pull request and prints the `git`/`gh` commands instead. It reproduced registry PR #2611 (Permit2 on Monad) byte for byte.
+
+**Decisions file.** `decisions --contract <id>` writes the judgment slots (intent, interpolated intent, per-field show/hide with reason, label, format, token denomination, exclude with reason) with read-only hints: NatSpec, registry priors for the same selector, candidate denominations, formats valid for the type. `apply --decisions <file>` validates the whole descriptor before writing and records `human` or `llm` in `clear-signing/provenance.json`. `$ref` definitions and descriptor-level `visible: "never"` round-trip unchanged.
+
+**Registry priors.** What other registry descriptors do with the same selector (snapshot of registry `8f56072`, 280 descriptors, 533 selectors) appears in `init` evidence and decisions hints. `check` warns `CORPUS_DISAGREEMENT` only when every prior agrees and the draft differs.
+
+**`interpolatedIntent`.** Validated (placeholders must name displayed fields), rendered, and carried into expectations and `testsv2`; ERC-20 and WETH conventions include the registry's phrasings.
+
+**Registry CI parity on export.** Export formats with the registry's `erc7730 format` and lints with the registry CI's own package: the Sourcify fork of `erc7730` from the registry's `.github/requirements.txt`, with `--require-verified`, so every calldata deployment must be verified on Sourcify. `--ci-pins <registry-clone>` reads the package, lint flags and runner revisions from a clone. `--registry-runners` builds and runs the registry's Sourcify and Rust test runners on the bundle; any failed case removes the bundle. The runners are required when a displayed field is a signed integer or a nested array, where this tool's renderer and the registry's can differ; `--skip-registry-runners "<reason>"` records why they were not run.
+
+**Validation follows the renderer.** `#.` roots, `$id`, `$ref` definitions, constant-value fields, `visible` rules, byte slices, group-scoped parameter paths and token references to integer leaves are accepted; type mismatches, a missing intent or owner are warnings, as they are in the renderer. One field resolver serves validation, decisions, apply and priors. The validator accepts 258 of the 280 calldata descriptors merged in the registry at `8f56072`; the rest use nested calldata or an encrypted field.
+
+**Agent skill.** `.claude/skills/clear-signing-helper/` drives the CLI end to end: registry search first, `registry add-deployment` when the protocol is listed, otherwise `init`, the decisions file, fixtures, tests and export, with an ownership gate before any pull request.
+
+## Network access
+
+Only at explicit moments: `init --address` and `registry add-deployment` (Sourcify, then Etherscan with a key; for EIP-712, read-only `eth_chainId`, `eth_getCode` and `eth_call` against the `--rpc-url` you name), upstream `erc7730 lint` and `format` through `uvx` (which installs the registry's pinned package from GitHub on first use), and the one-time clone and build of the registry runners. Everything else is offline.
+
+## Scope and limitations
+
+Authoring new EIP-712 descriptors, the `calldata` format (nested call resolution) and encrypted fields remain unsupported and fail explicitly. `--strict-portability` still rejects signed integers, nested arrays and multi-field tuple arrays because of recorded consumer incompatibilities. A matching EIP-712 domain proves the contract signs under that domain, not that its bytecode matches other deployments. Generated intents, units, token relationships and hidden-argument decisions require developer review; the CLI records that review and never claims audit, attestation, wallet certification or registry acceptance. It does not hold keys, send transactions or publish.
+
+## Install
+
+Requires Node.js 22+ and, for Foundry mode, Foundry. From the release assets:
+
+```sh
+sha256sum --check clear-signing-helper-0.4.0-preview.1.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.4.0-preview.1.tgz
+clear-signing --version
+```
+
+On macOS, use `shasum -a 256 --check`. Expected version: `0.4.0-preview.1`. Upstream lint and format need `uv` (`uvx`) on the PATH; the registry runners need `git`, `npm` and `cargo`.
+
+## Validation
+
+55 automated tests across authoring, rendering, adversarial input, the pinned registry corpus, ABI mode and registry edits against mocked Sourcify and JSON-RPC, runner result handling with stub runners, and a mined Anvil deposit. Live: PuddleSwap StakingRewards (Monad testnet) went from `init --address` to an exported bundle that passed format, lint, both schemas and both registry runners and is open unchanged as registry PR #3003; the #2611 Permit2-on-Monad edit was reproduced byte for byte by `registry add-deployment` against `rpc.monad.xyz`, with both runners 6/6; the registry lint pin was exercised against registry `8f56072` with verified and unverified deployments. Physical-device and human review results from 0.2.0-preview.1 were not repeated for this version.
+
+---
+
 # Clear Signing Helper 0.3.0-preview.1 — developer preview
 
 Generate ERC-7730 calldata descriptors from what your repository already proves, accept every descriptor the registry accepts, and export a bundle laid out for a registry pull request and checked by the registry's own linter. Works inside a Foundry project or from a verified contract address.
