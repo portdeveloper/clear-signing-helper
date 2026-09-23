@@ -126,7 +126,8 @@ export function resolveFields(items: (Field | Group)[], definitions: Record<stri
 // The leaves a path covers: itself, or every leaf of the struct or array it names.
 export const coveredLeaves = (key: string, leafKeys: Iterable<string>) => [...leafKeys].filter(l => l === key || l.startsWith(key + '.'));
 // Where a scaffolded value came from, so reviewers can tell author text and proofs from conventions.
-export interface Provenance {signature: string; path?: string; source: 'natspec' | 'ast' | 'broadcast' | 'convention' | 'registry' | 'human' | 'llm'; detail: string}
+// author: the decisions-file author string ("human", "llm:<model>") for human and llm entries.
+export interface Provenance {signature: string; path?: string; source: 'natspec' | 'ast' | 'broadcast' | 'convention' | 'registry' | 'human' | 'llm'; author?: string; detail: string}
 const firstSentence = (text: string) => text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, '').trim();
 // The registry linter warns above 30 characters because Ledger devices truncate longer intents.
 export const MAX_INTENT = 30, MAX_LABEL = 32;

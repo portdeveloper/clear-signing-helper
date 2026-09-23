@@ -19,7 +19,7 @@ function formatHumanOutput(data: any): string {
   }
   if (data.url) return `Preview: ${data.url}\nPress Ctrl+C to stop.\n\n${formatHumanOutput(data.rendering)}`;
   if (data.upgraded !== undefined) return data.note;
-  if (data.applied) return [`Applied decisions by ${data.author} to ${data.applied}: ${data.functions} function(s), ${data.excluded} excluded, ${data.hidden} hidden field(s).`,...(data.warnings??[]).map((w:any)=>`Warning ${w.code}${w.signature?` (${w.signature})`:''}: ${w.message}`),data.next].join('\n');
+  if (data.applied) return [`Applied decisions by ${data.author} to ${data.applied}: ${data.functions} function(s), ${data.excluded} excluded, ${data.hidden} hidden field(s); ${data.recorded} changed value(s) recorded in provenance.`,...(data.warnings??[]).map((w:any)=>`Warning ${w.code}${w.signature?` (${w.signature})`:''}: ${w.message}`),data.next].join('\n');
   if (data.runners && data.sourcify && data.rust) return `Registry runners ready under ${data.runners}\n  Sourcify: ${data.sourcify.cli} (${data.sourcify.ref.slice(0,8)})\n  Rust: ${data.rust.binary} (${data.rust.ref.slice(0,8)})`;
   if (data.deployment && data.next) return [
     `Added ${data.deployment.chainId}:${data.deployment.address} to ${data.descriptor}.`,

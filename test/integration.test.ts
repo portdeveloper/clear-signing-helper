@@ -348,7 +348,7 @@ await test('decisions template exposes the judgment slots with hints, and apply 
   fn.fields['amountIn']={...fn.fields['amountIn'],label:'Amount to send',format:'tokenAmount',params:{tokenPath:'path.[0]'}};
   fn.fields['amountOutMin']={...fn.fields['amountOutMin'],label:'Minimum to receive',format:'tokenAmount',params:{tokenPath:'path.[-1]'}};
   fn.fields['path.[]']={...fn.fields['path.[]'],show:false,hideReason:'Route is implied by the token amounts'};
-  fn.fields['to']={...fn.fields['to'],label:'Recipient',format:'addressName',params:{types:['eoa','wallet']}};
+  fn.fields['to']={...fn.fields['to'],label:'Recipient',format:'addressName',params:{types:['eoa','wallet']},author:'human'};
   fn.fields['deadline']={...fn.fields['deadline'],label:'Expires',format:'date',params:{encoding:'timestamp'}};
   for(const [sig,f] of Object.entries<any>(dec.functions)) if(sig!==swap){f.decision='exclude';f.excludeReason='Outside this test';}
   write(dfile,dec);
@@ -362,7 +362,16 @@ await test('decisions template exposes the judgment slots with hints, and apply 
   const cfg=TOML.parse(fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8')) as any;
   assert.equal(cfg.contracts[0].hidden[swap]['path.[]'],'Route is implied by the token amounts');assert.ok(cfg.contracts[0].exclusions['transferAdmin(address)']);
   const prov=read(path.join(root,'clear-signing/provenance.json'))[router];
-  assert.ok(prov.some((p:any)=>p.source==='llm'&&p.detail==='intent: Swap'));assert.ok(prov.some((p:any)=>p.source==='llm'&&p.path==='path.[]'&&p.detail.startsWith('hidden:')));
+  assert.ok(prov.some((p:any)=>p.source==='llm'&&p.author==='llm:test-model'&&p.detail==='intent: Swap'));assert.ok(prov.some((p:any)=>p.source==='llm'&&p.path==='path.[]'&&p.detail.startsWith('hidden:')));
+  // A field-level author overrides the file author for that field only.
+  assert.deepEqual(prov.filter((p:any)=>p.path==='to'&&(p.source==='human'||p.source==='llm')).map((p:any)=>[p.source,p.author]),[['human','human']]);
+  // Re-applying an unchanged file records nothing new.
+  const before=prov.length,reapplied=run(root,['apply','--decisions',created.created]).result;
+  assert.equal(reapplied.recorded,0);assert.equal(read(path.join(root,'clear-signing/provenance.json'))[router].length,before);
+  // An empty per-value author is refused.
+  fn.fields['deadline'].author='';write(dfile,dec);
+  assert.equal(run(root,['apply','--decisions',created.created],2).diagnostics[0].code,'DECISIONS_AUTHOR');
+  delete fn.fields['deadline'].author;write(dfile,dec);
   // check is clean apart from review, and the decisions round-trip.
   run(root,['review','--accept']);const checked=run(root,['check']).result;assert.deepEqual(checked.warnings,[]);
   const again=read(path.join(root,run(root,['decisions','--contract',router,'--out','clear-signing/decisions/again.json']).result.created));

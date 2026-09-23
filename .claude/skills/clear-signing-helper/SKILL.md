@@ -87,11 +87,13 @@ Do not edit descriptor JSON by hand. Ask the tool for the judgment slots, fill t
 
 ```sh
 clear-signing decisions --contract <id>            # writes clear-signing/decisions/<Name>.json
-# edit that file, set "author": "llm:<your model>" (or "human" when the user decided)
+# edit that file and set "author": "llm:<your model>"
 clear-signing apply --decisions clear-signing/decisions/<Name>.json
 ```
 
-The file lists every function and argument with hints you must read before deciding: the NatSpec text, what other registry descriptors do with the same selector (`hints.registryPriors`), the candidate denominations for each amount, and the formats valid for the type. `apply` refuses invalid combinations and writes nothing on error; it records every decision in provenance under your author tag, so reviewers can see which choices were the model's. Where a hint does not settle a question, ask the user rather than choosing. The rules for each slot:
+Tag every value with whoever decided it. The file-level `author` is yours: `llm:<your model>`. When the user gave you a specific answer (an intent wording, which token an amount is in, a hide reason), put `"author": "human"` on that function or field only. Anything you wrote or chose stays under your tag, even if the user approved the file as a whole; approving is not deciding. Use a file-level `"human"` only when the user filled in the file themselves.
+
+The file lists every function and argument with hints you must read before deciding: the NatSpec text, what other registry descriptors do with the same selector (`hints.registryPriors`), the candidate denominations for each amount, and the formats valid for the type. `apply` refuses invalid combinations and writes nothing on error; it records each value you changed from the template in provenance, under the author tag that applies to it, so reviewers can see which choices were the model's and which were the user's. Values left as the tool drafted them keep their original source (NatSpec, AST, convention). Where a hint does not settle a question, ask the user rather than choosing. The rules for each slot:
 
 - **Intent**: the action in plain words, 30 characters or fewer (Ledger truncates; the registry linter warns). "Approve USDC", "Supply collateral", "Swap". The CLI prefilled NatSpec `@notice` where it fit; keep it only if it reads as an action.
 - **Interpolated intent**: also fill `interpolatedIntent`, a sentence with `{path}` placeholders for shown fields: "Stake {amount}", "Send {amount} to {to}". Wallets prefer it and the registry's advisory bot asks for one on every format. Placeholders must name fields you show; `hints.registryInterpolatedIntents` lists how other descriptors phrase the same selector. Argument-free functions get a fuller sentence, e.g. "Claim staking rewards".

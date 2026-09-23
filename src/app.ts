@@ -426,15 +426,27 @@ export function writeDecisions(state: State, id: string, out?: string) {
   const c = getContract(state.project, id), decisions = buildDecisions(state, id);
   const file = out ?? `${decisionsDir}/${c.name}.json`;
   writeJson(safePath(state.project.root, file), decisions);
-  return {created: file, functions: Object.keys(functions).length, next: `Fill intents, formats, denominations and show/hide reasons in ${file}, set author, then run apply --decisions ${file}.`};
+  return {created: file, functions: Object.keys(decisions.functions).length, next: `Fill intents, formats, denominations and show/hide reasons in ${file}, set author, then run apply --decisions ${file}.`};
 }
 export function applyDecisions(state: State, file: string) {
   const dec = readJson<Decisions>(safePath(state.project.root, file));
   assertKeys(dec, ['version', 'contract', 'descriptor', 'author', 'generatedAt', 'owner', 'url', 'functions', 'guidance'], 'decisions');
   if (dec.version !== 1 || typeof dec.contract !== 'string' || !dec.functions || typeof dec.functions !== 'object') fail('INVALID_DECISIONS', 'decisions file must have version 1, a contract id and a functions map.', 2);
   if (typeof dec.author !== 'string' || !dec.author.trim()) fail('DECISIONS_AUTHOR', 'Set "author" to "human" or "llm:<model>" so provenance records who decided.', 2);
-  const source: Provenance['source'] = /^llm\b/i.test(dec.author) ? 'llm' : 'human';
+  const sourceOf = (author: string): Provenance['source'] => /^llm\b/i.test(author) ? 'llm' : 'human';
+  const authorOf = (own: unknown, fallback: string, where: string) => {
+    if (own === undefined || own === null) return fallback;
+    if (typeof own !== 'string' || !own.trim()) fail('DECISIONS_AUTHOR', `${where}: "author" must be "human" or "llm:<model>" when present.`, 2);
+    return own.trim();
+  };
+  for (const [sig, fd] of Object.entries(dec.functions)) { authorOf(fd?.author, '', sig); for (const [full, fl] of Object.entries(fd?.fields ?? {})) authorOf(fl?.author, '', `${sig} ${full}`); }
+  const source = sourceOf(dec.author);
   const selection = selectContracts(state, [dec.contract])[0];
+  // What the file said before anyone edited it: a value equal to this is not a decision.
+  const baseline = buildDecisions(state, dec.contract).functions;
+  const sameField = (a: DecisionField, b: DecisionField | undefined) => !!b && (a.show !== false) === b.show && (a.show === false
+    ? (a.hideReason ?? '').trim() === (b.hideReason ?? '').trim()
+    : (a.label ?? '').trim() === b.label && (a.format ?? 'raw') === b.format && canonical(a.params && Object.keys(a.params).length ? a.params : null) === canonical(b.params && Object.keys(b.params).length ? b.params : null));
   const c = getContract(state.project, dec.contract), current = state.descriptors.get(dec.contract)!;
   const d: Descriptor = structuredClone(current);
   if (typeof dec.owner === 'string' && dec.owner.trim()) d.metadata.owner = dec.owner.trim();
@@ -445,11 +457,15 @@ export function applyDecisions(state: State, file: string) {
   for (const f of c.functions) {
     const sig = f.format('sighash'), fd = dec.functions[sig];
     if (!fd) continue;
-    const key = byKey.get(sig) ?? signature(f);
+    const key = byKey.get(sig) ?? signature(f), base = baseline[sig];
+    const fnAuthor = authorOf(fd.author, dec.author.trim(), sig);
+    const record = (author: string, entry: Omit<Provenance, 'source' | 'author'>) => provenance.push({contract: dec.contract, ...entry, source: sourceOf(author), author});
+    // A function switched between describe and exclude is decided as a whole.
+    const flipped = !base || base.decision !== fd.decision;
     if (fd.decision === 'exclude') {
       if (typeof fd.excludeReason !== 'string' || !fd.excludeReason.trim()) fail('DECISIONS_REASON', `${sig}: decision "exclude" needs an excludeReason.`, 2);
       delete d.display.formats[key]; exclusions[sig] = fd.excludeReason.trim(); delete hidden[sig];
-      provenance.push({contract: dec.contract, signature: sig, source, detail: `excluded: ${fd.excludeReason.trim()}`});
+      if (flipped || (base.excludeReason ?? '').trim() !== fd.excludeReason.trim()) record(fnAuthor, {signature: sig, detail: `excluded: ${fd.excludeReason.trim()}`});
       continue;
     }
     if (fd.decision !== 'describe') fail('INVALID_DECISIONS', `${sig}: decision must be "describe" or "exclude".`, 2);
@@ -457,8 +473,11 @@ export function applyDecisions(state: State, file: string) {
     if (typeof fd.intent !== 'string' || !fd.intent.trim()) fail('DECISIONS_INTENT', `${sig}: intent is required.`, 2);
     const spec = d.display.formats[key] ?? scaffoldFormatWithProvenance(f).format;
     spec.intent = fd.intent.trim();
-    provenance.push({contract: dec.contract, signature: sig, source, detail: `intent: ${spec.intent}`});
-    if (typeof fd.interpolatedIntent === 'string' && fd.interpolatedIntent.trim()) { spec.interpolatedIntent = fd.interpolatedIntent.trim(); provenance.push({contract: dec.contract, signature: sig, source, detail: `interpolatedIntent: ${spec.interpolatedIntent}`}); }
+    if (flipped || base.intent !== spec.intent) record(fnAuthor, {signature: sig, detail: `intent: ${spec.intent}`});
+    if (typeof fd.interpolatedIntent === 'string' && fd.interpolatedIntent.trim()) {
+      spec.interpolatedIntent = fd.interpolatedIntent.trim();
+      if (flipped || base.interpolatedIntent !== spec.interpolatedIntent) record(fnAuthor, {signature: sig, detail: `interpolatedIntent: ${spec.interpolatedIntent}`});
+    }
     else delete spec.interpolatedIntent;
     // Edit leaves in place to keep existing grouping; drop hidden ones; append newly shown ones flat.
     // Paths resolve exactly as the validator reads them (resolveFields): group scope, $ref definitions, "#." roots.
@@ -509,9 +528,13 @@ export function applyDecisions(state: State, file: string) {
       if (!(SUPPORTED_FORMATS as readonly string[]).includes(format)) fail('UNSUPPORTED_FORMAT', `${sig} ${full}: ${format} is not a supported format.`, 2);
       spec.fields.push({path: full, label: decision.label?.trim() || full, format, ...(decision.params && Object.keys(decision.params).length ? {params: decision.params as Record<string, any>} : {})});
     }
-    for (const [full, decision] of Object.entries(fd.fields ?? {})) if (decision.show !== false) provenance.push({contract: dec.contract, signature: sig, path: full, source, detail: `${decision.format ?? 'raw'}${decision.params ? ` ${JSON.stringify(decision.params)}` : ''}, label "${decision.label}"`});
+    for (const [full, decision] of Object.entries(fd.fields ?? {})) {
+      if (!flipped && sameField(decision, base.fields[full])) continue;
+      const author = authorOf(decision.author, fnAuthor, `${sig} ${full}`);
+      if (decision.show !== false) record(author, {signature: sig, path: full, detail: `${decision.format ?? 'raw'}${decision.params ? ` ${JSON.stringify(decision.params)}` : ''}, label "${decision.label}"`});
+      else if (hiddenHere[full]) record(author, {signature: sig, path: full, detail: `hidden: ${hiddenHere[full]}`});
+    }
     if (Object.keys(hiddenHere).length) hidden[sig] = hiddenHere; else delete hidden[sig];
-    for (const [full, reason] of Object.entries(hiddenHere)) provenance.push({contract: dec.contract, signature: sig, path: full, source, detail: `hidden: ${reason}`});
     d.display.formats[key] = spec;
   }
   const nextSelection: Selection = {...selection, exclusions, ...(Object.keys(hidden).length ? {hidden} : {})};
@@ -525,5 +548,5 @@ export function applyDecisions(state: State, file: string) {
   config.contracts = config.contracts.map(s => s.id === dec.contract ? nextSelection : s);
   saveConfig(state.project, config);
   recordProvenance(state.project.root, provenance, false);
-  return {applied: selection.descriptor, author: dec.author, source, functions: Object.keys(dec.functions).length, excluded: Object.keys(exclusions).length, hidden: Object.values(hidden).reduce((n, h) => n + Object.keys(h).length, 0), warnings: warningsOf(diagnostics), next: 'Run preview on your fixtures, then review --accept and test --update after inspecting them.'};
+  return {applied: selection.descriptor, author: dec.author, source, recorded: provenance.length, functions: Object.keys(dec.functions).length, excluded: Object.keys(exclusions).length, hidden: Object.values(hidden).reduce((n, h) => n + Object.keys(h).length, 0), warnings: warningsOf(diagnostics), next: 'Run preview on your fixtures, then review --accept and test --update after inspecting them.'};
 }
