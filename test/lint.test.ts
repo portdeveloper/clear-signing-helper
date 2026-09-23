@@ -16,7 +16,7 @@ function clone(requirement: string, lintLine: string) {
 }
 test('the lint pin follows a registry clone\'s CI definition, and the built-in pin requires Sourcify verification', t => {
   const before = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e7bdf8481440c8aad2200d132459b2157d24396b', 'erc7730 lint $AFFECTED_FILES --gha');
-  const after = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@f2fafe1cf93483de2715ef0cad798277ac2ad9ed', 'erc7730 lint --require-verified $AFFECTED_FILES --gha');
+  const after = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e823abc2f69b87db902464b8d204912831e8969e', 'erc7730 lint --require-verified $AFFECTED_FILES --gha');
   const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'csh-lint-pin-'));
   t.after(() => { for (const d of [before, after, empty]) fs.rmSync(d, {recursive: true, force: true}); });
   const a = lintPinFromRegistry(before), b = lintPinFromRegistry(after), c = lintPinFromRegistry(empty);
@@ -27,5 +27,5 @@ test('the lint pin follows a registry clone\'s CI definition, and the built-in p
   assert.deepEqual([c.requirement, c.flags], [DEFAULT_LINT_PIN.requirement, DEFAULT_LINT_PIN.flags]);
   assert.match(c.source, /has no \.github\/requirements\.txt/);
   // The printed command is copy-pasteable: the requirement carries spaces.
-  assert.equal(lintCommand(['registry/x/calldata-X.json'], b), `uvx --from 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@f2fafe1cf93483de2715ef0cad798277ac2ad9ed' erc7730 lint --require-verified registry/x/calldata-X.json`);
+  assert.equal(lintCommand(['registry/x/calldata-X.json'], b), `uvx --from 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e823abc2f69b87db902464b8d204912831e8969e' erc7730 lint --require-verified registry/x/calldata-X.json`);
 });

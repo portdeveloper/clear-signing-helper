@@ -9,7 +9,7 @@ import { spawnSync } from 'node:child_process';
 export interface LintPin {requirement: string; flags: string[]; source: string}
 // Registry CI as of ethereum/clear-signing-erc7730-registry#3038: Sourcify verification required.
 export const DEFAULT_LINT_PIN: LintPin = {
-  requirement: 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@f2fafe1cf93483de2715ef0cad798277ac2ad9ed',
+  requirement: 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e823abc2f69b87db902464b8d204912831e8969e',
   flags: ['--require-verified'],
   source: 'built-in (registry CI after ethereum/clear-signing-erc7730-registry#3038, 2026-09-23)'
 };
