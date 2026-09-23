@@ -14,18 +14,27 @@ Make it easy for a team to go from a deployed contract to a descriptor and test 
 
 The success test is simple: a team with a real project (reference case: the sibling repo `../puddleswap`, a Uniswap V2 fork on Monad testnet, chain 10143) runs the tool, edits labels, and ends with files the registry maintainers would merge. Anything that makes them leave the tool to finish, or that rejects a descriptor the registry would accept, is a defect against this purpose. So is asking a human for something the repository already proves (see roadmap item 3).
 
-## What the tool is today (0.3.0-preview.1)
+## What the tool is today (main; last release 0.3.0-preview.1)
 
-A Node 22+ CLI (`clear-signing`) that works inside a Foundry repo:
+A Node 22+ CLI, `clear-signing`, that works from a Foundry repo, an ABI file, or a verified address (`mode = "abi"` in `clear-signing.toml`).
 
-- `init` scaffolds raw-value ERC-7730 v2 calldata descriptors from compiled write functions.
-- `fixture` encodes a sample call; `preview` renders it through the vendored Sourcify renderer; `test` snapshots renderings; `review --accept` records a fingerprinted human acknowledgement.
-- `export` writes the descriptor plus a `testsv2/*.tests.json` file in the registry's v2 test format.
-- `check --strict-portability` flags ABI shapes with recorded wallet failures: signed ints, nested arrays, multi-field tuple arrays.
+- `init` scaffolds ERC-7730 v2 calldata descriptors from what the project proves: ABI, NatSpec, enums (AST), constructor constants and deployments (broadcasts), verified source (Sourcify, proxies resolved), ERC-20/WETH conventions, registry priors. Every value is tagged in `clear-signing/provenance.json`.
+- `decisions --contract` writes the judgment slots (intent, interpolated intent, denomination, show/hide, exclude) with hints; `apply --decisions` validates and writes descriptor, `clear-signing.toml` and provenance (`human` or `llm`).
+- `fixture` encodes a call or copies a recorded broadcast transaction (`--broadcast-tx`); `preview` renders through the vendored Sourcify renderer; `test` snapshots; `review --accept` records a fingerprinted acknowledgement; `check` validates (schema, selectors, paths, renderer-supported formats, registry-prior disagreement, review freshness), all with `--contract`.
+- `export` writes `registry/<entity>/calldata-<Name>.json` + `testsv2/`, runs `erc7730 format` and `lint`, optionally both registry runner implementations (`--registry-runners`), and produces no bundle on any failure.
+- `registry add-deployment` adds a chain to an existing registry descriptor with a selector proof, a rendered test case, a minimal positional diff, lint, optional runners. `registry setup-runners` pre-builds the runners.
 
-It never signs, sends, publishes, or verifies deployed bytecode beyond a Sourcify match. The agent skill under `.claude/skills/clear-signing-helper/` is a playbook over the CLI; only EIP-712 work still falls back to the upstream Python tool.
+It never signs, sends, publishes, verifies bytecode beyond a Sourcify match, or opens PRs. Network access only at `init --address`, `registry add-deployment`, the upstream lint/format run, and the one-time runner build. The agent skill under `.claude/skills/clear-signing-helper/` drives these commands; EIP-712 still falls back to the upstream Python tool.
 
-**What is genuinely good and must be preserved:** fixture encoding, canonical-calldata rejection, exact expected-value generation for `testsv2`, snapshot regression in CI, the hash-pinned vendored renderer with the signed-int fix, and the path/symlink/size hardening in `src/io.ts`.
+**What is genuinely good and must be preserved:** fixture encoding, canonical-calldata rejection, exact expected-value generation for `testsv2`, snapshot regression in CI, the hash-pinned vendored renderer with the signed-int fix, the path/symlink/size hardening in `src/io.ts`, validator parity with merged registry descriptors (see the acceptance metric), and the refusals: no guessing, no binding on a name, no writes on validation failure.
+
+## Next up (start here after a context reset)
+
+1. **PR reviews pending, nothing to do:** [#3003](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003) (PuddleSwap StakingRewards, tool output, CI green, bot recommendation addressed) and [#2611](https://github.com/ethereum/clear-signing-erc7730-registry/pull/2611) (Permit2 on Monad, rebased 2026-09-20, CI green). When feedback arrives, record it in `docs/DOGFOOD.md`; a merge closes item 10.
+2. **Item 14, EIP-712 `registry add-deployment`** (promoted from Later): most Monad additions to established protocols are EIP-712 (Permit2 proved it). Prove the address by matching the live `DOMAIN_SEPARATOR()` against the descriptor's domain (see `scripts/verify-address.sh` in the skill for the three domain shapes), append the deployment to the shared/common file, render a test case with the renderer's `formatTypedData`, minimal diff, lint, runners. Acceptance: #2611's change reproduced by one command.
+3. **Item 15, warning noise.** Over the merged corpus the validator emits 575 `UNDISPLAYED_ARGUMENT`, 343 `CORPUS_DISAGREEMENT`, 129 `INTENT_LENGTH` warnings. Correct, but a fresh draft will show dozens and teams will tune them out. Rank or group warnings in `check` output, and require more than one prior before `CORPUS_DISAGREEMENT` fires.
+4. **Item 13, advisory semantic verifier**, last, and only after measuring its disagreement rate on the corpus.
+5. **The test no code substitutes for:** one outside team running the skill cold on a verified contract.
 
 ## Verified gaps (2026-09-19, tested against puddleswap)
 
@@ -46,7 +55,7 @@ Cosmetic items (the "Item" group label, repeated labels, "v0.1" strings) were fi
 
 Ordered by leverage. Status: `todo` | `in progress` | `done (commit)`.
 
-### 1. Stop rejecting valid registry descriptors — `done` (uncommitted, 2026-09-19)
+### 1. Stop rejecting valid registry descriptors — `done` (2026-09-19, shipped in 0.3.0-preview.1)
 
 - Replace the format allowlist in `src/descriptors.ts` with: passes the pinned v2 schema AND the vendored renderer can render it. Reject only what the renderer truly cannot do, and say which one it is.
 - Allow all `addressName` params (`types`, `sources`, `senderAddress`). Allow `amount` for `@.value` and scaffold it that way.
@@ -55,14 +64,14 @@ Ordered by leverage. Status: `todo` | `in progress` | `done (commit)`.
 - Acceptance: the registry-style V2 swap descriptor from this session passes `check`, previews with token symbols, and exports. Existing corpus and adversarial tests still pass.
 - Result: formats now gated by schema plus the renderer's implemented set (`SUPPORTED_FORMATS` in `src/descriptors.ts`); all `addressName` params accepted; `tokenPath` may index arrays; `UNDISPLAYED_ARGUMENT` is a warning with a `hidden` opt-out in `clear-signing.toml`; `@.value` scaffolds as `amount` with a static chain table in `src/chains.ts`; fixtures accept `chain`, `ensNames`, `nftCollectionNames`, `blockTimestamps`; `context.contract.abi` is accepted. Engine subset bumped to 3. Verified on puddleswap: the V2 swap renders "1 USDC" / "0.99 WMON" with the route hidden. Export remains project-wide (item 2).
 
-### 2. Per-contract export and sane selection — `done` (uncommitted, 2026-09-19)
+### 2. Per-contract export and sane selection — `done` (2026-09-19, shipped in 0.3.0-preview.1)
 
 - `export --contract <id>` exports one contract with only its fixtures; project-wide export stays as the default.
 - Default selection skips contracts with zero write functions and anything under `test/` and `script/`. Print the deployed-looking dependency contracts (for example anything matching an address in `broadcast/`) as suggestions.
 - Acceptance: on puddleswap, `init` then `export --contract <router>` succeeds with only the router fixtured.
 - Result: `src/broadcast.ts` reads `broadcast/<Script>/<chainId>/run-latest.json` (dry runs skipped). `init` binds `deployments` from creations that map to exactly one compiled contract, and lists deployed non-selected contracts as suggestions. Default selection drops contracts with no entry points and anything under the test/script directories. `check`, `export` and `runTests` take `--contract` (repeatable). Verified on puddleswap: stubs skipped, StakingRewards bound to its testnet address from the broadcast, router exported alone.
 
-### 3. Use what the Foundry project already proves — `done` (uncommitted, 2026-09-19)
+### 3. Use what the Foundry project already proves — `done` (2026-09-19, shipped in 0.3.0-preview.1)
 
 The build already requests `devdoc` and `userdoc` and nothing reads them; `broadcast/` is skipped outright. Each item below moves a decision from the human column to the proven column.
 
@@ -76,7 +85,7 @@ The build already requests `devdoc` and `userdoc` and nothing reads them; `broad
 - Acceptance: on puddleswap, `init` yields StakingRewards with NatSpec intents, `stake` denominated in the staking token from the broadcast, TokenRegistry levels as an enum, and the router bound to `0x430c…` on 10143 without hand editing.
 - Result: `src/ast.ts` indexes `forge build --ast` output (selectors, enums through structs and arrays, constructor assignments to immutables, literal address constants). `src/evidence.ts` gathers NatSpec, enums, broadcast-resolved constants and ERC-20/WETH surface detection; `scaffoldWithProvenance` in `src/descriptors.ts` consumes it and returns a provenance list that `init` prints. `fixture --broadcast-tx <hash>` copies a recorded CALL. `UNKNOWN_ADDRESS` is informational. Verified on puddleswap: NatSpec intents on StakingRewards, `metadata.constants.rewardsToken/stakingToken` from the deploy broadcast, `TokenLevel` enum on TokenRegistry, WMON `Wrap`/`Unwrap`, and the recorded `notifyRewardAmount` transaction rendered as a fixture. Denominating `stake` in `stakingToken` stays a one-line human edit (`"token": "$.metadata.constants.stakingToken"`) because the ABI cannot prove which amount is in which token; the router binding stays manual because puddleswap deployed it outside `forge script`.
 
-### 4. Registry-ready output — `done` (uncommitted, 2026-09-19)
+### 4. Registry-ready output — `done` (2026-09-19, shipped in 0.3.0-preview.1)
 
 - Inline the compiled ABI into `context.contract.abi` on export.
 - Lay the bundle out as `registry/<owner>/calldata-<Name>.json` and `registry/<owner>/testsv2/…`, with `$schema` matching registry convention.
@@ -84,14 +93,14 @@ The build already requests `devdoc` and `userdoc` and nothing reads them; `broad
 - Acceptance: exported bundle drops into a registry clone and passes `erc7730 lint` and the tests-v2 schema without edits.
 - Result: bundle is `registry/<entity>/calldata-<Name>.json` + `testsv2/`, with the registry's relative `$schema`, contract-named files, `<fixture> - chain <id>` test descriptions, and a `review/` sibling for fixtures, renderings, validation and portability. `--entity` overrides the owner slug; `--inline-abi` is opt-in because the v2 schema deprecates `context.contract.abi` and `erc7730 lint 1.0.10` ignores it. `src/lint.ts` runs `uvx --from erc7730==1.0.10 erc7730 lint`; errors fail the export, warnings are recorded, `--no-lint` skips, missing `uvx` prints the command. `check` mirrors the linter's 30-character intent warning (`INTENT_LENGTH`), and NatSpec intents are only adopted under that limit. Verified: puddleswap StakingRewards bundle copied into a fresh registry clone passed lint (warnings: no ABI source for chain 10143, which Sourcify verification would clear) and both upstream schema checks. Not run: the registry's Sourcify/Rust test runners, which need the registry's own toolchain.
 
-### 5. ABI and address input — `done` (uncommitted, 2026-09-19)
+### 5. ABI and address input — `done` (2026-09-19, shipped in 0.3.0-preview.1)
 
 - Accept `--abi <file>` or `--address <addr> --chain-id <id>` (Sourcify, then Etherscan V2 fallback) as an alternative to Foundry artifacts for `init`, `fixture`, `preview`, `test`, `export`.
 - Consider reusing `erc7730 generate` output as the first draft, then layering fixtures and tests on top. The agent skill and the CLI should converge on one code path.
 - Acceptance: a Hardhat project or a bare verified address gets the same fixture/test/export workflow.
 - Result: `mode = "abi"` in `clear-signing.toml`; ABIs live in `clear-signing/abi/<Name>.json` with a `.source.json` provenance sidecar (`src/abi-project.ts`); `src/fetch.ts` queries Sourcify v2 (proxy resolved to its single implementation, proxy address bound, userdoc/devdoc kept) with an Etherscan V2 fallback behind `ETHERSCAN_API_KEY`. Fingerprint covers the ABI files. `findConfigRoot` accepts either `clear-signing.toml` or `foundry.toml`; modes cannot mix in one directory. Tests mock Sourcify over loopback so CI stays offline. Live check: WETH and the USDC proxy imported from sourcify.dev; the Monad testnet router correctly refused as unverified. The `erc7730 generate` reuse idea was dropped: our scaffold now produces typed defaults itself, and the agent skill remains a separate prompt workflow for now.
 
-### 6. Polish — `done` (uncommitted, 2026-09-19)
+### 6. Polish — `done` (2026-09-19, shipped in 0.3.0-preview.1)
 
 - Offline-build failure explains "run `forge build` once so compilers are cached".
 - Fix the "Item" group label and duplicated labels in terminal preview.
@@ -100,7 +109,7 @@ The build already requests `devdoc` and `userdoc` and nothing reads them; `broad
 
 ## Roadmap, phase 2
 
-Phase 1 (items 1-6) shipped as 0.3.0-preview.1 on 2026-09-19. Phase 2 is ordered by what a Monad team actually needs first.
+Phase 1 (items 1-6) shipped as 0.3.0-preview.1 on 2026-09-19. Items 7-12 and the validator parity pass are on `main`, unreleased; bump to 0.4.0-preview.1 before the next publish (engine unchanged since subset 3, so no forced `upgrade`). Phase 2 is ordered by what a Monad team actually needs first.
 
 ### 7. Add a chain to an existing registry descriptor — `done` (2026-09-19)
 
@@ -132,11 +141,11 @@ Upstream lint and the schemas run today; the Sourcify and Rust runners do not. T
 
 - Verify the puddleswap router on Sourcify (deployer side), import it with `init --address`, and take one contract through review, export and an actual registry PR opened by the owner. Record what still needed a human.
 - Acceptance: a merged registry PR whose files came out of `export` unchanged, or a written list of what the maintainers asked to change.
-- Progress (2026-09-19): StakingRewards, WMON and StableFaucet verified on Sourcify from the repo build; router and TokenRegistry source no longer match their deployments (router: pair init code hash constant; details in `docs/DOGFOOD.md`). StakingRewards taken from `init --address` to an exported bundle that passes format, lint, both schemas and both runners; staged as branch `puddleswap-staking-rewards` on the owner's fork and opened as [registry PR #3003](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003) with the exported files unchanged. Export now runs `erc7730 format` so the registry's format bot leaves the PR alone. Human steps recorded in `docs/DOGFOOD.md`.
+- Progress (2026-09-19): StakingRewards, WMON and StableFaucet verified on Sourcify from the repo build; router and TokenRegistry source no longer match their deployments (router: pair init code hash constant; details in `docs/DOGFOOD.md`). StakingRewards taken from `init --address` to an exported bundle that passes format, lint, both schemas and both runners; staged as branch `puddleswap-staking-rewards` on the owner's fork and opened as [registry PR #3003](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003) with the exported files unchanged. Export now runs `erc7730 format` so the registry's format bot leaves the PR alone. Human steps recorded in `docs/DOGFOOD.md`. 2026-09-19: the registry's advisory bot asked for `interpolatedIntent`; support was added, the branch regenerated from the decisions file, all 13 checks green again and the bot withdrew. 2026-09-20: #2611 (Permit2, EIP-712, manual) rebased and green; its Monad address proven by `DOMAIN_SEPARATOR()`. 2026-09-22: validator parity pass (see acceptance metric). Maintainer review of both PRs still pending.
 
 ### Later
 
-- EIP-712 descriptors (104 in the registry corpus): a separate decoding and review model. The Permit2 rebase (`docs/DOGFOOD.md`) shows the concrete need: `registry add-deployment` for `eip712-*.json`, proving the address by `DOMAIN_SEPARATOR()` instead of selectors.
+- EIP-712 authoring (104 descriptors in the registry corpus): a separate decoding and review model. The narrower `registry add-deployment` for `eip712-*.json` is promoted to item 14 in Next up.
 - Physical-device acceptance and independent human review, still open from the 0.2.0 tracker.
 - Persisting provenance into the review record so `review --accept` acknowledges sources explicitly.
 
@@ -181,7 +190,7 @@ Not doing: "generate first with AI" (the model would regenerate the provable par
 
 ## Public overview page
 
-https://portdeveloper.github.io/clear-signing-helper/ is built from `site/index.html` by `.github/workflows/pages.yml` on every push to `main` that touches `site/`. It carries the pipeline diagram, the operating principle, the comparison with `erc7730`, Ledger's JSON Builder and Cyfrin's `clearsig`, and the status list. Keep the status list and the acceptance number there in step with this file.
+https://portdeveloper.github.io/clear-signing-helper/ is built from `site/index.html` by `.github/workflows/pages.yml` on every push to `main` that touches `site/`. Five sections: a lead, the DOES / does NOT lists (each item linked to the enforcing code), the pipeline diagram with a file legend, get-started commands, the comparison with `erc7730`, Ledger's JSON Builder and Cyfrin's `clearsig`, and a status list. Every claim links to a file on `main`. Keep the status list, the acceptance number and the test count there in step with this file; no eyebrow lines, no repeated content.
 
 ## Working conventions
 
