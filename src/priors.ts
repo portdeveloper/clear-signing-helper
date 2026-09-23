@@ -47,3 +47,28 @@ export function disagreements(key: string, fields: (Field | Group)[], definition
   });
 }
 export type { ParamType };
+// Registry descriptors that describe this contract: every function the file describes exists here (so
+// registry add-deployment's selector proof would pass), or the file covers at least half of this contract's
+// functions (a fork that renamed or added a few). Either way it is the same protocol on another chain, or a
+// fork whose file belongs to another owner: a suggestion only, nothing is bound or skipped on it. Selectors
+// described by GENERIC_ENTITIES or more entities (ERC-20, ERC-4626, ERC-721, Ownable, multicall) identify an
+// interface, not a protocol; they count toward containment but not toward the MIN_SHARED overlap.
+export const GENERIC_ENTITIES = 3, MIN_SHARED = 2;
+export interface RegistryMatch {file: string; entity: string; shared: string[]; distinctive: number; described: number; contained: boolean}
+let descriptorSelectors: Map<string, {entity: string; selectors: Set<string>}> | undefined;
+export function registryMatches(selectors: string[]): RegistryMatch[] {
+  const bySelector = priors.bySelector as Record<string, Prior[]>;
+  if (!descriptorSelectors) {
+    descriptorSelectors = new Map();
+    for (const [s, list] of Object.entries(bySelector)) for (const p of list) {
+      const d = descriptorSelectors.get(p.file) ?? descriptorSelectors.set(p.file, {entity: p.entity, selectors: new Set()}).get(p.file)!;
+      d.selectors.add(s);
+    }
+  }
+  const ours = new Set(selectors.map(s => s.toLowerCase()));
+  const generic = (s: string) => new Set((bySelector[s] ?? []).map(p => p.entity)).size >= GENERIC_ENTITIES;
+  const distinctive = [...ours].filter(s => !generic(s));
+  return [...descriptorSelectors].map(([file, d]) => ({file, entity: d.entity, shared: distinctive.filter(s => d.selectors.has(s)), distinctive: distinctive.length, described: d.selectors.size, contained: [...d.selectors].every(s => ours.has(s))}))
+    .filter(m => m.shared.length >= MIN_SHARED && (m.contained || m.shared.length * 2 >= m.distinctive))
+    .sort((a, b) => Number(b.contained) - Number(a.contained) || b.shared.length - a.shared.length || a.file.localeCompare(b.file)).slice(0, 3);
+}

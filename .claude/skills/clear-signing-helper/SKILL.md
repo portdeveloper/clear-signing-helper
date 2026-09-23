@@ -59,11 +59,15 @@ clear-signing registry add-deployment --registry registry-clone \
 
 It follows `includes` to the file that holds the deployments (often a shared `common-*.json`), checks the endpoint serves that chain and there is code at the address, and requires the live `DOMAIN_SEPARATOR()` to equal a domain the descriptor or its existing tests record. Then it inserts the deployment in chain-id order, retargets an existing test case at the new chain and address, renders it the way the registry's runner does, and lints every descriptor that includes the edited file. Read `templateAddresses` in the result: those are message addresses (tokens, spenders) still copied from the template's chain. Point them at this chain's contracts with `--set details.token=0x… --set spender=0x…` and give the token with `--token`. Otherwise the test shows a mainnet address on the new chain. The proof shows the contract signs under this domain; it does not compare bytecode, so say in the PR how you know the address is the canonical deployment.
 
-Only author a new descriptor if nothing matched.
+Only author a new descriptor if nothing matched. The grep misses a protocol at a new address or under a differently named entity folder, so step 2 checks again by function selectors.
 
 ## 2. Generate the draft
 
 Pick the input you have. Each writes `clear-signing.toml`, `clear-signing/descriptors/calldata-<Name>-<hash>.json`, and `clear-signing/provenance.json`.
+
+Read `registryMatches` in the result (printed as "Already in the registry?"). It lists registry descriptors whose functions this contract shares, leaving out standard interfaces such as ERC-20 and ERC-4626. `contained: true` means every function the file describes exists here, so `add-deployment`'s selector proof would pass. The match does not tell you who owns the code. Ask the user:
+- **Same protocol, new chain:** go back to step 1 and run `registry add-deployment` with that file. The draft is not needed.
+- **A fork or copy** (for example a Uniswap V2 fork matching QuickSwap): the file belongs to its owner. Never add the fork's address to it. Keep authoring your own descriptor; the matched file's formats show up as `registryPriors` hints in step 3.
 
 **Foundry repository** (best evidence: NatSpec, enums, constructor constants, broadcast deployments and transactions):
 

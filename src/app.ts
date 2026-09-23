@@ -4,7 +4,7 @@ import TOML from '@iarna/toml';
 import { Interface } from 'ethers';
 import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
 import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
-import { priorsFor, summarizePrior } from './priors.js';
+import { priorsFor, summarizePrior, registryMatches } from './priors.js';
 import { gatherEvidence } from './evidence.js';
 import {portabilityFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
@@ -137,7 +137,12 @@ export async function init(options: InitOptions) {
   const reviewFile = safePath(project.root, reviewName);
   if (!fs.existsSync(reviewFile)) writeJson(reviewFile, {});
   const suggestions = suggestedContracts(project, selected);
-  return {created: writes.map(w => w.file), mode, imports: imports.map(i => ({contract: i.id, file: i.file, sidecar: i.sidecar, source: i.source.source, origin: i.source.origin, match: i.source.match, proxy: i.source.proxy})), contracts: config.contracts, bindings, suggestions, provenance, broadcastCalls: project.calls.length, next: 'Inspect action labels and field formats, create transaction fixtures with fixture, then run review --accept after inspecting them.', questions: selected.map(c => ({contract:c.id, functions:reviewQuestions(c)}))};
+  // Selector names, not selectors, so the list reads as function names; the registry file is what to open.
+  const registryMatchList = writes.length ? selected.filter(c => writes.some(w => config.contracts.find(s => s.id === c.id)?.descriptor === w.file)).flatMap(c => {
+    const names = new Map(c.functions.map(f => [f.selector.toLowerCase(), f.format('sighash')]));
+    return registryMatches([...names.keys()]).map(m => ({contract: c.id, file: m.file, entity: m.entity, shared: m.shared.map(s => names.get(s)!), distinctive: m.distinctive, described: m.described, contained: m.contained}));
+  }) : [];
+  return {created: writes.map(w => w.file), mode, imports: imports.map(i => ({contract: i.id, file: i.file, sidecar: i.sidecar, source: i.source.source, origin: i.source.origin, match: i.source.match, proxy: i.source.proxy})), contracts: config.contracts, bindings, suggestions, registryMatches: registryMatchList, provenance, broadcastCalls: project.calls.length, next: 'Inspect action labels and field formats, create transaction fixtures with fixture, then run review --accept after inspecting them.', questions: selected.map(c => ({contract:c.id, functions:reviewQuestions(c)}))};
 }
 // Broadcast creations that map to exactly this compiled contract. A name shared by several compiled
 // contracts is ambiguous and yields nothing; the user binds it explicitly.

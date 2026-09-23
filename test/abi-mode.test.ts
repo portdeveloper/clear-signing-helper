@@ -35,6 +35,8 @@ await test('ABI mode: import a local ABI, author, test and export without Foundr
   fs.writeFileSync(path.join(root,'token.abi.json'),JSON.stringify(tokenAbi));
   const created=run(root,['init','--abi','token.abi.json','--name','ClearToken','--owner','Example']).result;
   assert.equal(created.mode,'abi');assert.equal(created.imports[0].source,'file');
+  // An ERC-20 is an interface every token shares, not a registry protocol to add a chain to.
+  assert.deepEqual(created.registryMatches,[]);
   assert.ok(fs.existsSync(path.join(root,'clear-signing/abi/ClearToken.json')));assert.equal(read(path.join(root,'clear-signing/abi/ClearToken.source.json')).source,'file');
   assert.match(fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8'),/mode = "abi"/);
   const id='clear-signing/abi/ClearToken.json:ClearToken';
@@ -111,4 +113,19 @@ await test('export requires the registry runners, or a recorded reason, when a d
   fs.appendFileSync(path.join(root,'clear-signing.toml'),'\n[contracts.hidden."adjust(int256,address)"]\ndelta = "internal accounting value"\n');
   run(root,['review','--accept']);run(root,['test','--update']);
   assert.equal(run(root,['export','--out','hidden','--no-lint']).result.registryRunnersSkipped,undefined);
+});
+
+await test('init names the registry descriptor a Uniswap V2 router ABI already matches, and binds nothing on it',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const sigs=['addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256)','removeLiquidity(address,address,uint256,uint256,uint256,address,uint256)','swapExactTokensForTokens(uint256,uint256,address[],address,uint256)','swapTokensForExactTokens(uint256,uint256,address[],address,uint256)','swapExactETHForTokens(uint256,address[],address,uint256)','swapExactTokensForETH(uint256,uint256,address[],address,uint256)','swapTokensForExactETH(uint256,uint256,address[],address,uint256)','swapETHForExactTokens(uint256,address[],address,uint256)'];
+  const abi=sigs.map((s,i)=>{const [name,args]=[s.slice(0,s.indexOf('(')),s.slice(s.indexOf('(')+1,-1)];return {type:'function',name,stateMutability:name.includes('ETHFor')?'payable':'nonpayable',outputs:[],inputs:args.split(',').map((type,j)=>({name:`a${i}_${j}`,type}))};});
+  fs.writeFileSync(path.join(root,'router.abi.json'),JSON.stringify(abi));
+  const created=run(root,['init','--abi','router.abi.json','--name','Router','--owner','Example']).result;
+  assert.equal(created.registryMatches.length,1);
+  assert.deepEqual([created.registryMatches[0].file,created.registryMatches[0].shared.length,created.registryMatches[0].contained],['registry/quickswap/calldata-QuickSwap.json',7,false]); // QuickSwap does not describe swapETHForExactTokens
+  // A suggestion only: the draft is still written and carries no deployment.
+  const d=read(path.join(root,created.contracts[0].descriptor));
+  assert.deepEqual(d.context.contract.deployments,[]);
+  const human=spawnSync(process.execPath,[cli,'--root',root,'init','--abi','router.abi.json','--name','Router2','--owner','Example'],{encoding:'utf8'});
+  assert.match(human.stdout,/Already in the registry\?[\s\S]*registry\/quickswap\/calldata-QuickSwap\.json[\s\S]*registry add-deployment/);
 });

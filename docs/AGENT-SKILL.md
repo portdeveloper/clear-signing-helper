@@ -18,7 +18,7 @@ Prefer it as a standing skill? Install with `npx skills add portdeveloper/clear-
 
 Point it at a contract (address + chain) or a Foundry repository and it will:
 
-- check whether the registry already has a descriptor, since often you only need to add your chain; then `clear-signing registry add-deployment` proves the address is the same contract, appends the deployment and renders the test case
+- check whether the registry already has a descriptor, since often you only need to add your chain (`find-in-registry.sh` by address or name, then `init` again by function selectors, which catches a new address or a differently named entity); then `clear-signing registry add-deployment` proves the address is the same contract, appends the deployment and renders the test case
 - otherwise generate a draft with `clear-signing init`, from Foundry artifacts (NatSpec, enums, constructor constants, broadcast deployments) or from the verified source at an address (Sourcify, proxies resolved)
 - ask you only for what the ABI cannot prove: intent wording, which token an amount is in, which arguments to hide, and record those decisions
 - encode fixtures, preview the rendering, snapshot expectations, and export a bundle laid out for the registry and checked by the registry's own linter

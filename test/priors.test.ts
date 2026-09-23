@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Interface, FunctionFragment } from 'ethers';
-import { priorsFor, leafViews, disagreements, summarizePrior, PRIORS_META } from '../src/priors.js';
+import { priorsFor, leafViews, disagreements, summarizePrior, registryMatches, PRIORS_META } from '../src/priors.js';
 import { scaffold, scaffoldFormatWithProvenance, validateDescriptor, warningsOf } from '../src/descriptors.js';
 import type { Contract } from '../src/foundry.js';
 
@@ -59,4 +59,28 @@ test('ERC-20 conventions never scaffold an interpolatedIntent their own check fl
     const c=contract(sig),d=scaffold(c,'Example');d.display.formats={[sig]:draft(sig).format};
     assert.ok(!warningsOf(validateDescriptor(d,c,{id:c.id,descriptor:'t.json',exclusions:{}})).some(x=>x.code==='INTENT_LENGTH'),sig);
   }
+});
+const selectorsOf=(...sigs:string[])=>sigs.map(s=>FunctionFragment.from(`function ${s}`).selector);
+const V2_ROUTER=['addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256)','addLiquidityETH(address,uint256,uint256,uint256,address,uint256)','removeLiquidity(address,address,uint256,uint256,uint256,address,uint256)','removeLiquidityETH(address,uint256,uint256,uint256,address,uint256)','removeLiquidityWithPermit(address,address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)','removeLiquidityETHWithPermit(address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)','removeLiquidityETHSupportingFeeOnTransferTokens(address,uint256,uint256,uint256,address,uint256)','removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)','swapExactTokensForTokens(uint256,uint256,address[],address,uint256)','swapTokensForExactTokens(uint256,uint256,address[],address,uint256)','swapExactETHForTokens(uint256,address[],address,uint256)','swapTokensForExactETH(uint256,uint256,address[],address,uint256)','swapExactTokensForETH(uint256,uint256,address[],address,uint256)','swapETHForExactTokens(uint256,address[],address,uint256)','swapExactTokensForTokensSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)','swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256)','swapExactTokensForETHSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)'];
+test('a Uniswap V2 router ABI finds the registry\'s V2 router descriptor, contained in the ABI',()=>{
+  const [m,...rest]=registryMatches(selectorsOf(...V2_ROUTER));
+  assert.equal(m.file,'registry/quickswap/calldata-QuickSwap.json');
+  assert.deepEqual([m.shared.length,m.distinctive,m.contained],[15,17,true]);
+  assert.deepEqual(rest,[]);
+});
+test('a contract with many more functions than the registry describes still matches when the file is contained in it',()=>{
+  // SwapRouter02: the registry file describes six swaps; the contract also has permits, sweeps and multicalls.
+  const extra=Array.from({length:24},(_,i)=>`extraFunction${i}(uint256)`);
+  const [m]=registryMatches(selectorsOf('exactInput((bytes,address,uint256,uint256))','exactInputSingle((address,address,uint24,address,uint256,uint256,uint160))','exactOutput((bytes,address,uint256,uint256))','exactOutputSingle((address,address,uint24,address,uint256,uint256,uint160))','swapExactTokensForTokens(uint256,uint256,address[],address)','swapTokensForExactTokens(uint256,uint256,address[],address)','multicall(bytes[])',...extra));
+  assert.equal(m?.file,'registry/uniswap/calldata-UniswapV3Router02.json');
+  assert.ok(m.contained&&m.shared.length===6);
+  // Without containment, 6 of 30 distinctive functions is too little to suggest anything.
+  assert.deepEqual(registryMatches(selectorsOf('exactInput((bytes,address,uint256,uint256))','exactInputSingle((address,address,uint24,address,uint256,uint256,uint160))','exactOutput((bytes,address,uint256,uint256))',...extra)),[]);
+});
+test('standard interfaces and single coincidences suggest nothing',()=>{
+  // ERC-20 and ERC-4626 functions are described by many entities; they name an interface, not a protocol.
+  assert.deepEqual(registryMatches(selectorsOf('approve(address,uint256)','transfer(address,uint256)','transferFrom(address,address,uint256)','deposit()','withdraw(uint256)')),[]);
+  assert.deepEqual(registryMatches(selectorsOf('deposit(uint256,address)','withdraw(uint256,address,address)','mint(uint256,address)','redeem(uint256,address,address)','approve(address,uint256)')),[]);
+  // One shared distinctive function is a coincidence (StakingRewards shares withdraw(uint256) with one file).
+  assert.deepEqual(registryMatches(selectorsOf('stake(uint256)','withdraw(uint256)','getReward()','exit()','notifyRewardAmount(uint256)')),[]);
 });

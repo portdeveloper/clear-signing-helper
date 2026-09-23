@@ -59,11 +59,15 @@ function formatHumanOutput(data: any): string {
     const bindings=(data.bindings??[]).map((b:any)=>`  ${b.contract} bound to ${b.chainId}:${b.address} (from ${b.source})`);
     const label:Record<string,string>={natspec:'NatSpec',ast:'AST',broadcast:'broadcast',convention:'convention',registry:'registry prior',human:'human',llm:'LLM'};
     const evidence=(data.provenance??[]).map((p:any)=>`  [${label[p.source]??p.source}] ${p.contract} ${p.signature}${p.path?` ${p.path}`:''}: ${p.detail}`);
+    const matches=(data.registryMatches??[]).map((m:any)=>`  ${m.contract}: ${m.file} (${m.contained?`all ${m.described} functions it describes exist here`:`describes ${m.shared.length} of this contract's ${m.distinctive} functions, not all of its own ${m.described} exist here`}: ${m.shared.slice(0,4).map((f:string)=>f.split('(')[0]).join(', ')}${m.shared.length>4?`, ${m.shared.length-4} more`:''})`);
     const suggestions=(data.suggestions??[]).flatMap((s:any)=>[`  ${s.id}${s.ambiguous?' (name shared by several compiled contracts; bind manually)':''}`,...s.deployments.map((d:any)=>`    deployed at ${d.chainId}:${d.address} by ${d.script}`)]);
     return [`${data.created.length} descriptor(s) created.`, ...data.contracts.map((c:any)=>`  ${c.id}\n    ${c.descriptor}`),
       ...(imports.length?['\nImported ABIs (recorded in clear-signing/abi/*.source.json):',...imports]:[]),
       ...(bindings.length?['\nDeployment bindings taken from deployment records:',...bindings]:[]),
       ...(suggestions.length?['\nDeployed contracts not selected (add with init --contract <id>):',...suggestions]:[]),
+      ...(matches.length?['\nAlready in the registry? These descriptors match a contract\'s functions (ERC-20, ERC-4626, ERC-721 and Ownable functions are left out of the comparison):',...matches,
+        '  The same protocol on a new chain: registry add-deployment --descriptor <file> proves the address against the verified ABI and adds it; no new descriptor is needed.',
+        '  A fork or copy of that code: the file belongs to its owner, so keep authoring your own; its formats appear as registry priors in decisions.']:[]),
       ...(evidence.length?['\nEvidence used in the drafts (NatSpec and AST are author facts, broadcast is the deployment record, convention is an editable registry default, registry prior is what other descriptors do with the same selector):',...evidence]:[]),
       ...(data.broadcastCalls?[`\n${data.broadcastCalls} recorded broadcast transaction(s) can seed fixtures with fixture --broadcast-tx <hash>.`]:[]),
       '\nDrafts use raw values. Review the action, recipients, limits, units, and token relationships.', data.next].join('\n');
