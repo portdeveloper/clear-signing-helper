@@ -25,5 +25,6 @@ echo "# Entity folders that look related:"
 ls "$REG" | grep -i -- "$QUERY" || echo "  (none found - you are likely authoring a NEW descriptor)"
 
 echo
-echo "If a file matched an address/name and only your chain is missing,"
-echo "add { \"chainId\": <id>, \"address\": \"<addr>\" } to its context.contract.deployments and stop."
+echo "If a file matched an address/name and only your chain is missing, do not edit it by hand. Run:"
+echo "  clear-signing registry add-deployment --registry $ROOT --descriptor registry/<entity>/<file>.json --chain-id <id> --address <addr>"
+echo "It proves the address is the same contract, adds the deployment and renders a test case (EIP-712 files also need --rpc-url)."
