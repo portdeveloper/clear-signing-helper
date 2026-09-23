@@ -51,7 +51,10 @@
 
 
 <h2>Use it</h2>
-<p>Paste this into Claude Code, Cursor or another coding agent:</p>
+<p>Paste one of these into Claude Code, Cursor or another coding agent.</p>
+<p>In your Foundry repo (deployments recorded by <code>forge script</code> are read from <code>broadcast/</code>):</p>
+<pre><code>read https://github.com/portdeveloper/clear-signing-helper and use it to make the contracts in this repo clear-signable</code></pre>
+<p>For a deployed contract verified on Sourcify:</p>
 <pre><code>read https://github.com/portdeveloper/clear-signing-helper and use it to make my contract clear-signable: &lt;address&gt; on &lt;chain&gt;</code></pre>
 <p>The agent checks whether the registry already covers your protocol, runs the tool, asks you only the questions the contract cannot answer, and stops at a reviewed draft. You open the PR. To keep it installed as a skill: <code>npx skills add portdeveloper/clear-signing-helper</code>.</p>
 <div class="card">
