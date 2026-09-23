@@ -6,7 +6,7 @@ import { loadProject, defaultContracts, deployedContracts, suggestedContracts, g
 import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
 import { priorsFor, summarizePrior } from './priors.js';
 import { gatherEvidence } from './evidence.js';
-import {portabilityFindings, PORTABILITY_REFERENCE} from './portability.js';
+import {portabilityFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
 import { renderFixture, validateFixture, blockingWarnings, type Fixture, type Rendering } from './fixtures.js';
 import { registryTests } from './registry.js';
@@ -277,12 +277,15 @@ export async function runTests(state: State, update=false, ids?: string[]) {
   for(const u of updates) writeJson(u.file,u.rendering);
   return {passed:renders.length, updated:updates.length, renders};
 }
-export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; inlineAbi?: boolean; lint?: boolean; registryRunners?: boolean; runnerPins?: string; log?: (line: string) => void}
+export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; inlineAbi?: boolean; lint?: boolean; registryRunners?: boolean; skipRegistryRunners?: string; runnerPins?: string; log?: (line: string) => void}
 // Registry entity folders are kebab-case slugs of the owner name, e.g. "Morpho DAO" -> "morpho-dao".
 export const entitySlug = (owner: string) => owner.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const REGISTRY_SCHEMA = '../../specs/erc7730-v2.schema.json';
 export async function exportBundle(state: State, out: string, strictPortability=false, ids?: string[], options: ExportOptions = {}) {
   const selections = selectContracts(state, ids);
+  const skipReason = options.skipRegistryRunners?.trim();
+  if (options.skipRegistryRunners !== undefined && !skipReason) fail('USAGE_ERROR', '--skip-registry-runners needs a reason, which is recorded in the bundle.', 2);
+  if (skipReason && options.registryRunners) fail('USAGE_ERROR', '--registry-runners and --skip-registry-runners exclude each other.', 2);
   const {portability}=check(state,strictPortability,ids);
   const tests=await runTests(state,false,ids);
   const errors:Diagnostic[]=[];
@@ -299,6 +302,10 @@ export async function exportBundle(state: State, out: string, strictPortability=
   const entity=options.entity ?? entitySlug([...owners][0] ?? '');
   if(!options.entity && owners.size>1) errors.push({code:'ENTITY_AMBIGUOUS',message:`Selected descriptors name different owners (${[...owners].join(', ')}). Pass --entity <registry-folder> or export per contract.`});
   if(!/^[a-z0-9][a-z0-9-]*$/.test(entity)) errors.push({code:'ENTITY_INVALID',message:`Registry entity folder must be a kebab-case slug; got "${entity}". Pass --entity.`});
+  // Where this tool's renderer and the registry's runners can differ, a local pass is not evidence
+  // the registry's CI will pass; the runners must check the expected values, or the user records why not.
+  const divergence=selections.flatMap(s=>runnerDivergence(s.id,state.descriptors.get(s.id)!));
+  if(divergence.length && !options.registryRunners && !skipReason) errors.push(...divergence.map(f=>({code:'REGISTRY_RUNNERS_REQUIRED',signature:f.signature,message:`${f.contract} ${f.path}: ${f.message}`,remedy:'The testsv2 expected values come from this tool\'s renderer, which can differ from the registry CI\'s on this shape (negative signed integers, nested arrays). Export with --registry-runners so both registry implementations check them, or with --skip-registry-runners "<reason>" to export anyway and record why.'})));
   throwDiagnostics(errors);
   const target=safePath(state.project.root,out);
   if(fs.existsSync(target)) fail('OUTPUT_EXISTS',`Refusing to overwrite ${out}. Choose a new output directory.`,2);
@@ -344,7 +351,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
       }
       if(failures.length) throw new Failure('REGISTRY_RUNNER_FAILED',`${failures.length} registry runner check(s) failed.`,1,failures);
     }
-    writeJson(path.join(stage,'review','validation.json'),{tool:packageJson.version, engine:ENGINE, entity, contracts:selections.map(s=>({id:s.id,descriptor:`registry/${entity}/calldata-${getContract(state.project,s.id).name}.json`,exclusions:s.exclusions,hidden:s.hidden??{}})),fixtures:tests.passed, upstreamLint:lint, registryRunners:options.registryRunners?runnerResults:'not run', deploymentVerification:'not performed',publication:'not submitted'});
+    writeJson(path.join(stage,'review','validation.json'),{tool:packageJson.version, engine:ENGINE, entity, contracts:selections.map(s=>({id:s.id,descriptor:`registry/${entity}/calldata-${getContract(state.project,s.id).name}.json`,exclusions:s.exclusions,hidden:s.hidden??{}})),fixtures:tests.passed, upstreamLint:lint, registryRunners:options.registryRunners?runnerResults:'not run', ...(skipReason?{registryRunnersSkipped:{reason:skipReason,divergence}}:{}), deploymentVerification:'not performed',publication:'not submitted'});
     writeJson(path.join(stage,'review','portability.json'),portability);
     const provenanceFile=safePath(state.project.root,provenanceName);
     if(fs.existsSync(provenanceFile)) { const all=readJson<Record<string,unknown>>(provenanceFile); writeJson(path.join(stage,'review','provenance.json'),Object.fromEntries(selections.filter(s=>s.id in all).map(s=>[s.id,all[s.id]]))); }
@@ -353,11 +360,12 @@ export async function exportBundle(state: State, out: string, strictPortability=
       '```sh',`cp -r registry/${entity}/. <registry-clone>/registry/${entity}/`,'```','',
       `Upstream lint: ${lint.ran ? `ran (exit ${lint.exitCode}, ${lint.warnings} warning(s)). Output is recorded in review/validation.json.` : `not run (${lint.reason}). Run it yourself before opening a pull request:`}`,'',
       ...(lint.ran ? [] : ['```sh',lint.command,'```','']),
+      ...(skipReason ? [`Registry runners: skipped (${skipReason}). ${divergence.length} displayed field(s) use a shape where this tool's renderer and the registry CI's can differ, so the testsv2 expected values may fail registry CI. Details in review/validation.json.`,''] : []),
       'The `review/` directory holds the original fixtures, normalized renderings, the validation record and the portability report. Read `review/portability.json` for known consumer limitations; a passing local test is not wallet certification.','',
       'Verify deployed code and proxy mappings independently. Open the pull request from an account tied to the contract owner; registry review, attestations and wallet availability are separate steps: https://clearsigning.org/build/',''].join('\n'));
     fs.renameSync(stage,target);
   } catch(e) {fs.rmSync(stage,{recursive:true,force:true});throw e;}
-  return {exported:out,entity,registryPath:`${out}/registry/${entity}`,descriptors:selections.length,fixtures:tests.passed,lint,registryRunners:options.registryRunners?runnerResults:null,deploymentVerification:'not performed',publication:'not submitted',portability};
+  return {exported:out,entity,registryPath:`${out}/registry/${entity}`,descriptors:selections.length,fixtures:tests.passed,lint,registryRunners:options.registryRunners?runnerResults:null,...(skipReason?{registryRunnersSkipped:{reason:skipReason,divergence}}:{}),deploymentVerification:'not performed',publication:'not submitted',portability};
 }
 
 // ---------------------------------------------------------------------------------------------

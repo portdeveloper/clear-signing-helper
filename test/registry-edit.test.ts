@@ -179,3 +179,27 @@ await test('registry add-deployment restores the clone when upstream lint or a r
   assert.equal(ok.lint.exitCode,0);assert.deepEqual(ok.registryRunners.map((x:any)=>x.passed),[true,true]);
   assert.equal(read(desc).context.contract.deployments.length,2);
 });
+
+// A rendered test case that displays a signed integer is checked by the registry runners, or skipped with a recorded reason.
+await test('registry add-deployment requires the runners, or a recorded reason, for a test that renders differently in registry CI',async t=>{
+  const abi=[{type:'function',name:'adjust',stateMutability:'nonpayable',inputs:[{name:'delta',type:'int256'},{name:'account',type:'address'}],outputs:[]}];
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-registry-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const dir=path.join(root,'registry/example');fs.mkdirSync(path.join(dir,'testsv2'),{recursive:true});
+  const desc=path.join(dir,'calldata-Ledger.json'),tests=path.join(dir,'testsv2/calldata-Ledger.tests.json');
+  fs.writeFileSync(desc,JSON.stringify({$schema:'../../specs/erc7730-v2.schema.json',context:{contract:{deployments:[{chainId:1,address:mainnetToken}]}},metadata:{owner:'Example'},
+    display:{formats:{'adjust(int256 delta,address account)':{intent:'Adjust',fields:[{path:'delta',label:'Delta',format:'raw'},{path:'account',label:'Account',format:'raw'}]}}}},null,2)+'\n');
+  const data=new Interface(abi).encodeFunctionData('adjust',[-5n,recipient]);
+  const rawTx=Transaction.from({type:2,chainId:1,to:mainnetToken,data,value:0n,nonce:0,gasLimit:1_000_000n,maxFeePerGas:0,maxPriorityFeePerGas:0}).unsignedSerialized;
+  fs.writeFileSync(tests,JSON.stringify({$schema:'../../../specs/erc7730-tests-v2.schema.json',descriptor:'../calldata-Ledger.json',tests:[{description:'Adjust - chain 1',rawTx,expected:{intent:'Adjust',owner:'Example',fields:[{label:'Delta',value:'-5'},{label:'Account',value:recipient}]}}]},null,2)+'\n');
+  const server=createServer((req,res)=>{const ok=new URL(req.url!,'http://x').pathname===`/v2/contract/10143/${monadToken}`;res.writeHead(ok?200:404,{'content-type':'application/json'});res.end(JSON.stringify(ok?{match:'exact_match',abi,compilation:{name:'Ledger'},proxyResolution:{isProxy:false,implementations:[]}}:{match:null}));});
+  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));t.after(()=>server.close());
+  const env={CLEAR_SIGNING_SOURCIFY_URL:`http://127.0.0.1:${(server.address() as any).port}`,ETHERSCAN_API_KEY:''};
+  const before=[fs.readFileSync(desc,'utf8'),fs.readFileSync(tests,'utf8')];
+  const args=['registry','add-deployment','--registry',root,'--descriptor','registry/example/calldata-Ledger.json','--chain-id','10143','--address',monadToken,'--no-lint'];
+  const blocked=(await runAsync(args,1,env)).diagnostics[0];
+  assert.equal(blocked.code,'REGISTRY_RUNNERS_REQUIRED');assert.match(blocked.message,/delta \(SIGNED_INTEGER_PORTABILITY\)[\s\S]*Nothing was changed/);
+  assert.deepEqual([fs.readFileSync(desc,'utf8'),fs.readFileSync(tests,'utf8')],before);
+  const r=(await runAsync([...args,'--skip-registry-runners','runners not built here'],0,env)).result;
+  assert.equal(r.registryRunnersSkipped.reason,'runners not built here');assert.equal(r.test.description,'Adjust - chain 10143');
+  assert.deepEqual(r.test.expected.fields,[{label:'Delta',value:'-5'},{label:'Account',value:recipient}]);
+});

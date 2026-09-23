@@ -27,12 +27,14 @@ function formatHumanOutput(data: any): string {
     data.test ? `Test case "${data.test.description}" rendered from "${data.test.template}" in ${data.test.file}:\n${data.test.expected.fields.map((f:any)=>`  ${f.label}: ${f.value}`).join('\n')}` : 'No test case added.',
     data.lint?.ran ? `Upstream erc7730 lint: exit ${data.lint.exitCode}, ${data.lint.warnings} warning(s).${data.lint.warnings ? '\n'+data.lint.output.map((l:string)=>`  ${l}`).join('\n') : ''}` : `Upstream erc7730 lint not run (${data.lint?.reason}). Run: ${data.lint?.command}`,
     ...(data.registryRunners?data.registryRunners.map((r:any)=>`Registry ${r.name} runner (${r.implementation??r.ref.slice(0,8)}): ${r.passed?'all cases pass':'FAILED'} ${JSON.stringify(r.cases)}`):[]),
+    ...(data.registryRunnersSkipped?[`Registry runners skipped (${data.registryRunnersSkipped.reason}); the new test displays ${data.registryRunnersSkipped.divergence.length} field(s) that may render differently in registry CI.`]:[]),
     '', data.note, '', 'Next, after reviewing the diff:', ...data.next.map((c:string)=>`  ${c}`)].join('\n');
   if (data.reviewed) return `Review recorded for ${data.reviewed.length} contract(s).\n${data.note}`;
   if (data.exported) return [`Exported ${data.descriptors} descriptor(s) and ${data.fixtures} fixture(s) to ${data.exported}.`,
     `Registry-ready files: ${data.registryPath}/ (copy into <registry-clone>/registry/${data.entity}/).`,
     data.lint?.ran ? [`Upstream erc7730 format: ${data.lint.formatted?.ran?'applied':`not applied (${data.lint.formatted?.reason})`}; lint: exit ${data.lint.exitCode}, ${data.lint.warnings} warning(s).`,...(data.lint.warnings ? data.lint.output.map((l:string)=>`  ${l}`) : [])].join('\n') : `Upstream erc7730 lint not run (${data.lint?.reason}). Run: ${data.lint?.command}`,
     ...(data.registryRunners?data.registryRunners.map((r:any)=>`Registry ${r.name} runner (${r.implementation??r.ref.slice(0,8)}) on ${r.testsFile}: ${r.passed?'all cases pass':'FAILED'} ${JSON.stringify(r.cases)}`):[]),
+    ...(data.registryRunnersSkipped?[`Registry runners skipped (${data.registryRunnersSkipped.reason}); ${data.registryRunnersSkipped.divergence.length} displayed field(s) may render differently in registry CI.`]:[]),
     ...portability,'See review/portability.json. Wallet/deployment verification and registry publication have not been performed.'].join('\n');
   if (data.passed !== undefined) return `${data.passed} signing test(s) passed.${data.updated ? ` ${data.updated} expectation(s) updated.` : ''}`;
   if (data.created) {

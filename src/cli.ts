@@ -80,8 +80,9 @@ program.command('export').description('Validate and write a submission bundle; d
   .option('--inline-abi','Embed the compiled ABI in context.contract.abi (deprecated by the schema; off by default)')
   .option('--no-lint','Skip running the pinned upstream erc7730 lint')
   .option('--registry-runners','Also run the registry CI\'s Sourcify and Rust implementations on the exported tests (builds them once; needs git, npm, cargo)')
+  .option('--skip-registry-runners <reason>','Export without the registry runners although a displayed field uses a shape where this tool and the registry CI render differently; the reason is recorded')
   .option('--runner-pins <registry-clone>','Read runner revisions from a registry clone\'s CI definition instead of the built-in pins')
-  .action(async options=>output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,inlineAbi:options.inlineAbi===true,lint:options.lint!==false,registryRunners:options.registryRunners===true,runnerPins:options.runnerPins,log:progress})));
+  .action(async options=>output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,inlineAbi:options.inlineAbi===true,lint:options.lint!==false,registryRunners:options.registryRunners===true,skipRegistryRunners:options.skipRegistryRunners,runnerPins:options.runnerPins,log:progress})));
 const registry=program.command('registry').description('Edit an existing registry clone; never commits or opens pull requests');
 registry.command('add-deployment').description('Add a verified deployment (and a rendered test case) to a descriptor already in the registry')
   .requiredOption('--registry <directory>','Path to a clone of ethereum/clear-signing-erc7730-registry')
@@ -98,7 +99,8 @@ registry.command('add-deployment').description('Add a verified deployment (and a
   .option('--no-test','Add the deployment only; do not touch testsv2')
   .option('--no-lint','Skip running the pinned upstream erc7730 lint')
   .option('--runners','Also run the registry CI\'s Sourcify and Rust implementations on the updated test file (pins read from the clone)')
-  .action(async options=>output(await addDeployment({registry:options.registry,descriptor:options.descriptor,chainId:Number(options.chainId),address:options.address,abiFile:options.abi,rpcUrl:options.rpcUrl,template:options.template,set:options.set,tokens:options.token,addressNames:options.addressName,description:options.description,test:options.test!==false,lint:options.lint!==false,runners:options.runners===true,log:progress})));
+  .option('--skip-registry-runners <reason>','Calldata: add the test without the runners although it displays a shape where this tool and the registry CI render differently; the reason is recorded')
+  .action(async options=>output(await addDeployment({registry:options.registry,descriptor:options.descriptor,chainId:Number(options.chainId),address:options.address,abiFile:options.abi,rpcUrl:options.rpcUrl,template:options.template,set:options.set,tokens:options.token,addressNames:options.addressName,description:options.description,test:options.test!==false,lint:options.lint!==false,runners:options.runners===true,skipRegistryRunners:options.skipRegistryRunners,log:progress})));
 registry.command('setup-runners').description('Clone and build the registry CI\'s Sourcify and Rust implementations once, for later --registry-runners / --runners use')
   .option('--registry <directory>','Read runner revisions from this registry clone\'s CI definition')
   .action(options=>{const tc=setupRunners(options.registry?pinsFromRegistry(options.registry):DEFAULT_PINS,progress);output({runners:tc.dir,sourcify:{cli:tc.sourcifyCli,ref:tc.pins.sourcify.ref},rust:{binary:tc.rustBinary,ref:tc.pins.rust.ref}});});

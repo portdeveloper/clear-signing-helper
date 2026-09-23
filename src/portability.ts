@@ -1,5 +1,5 @@
 import type {ParamType} from 'ethers';
-import {parseSignature, type Descriptor} from './descriptors.js';
+import {parseSignature, resolveFields, type Descriptor} from './descriptors.js';
 
 export interface PortabilityFinding {code:string;contract:string;signature:string;path:string;message:string}
 export const PORTABILITY_REFERENCE = {
@@ -31,4 +31,17 @@ export function portabilityFindings(contract:string, descriptor:Descriptor):Port
     fn.inputs.forEach((p,i)=>visit(p,p.name||`arg${i}`));
   }
   return findings;
+}
+// Findings where this tool's expected values can differ from what the registry's CI renders: the helper's
+// renderer carries a signed-integer fix and lowers nested arrays before rendering; the pinned registry runners
+// do neither. Only leaves a format actually displays matter; a hidden argument renders nothing to disagree on.
+export const RUNNER_DIVERGENCE = new Set(['SIGNED_INTEGER_PORTABILITY', 'NESTED_ARRAY_PORTABILITY']);
+export function runnerDivergence(contract:string, descriptor:Descriptor, signatures?:Set<string>):PortabilityFinding[] {
+  const shown=new Map<string,string[]>();
+  for(const [key,spec] of Object.entries(descriptor.display.formats)) {
+    const sig=parseSignature(key).format('sighash');
+    shown.set(sig,resolveFields(spec.fields??[],descriptor.display.definitions??{}).filter(r=>r.key&&!r.hidden).map(r=>r.key!));
+  }
+  return portabilityFindings(contract,descriptor).filter(f=>RUNNER_DIVERGENCE.has(f.code) && (!signatures || signatures.has(f.signature))
+    && (shown.get(f.signature)??[]).some(k=>k===f.path||k.startsWith(f.path+'.')));
 }

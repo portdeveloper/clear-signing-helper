@@ -87,3 +87,28 @@ await test('ABI mode: fetch a verified proxy from Sourcify, bind the proxy addre
   // Foundry-mode flags are rejected in an ABI project, and ABI flags in a Foundry project.
   assert.equal(run(path.join(repo,'examples/standard'),['init','--abi','x.json'],2).diagnostics[0].code,'MODE_CONFLICT');
 });
+
+// Signed integers render differently here (patched renderer) than in the registry's pinned runners, so a
+// displayed int cannot be exported on the strength of a local pass alone.
+await test('export requires the registry runners, or a recorded reason, when a displayed field renders differently in registry CI',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-int-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  fs.writeFileSync(path.join(root,'Ledger.json'),JSON.stringify([{type:'function',name:'adjust',stateMutability:'nonpayable',inputs:[{name:'delta',type:'int256'},{name:'account',type:'address'}],outputs:[]}]));
+  const created=run(root,['init','--abi','Ledger.json','--owner','Example']).result,id='clear-signing/abi/Ledger.json:Ledger';
+  const dfile=path.join(root,created.contracts[0].descriptor),d=read(dfile);d.context.contract.deployments=[{chainId:1,address:token}];write(dfile,d);
+  run(root,['fixture','--name','adjust','--contract',id,'--function','adjust(int256,address)','--args',JSON.stringify(['-5',proxy]),'--chain-id','1','--to',token]);
+  run(root,['review','--accept']);run(root,['test','--update']);
+  const blocked=run(root,['export','--out','bundle','--no-lint'],1).diagnostics;
+  assert.deepEqual(blocked.map((x:any)=>[x.code,x.signature]),[['REGISTRY_RUNNERS_REQUIRED','adjust(int256,address)']]);assert.match(blocked[0].message,/delta/);assert.match(blocked[0].remedy,/--registry-runners/);
+  assert.equal(fs.existsSync(path.join(root,'bundle')),false);
+  assert.equal(run(root,['export','--out','bundle','--no-lint','--skip-registry-runners',' '],2).diagnostics[0].code,'USAGE_ERROR');
+  assert.equal(run(root,['export','--out','bundle','--no-lint','--registry-runners','--skip-registry-runners','x'],2).diagnostics[0].code,'USAGE_ERROR');
+  const skipped=run(root,['export','--out','bundle','--no-lint','--skip-registry-runners','no cargo on this machine']).result;
+  assert.equal(skipped.registryRunnersSkipped.reason,'no cargo on this machine');assert.deepEqual(skipped.registryRunnersSkipped.divergence.map((f:any)=>f.path),['delta']);
+  assert.equal(read(path.join(root,'bundle/review/validation.json')).registryRunnersSkipped.reason,'no cargo on this machine');
+  assert.match(fs.readFileSync(path.join(root,'bundle/README.md'),'utf8'),/Registry runners: skipped \(no cargo on this machine\)/);
+  // A hidden int displays nothing to disagree on: no gate.
+  const h=read(dfile);h.display.formats['adjust(int256 delta,address account)'].fields=h.display.formats['adjust(int256 delta,address account)'].fields.filter((f:any)=>f.path!=='delta');write(dfile,h);
+  fs.appendFileSync(path.join(root,'clear-signing.toml'),'\n[contracts.hidden."adjust(int256,address)"]\ndelta = "internal accounting value"\n');
+  run(root,['review','--accept']);run(root,['test','--update']);
+  assert.equal(run(root,['export','--out','hidden','--no-lint']).result.registryRunnersSkipped,undefined);
+});

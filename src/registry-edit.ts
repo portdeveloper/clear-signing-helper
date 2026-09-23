@@ -10,6 +10,7 @@ import { testCase, typedDataTestCase, validateRegistryTests } from './registry.j
 import { runUpstreamLint, lintCommand, type LintResult } from './lint.js';
 import { setupRunners, runRegistryRunners, pinsFromRegistry, type RunnerResult } from './runners.js';
 import { KNOWN_CHAINS } from './chains.js';
+import { runnerDivergence, type PortabilityFinding } from './portability.js';
 import { fail, readJson, readText, safePath, walk, writeText, Failure } from './io.js';
 import type { Contract } from './foundry.js';
 import { appendToContainer, detectStep, insertIntoArray, scanJson, spanAt } from './json-edit.js';
@@ -21,7 +22,7 @@ import { appendToContainer, detectStep, insertIntoArray, scanJson, spanAt } from
 export interface AddDeploymentOptions {
   registry: string; descriptor: string; chainId: number; address: string;
   abiFile?: string; rpcUrl?: string; template?: string; set?: string[];
-  tokens?: string[]; addressNames?: string[]; description?: string; test?: boolean; lint?: boolean; runners?: boolean; log?: (line: string) => void;
+  tokens?: string[]; addressNames?: string[]; description?: string; test?: boolean; lint?: boolean; runners?: boolean; skipRegistryRunners?: string; log?: (line: string) => void;
 }
 export async function addDeployment(o: AddDeploymentOptions) {
   const registry = fs.realpathSync(path.resolve(o.registry));
@@ -30,6 +31,8 @@ export async function addDeployment(o: AddDeploymentOptions) {
   if (!Number.isSafeInteger(o.chainId) || o.chainId <= 0) fail('FIXTURE_ARGUMENTS', '--chain-id must be a positive integer.', 2);
   if (!isAddress(o.address)) fail('INVALID_ADDRESS', `${o.address} is not a valid address.`, 2);
   const address = getAddress(o.address);
+  if (o.skipRegistryRunners !== undefined && !o.skipRegistryRunners.trim()) fail('USAGE_ERROR', '--skip-registry-runners needs a reason, which is recorded in the result.', 2);
+  if (o.skipRegistryRunners !== undefined && o.runners) fail('USAGE_ERROR', '--runners and --skip-registry-runners exclude each other.', 2);
   if (/^eip712-.*\.json$/.test(path.basename(descriptorFile))) return addTypedDataDeployment(o, registry, descriptorFile, address);
   if (!/^calldata-.*\.json$/.test(path.basename(descriptorFile))) fail('UNSUPPORTED_DESCRIPTOR', 'Only calldata-*.json and eip712-*.json descriptors are supported.', 2);
   if (o.rpcUrl || o.set?.length || o.template) fail('USAGE_ERROR', '--rpc-url, --set and --template apply to EIP-712 descriptors; a calldata deployment is proven by its verified ABI.', 2);
@@ -66,7 +69,7 @@ export async function addDeployment(o: AddDeploymentOptions) {
   updated.context.contract.deployments.push({chainId: o.chainId, address});
   let test: {file: string; description: string; template: string; expected: any} | undefined;
   const skippedTemplates: string[] = [];
-  let testsOriginal: string | undefined, testsUpdated: any;
+  let testsOriginal: string | undefined, testsUpdated: any, divergence: PortabilityFinding[] = [];
   if (o.test !== false && fs.existsSync(testsFile)) {
     testsOriginal = readText(testsFile);
     testsUpdated = JSON.parse(testsOriginal);
@@ -96,6 +99,10 @@ export async function addDeployment(o: AddDeploymentOptions) {
       }
     }
     if (!template || !fixture || !rendering) fail('NO_RENDERABLE_TEMPLATE', `No existing test case could be rendered for chain ${o.chainId}:\n  ${attempts.join('\n  ')}\nSupply chain metadata with --token <address>=<SYMBOL>:<decimals> or --address-name <address>=<Name> where that is the cause, or add the deployment alone with --no-test and write the test case by hand. Nothing was changed.`, 1);
+    // The rendered expectation comes from this tool's renderer; where it can differ from the
+    // registry's runners, the runners check it or the user records why not, before anything is written.
+    divergence = runnerDivergence(name, updated, new Set([available.get(template.tx.data.slice(0, 10).toLowerCase())!.format('sighash')]));
+    if (divergence.length && !o.runners && !o.skipRegistryRunners) fail('REGISTRY_RUNNERS_REQUIRED', `The new test case displays ${divergence.map(f => `${f.path} (${f.code})`).join(', ')}, a shape where this tool's renderer and the registry CI's can differ, so its expected values may fail registry CI. Rerun with --runners, or with --skip-registry-runners "<reason>" to record why not. Nothing was changed.`, 1);
     const description = newDescription(o, template.c.description, cases);
     const entry = testCase(description, fixture, rendering, updated.metadata?.owner ?? '');
     if (attempts.length) skippedTemplates.push(...attempts);
@@ -115,7 +122,8 @@ export async function addDeployment(o: AddDeploymentOptions) {
   const changed = [relDescriptor, ...(test ? [test.file] : [])];
   const next = nextCommands(registry, entity, o.chainId, changed, verification.name ?? name.replace(/^calldata-|\.json$/g, ''),
     `Adds ${o.chainId}:${address} to ${relDescriptor}${test ? ` with test case \\"${test.description}\\"` : ''}. ABI verified via ${verification.source}${verification.match ? ` (${verification.match})` : ''}.`);
-  return {descriptor: relDescriptor, deployment: {chainId: o.chainId, address}, verification, selectorsChecked: formats.length, test: test ?? null, skippedTemplates, lint, registryRunners: runners, changed, next, note: 'Files changed in the registry clone; nothing committed. Open the pull request from an account tied to the contract owner.'};
+  return {descriptor: relDescriptor, deployment: {chainId: o.chainId, address}, verification, selectorsChecked: formats.length, test: test ?? null, skippedTemplates, lint, registryRunners: runners,
+    ...(o.skipRegistryRunners && divergence.length ? {registryRunnersSkipped: {reason: o.skipRegistryRunners.trim(), divergence}} : {}), changed, next, note: 'Files changed in the registry clone; nothing committed. Open the pull request from an account tied to the contract owner.'};
 }
 
 // EIP-712: the deployments usually live in a shared file several descriptors include. The address is
