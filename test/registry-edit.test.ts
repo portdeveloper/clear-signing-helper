@@ -69,3 +69,74 @@ await test('registry add-deployment proves the ABI, appends the deployment, rend
   // Adding it again is refused.
   assert.equal((await runAsync(['registry','add-deployment','--registry',root,'--descriptor','registry/example/calldata-ClearToken.json','--chain-id','10143','--address',monadToken,'--no-lint'],2,env)).diagnostics[0].code,'DEPLOYMENT_EXISTS');
 });
+
+// EIP-712: the deployments live in a shared file two descriptors include; the address is proven by
+// a mocked JSON-RPC endpoint's DOMAIN_SEPARATOR().
+function typedRegistryClone() {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-registry-'));
+  const dir=path.join(root,'registry/vault');fs.mkdirSync(path.join(dir,'testsv2'),{recursive:true});
+  const common={$schema:'../../specs/erc7730-v2.schema.json',context:{eip712:{domain:{name:'Vault'},deployments:[{chainId:1,address:vault},{chainId:8453,address:vault}]}},metadata:{owner:'Vault Labs'}};
+  fs.writeFileSync(path.join(dir,'common-eip712-vault.json'),JSON.stringify(common,null,2)+'\n');
+  const permit={$schema:'../../specs/erc7730-v2.schema.json',includes:'common-eip712-vault.json',display:{formats:{'Permit(address spender,address token,uint256 value)':{intent:'Approve spending',fields:[{path:'spender',label:'Spender',format:'raw'},{path:'value',label:'Amount',format:'tokenAmount',params:{tokenPath:'token'}}],required:['spender','value'],excluded:['token']}}}};
+  fs.writeFileSync(path.join(dir,'eip712-vault-permit.json'),JSON.stringify(permit,null,2)+'\n');
+  fs.writeFileSync(path.join(dir,'eip712-vault-other.json'),JSON.stringify({...permit,display:{formats:{'Other(address spender)':{intent:'Other',fields:[{path:'spender',label:'Spender',format:'raw'}]}}}},null,2)+'\n');
+  const data={types:{EIP712Domain:[{name:'name',type:'string'},{name:'chainId',type:'uint256'},{name:'verifyingContract',type:'address'}],Permit:[{name:'spender',type:'address'},{name:'token',type:'address'},{name:'value',type:'uint256'}]},
+    primaryType:'Permit',domain:{name:'Vault',chainId:1,verifyingContract:vault},message:{spender:recipient,token:mainnetToken,value:'2500000'}};
+  const tests={$schema:'../../../specs/erc7730-tests-v2.schema.json',descriptor:'../eip712-vault-permit.json',dataProvider:{tokens:{[mainnetToken.toLowerCase()]:{symbol:'CLR',decimals:6,name:'Clear Token'}}},
+    tests:[{description:'Approve spending',data,expected:{intent:'Approve spending',owner:'Vault Labs',fields:[{label:'Spender',value:recipient},{label:'Amount',value:'2.5 CLR'}]}}]};
+  fs.writeFileSync(path.join(dir,'testsv2/eip712-vault-permit.tests.json'),JSON.stringify(tests,null,2)+'\n');
+  return root;
+}
+const vault='0x6666666666666666666666666666666666666666', imposter='0x7777777777777777777777777777777777777777', empty='0x8888888888888888888888888888888888888888', spender143='0x9999999999999999999999999999999999999999';
+
+await test('registry add-deployment on an EIP-712 descriptor proves the domain, inserts in chain order in the shared file, and renders a retargeted test',async t=>{
+  const {TypedDataEncoder}=await import('ethers');
+  const root=typedRegistryClone();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const server=createServer((req,res)=>{
+    let body='';req.on('data',d=>body+=d);req.on('end',()=>{
+      const {method,params}=JSON.parse(body);const chainId=Number(/^\/chain(\d+)$/.exec(req.url??'')?.[1]??143);
+      const reply=(result:unknown)=>{res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({jsonrpc:'2.0',id:1,...(result instanceof Error?{error:{code:-32000,message:result.message}}:{result})}));};
+      if(method==='eth_chainId') return reply('0x'+chainId.toString(16));
+      const to=String(method==='eth_call'?params[0].to:params[0]).toLowerCase();
+      if(method==='eth_getCode') return reply(to===empty?'0x':'0x6080604052');
+      if(to===imposter) return reply(TypedDataEncoder.hashDomain({name:'Imposter',chainId,verifyingContract:imposter}));
+      return reply(TypedDataEncoder.hashDomain({name:'Vault',chainId,verifyingContract:vault}));
+    });
+  });
+  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));t.after(()=>server.close());
+  const rpc=`http://127.0.0.1:${(server.address() as any).port}`;
+  const common=path.join(root,'registry/vault/common-eip712-vault.json'),tests=path.join(root,'registry/vault/testsv2/eip712-vault-permit.tests.json');
+  const before=[fs.readFileSync(common,'utf8'),fs.readFileSync(tests,'utf8')];
+  const base=['registry','add-deployment','--registry',root,'--descriptor','registry/vault/eip712-vault-permit.json','--chain-id','143','--no-lint'];
+  const code=async(args:string[],exit:number)=>(await runAsync([...base,...args],exit)).diagnostics[0].code;
+  assert.equal(await code(['--address',vault],2),'RPC_REQUIRED');
+  assert.equal(await code(['--address',vault,'--rpc-url',`${rpc}/chain1`],2),'RPC_CHAIN_MISMATCH');
+  assert.equal(await code(['--address',empty,'--rpc-url',rpc],1),'NO_CODE');
+  assert.equal(await code(['--address',imposter,'--rpc-url',rpc],1),'DOMAIN_MISMATCH');
+  assert.equal(await code(['--address',vault,'--rpc-url',rpc,'--abi','x.json'],2),'USAGE_ERROR');
+  // Proven, but the retargeted test needs the new chain's token, and a --set path must exist.
+  const noToken=(await runAsync([...base,'--address',vault,'--rpc-url',rpc,'--set',`token=${monadToken}`],1)).diagnostics[0];
+  assert.equal(noToken.code,'NO_RENDERABLE_TEMPLATE');assert.match(noToken.message,/needs metadata for chain 143/);
+  const typo=(await runAsync([...base,'--address',vault,'--rpc-url',rpc,'--set','spendr=0x01'],1)).diagnostics[0];
+  assert.equal(typo.code,'NO_RENDERABLE_TEMPLATE');assert.match(typo.message,/no field spendr/);
+  assert.deepEqual([fs.readFileSync(common,'utf8'),fs.readFileSync(tests,'utf8')],before,'failed attempts must not modify the clone');
+  const r=(await runAsync([...base,'--address',vault,'--rpc-url',rpc,'--set',`token=${monadToken}`,'--set',`spender=${spender143}`,'--token',`${monadToken}=mCLR:6`],0)).result;
+  assert.equal(r.deploymentsFile,'registry/vault/common-eip712-vault.json');assert.equal(r.verification.domainSource,'descriptor context.eip712.domain');
+  assert.deepEqual(r.affectedDescriptors,['registry/vault/eip712-vault-other.json','registry/vault/eip712-vault-permit.json']);
+  assert.deepEqual(r.test.expected,{intent:'Approve spending',owner:'Vault Labs',fields:[{label:'Spender',value:spender143},{label:'Amount',value:'2.5 mCLR'}]});
+  // Inserted between chain 1 and 8453 with the neighbours' multi-line layout; nothing else moved.
+  const text=fs.readFileSync(common,'utf8');
+  assert.deepEqual(read(common).context.eip712.deployments.map((x:any)=>x.chainId),[1,143,8453]);
+  const entry=(id:number)=>`        {\n          "chainId": ${id},\n          "address": "${vault}"\n        },\n`;
+  assert.equal(text,before[0].replace(entry(8453).replace('},','}'),entry(143)+entry(8453).replace('},','}')));
+  const tf=read(tests);assert.equal(tf.tests.length,2);assert.equal(tf.tests[1].description,'Approve spending - chain 143');
+  assert.deepEqual(tf.tests[1].data.domain,{name:'Vault',chainId:143,verifyingContract:vault});assert.equal(tf.tests[1].data.message.spender,spender143);
+  assert.deepEqual(Object.keys(tf.dataProvider.tokens[monadToken.toLowerCase()]),['symbol','decimals','name']);
+  assert.deepEqual(r.changed,['registry/vault/common-eip712-vault.json','registry/vault/testsv2/eip712-vault-permit.tests.json']);
+  assert.deepEqual(r.templateAddresses,[]);
+  // A second run on another chain without --set keeps the template's addresses and says so.
+  const kept=(await runAsync([...base.slice(0,6),'--chain-id','10','--no-lint','--address',vault,'--rpc-url',`${rpc}/chain10`],0)).result;
+  assert.deepEqual(kept.templateAddresses,[`spender=${recipient}`,`token=${mainnetToken}`]);assert.match(kept.note,/--set <path>=<address>/);
+  assert.deepEqual(read(common).context.eip712.deployments.map((x:any)=>x.chainId),[1,10,143,8453]);
+  assert.equal(await code(['--address',vault,'--rpc-url',rpc],2),'DEPLOYMENT_EXISTS');
+});

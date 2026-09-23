@@ -46,6 +46,16 @@ export function appendToContainer(text: string, keys: (string | number)[], entry
   const indent = lineIndent(text, lastKeyStart(text, last));
   return text.slice(0, last.end) + `,\n${indent}${reindent(entry, indent)}` + text.slice(last.end);
 }
+// Insert `entry` into the array at `keys` before element `index`, in the array's own layout.
+export function insertIntoArray(text: string, keys: (string | number)[], index: number, entry: string): string | undefined {
+  const container = spanAt(scanJson(text), keys);
+  if (!container || container.type !== 'array') return undefined;
+  const before = container.children.get(index);
+  if (!before) return appendToContainer(text, keys, entry);
+  if (!text.slice(container.start + 1, container.end - 1).includes('\n')) return text.slice(0, before.start) + `${entry}, ` + text.slice(before.start);
+  const indent = lineIndent(text, before.start);
+  return text.slice(0, before.start) + `${reindent(entry, indent)},\n${indent}` + text.slice(before.start);
+}
 function lastKeyStart(text: string, valueSpan: Span) {
   // For object members the line starts at the key; walk back to the line start from the value.
   let i = valueSpan.start; while (i > 0 && text[i - 1] !== '\n') i--; return i;

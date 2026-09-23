@@ -28,7 +28,7 @@ ERC-7730 is chain-agnostic, so this is not specific to any one chain or project.
 
 ## Beyond Claude Code
 
-The skill is a plain playbook over the `clear-signing` CLI, plus two bash scripts: `find-in-registry.sh` to search a registry clone, and `verify-address.sh` to match a live `DOMAIN_SEPARATOR()` for EIP-712 work the CLI does not cover. The logic carries over to any agent or to a human following along by hand.
+The skill is a plain playbook over the `clear-signing` CLI, plus two bash scripts: `find-in-registry.sh` to search a registry clone, and `verify-address.sh` to match a live `DOMAIN_SEPARATOR()` while authoring a new EIP-712 descriptor, which the CLI does not cover (adding a chain to an existing one goes through `registry add-deployment --rpc-url`). The logic carries over to any agent or to a human following along by hand.
 
 ## Links
 

@@ -22,19 +22,18 @@ A Node 22+ CLI, `clear-signing`, that works from a Foundry repo, an ABI file, or
 - `decisions --contract` writes the judgment slots (intent, interpolated intent, denomination, show/hide, exclude) with hints; `apply --decisions` validates and writes descriptor, `clear-signing.toml` and provenance (`human` or `llm`).
 - `fixture` encodes a call or copies a recorded broadcast transaction (`--broadcast-tx`); `preview` renders through the vendored Sourcify renderer; `test` snapshots; `review --accept` records a fingerprinted acknowledgement; `check` validates (schema, selectors, paths, renderer-supported formats, registry-prior disagreement, review freshness), all with `--contract`.
 - `export` writes `registry/<entity>/calldata-<Name>.json` + `testsv2/`, runs `erc7730 format` and `lint`, optionally both registry runner implementations (`--registry-runners`), and produces no bundle on any failure.
-- `registry add-deployment` adds a chain to an existing registry descriptor with a selector proof, a rendered test case, a minimal positional diff, lint, optional runners. `registry setup-runners` pre-builds the runners.
+- `registry add-deployment` adds a chain to an existing registry descriptor: calldata with a selector proof against the verified ABI, EIP-712 with a live `DOMAIN_SEPARATOR()` proof over `--rpc-url` (includes followed to the shared deployments file). Both render a test case, make a minimal positional diff in chain-id order, lint, optional runners. `registry setup-runners` pre-builds the runners.
 
-It never signs, sends, publishes, verifies bytecode beyond a Sourcify match, or opens PRs. Network access only at `init --address`, `registry add-deployment`, the upstream lint/format run, and the one-time runner build. The agent skill under `.claude/skills/clear-signing-helper/` drives these commands; EIP-712 still falls back to the upstream Python tool.
+It never signs, sends, publishes, verifies bytecode beyond a Sourcify match, or opens PRs. Network access only at `init --address`, `registry add-deployment` (Sourcify, or read-only RPC for EIP-712), the upstream lint/format run, and the one-time runner build. The agent skill under `.claude/skills/clear-signing-helper/` drives these commands; authoring a new EIP-712 descriptor still falls back to the upstream Python tool.
 
 **What is genuinely good and must be preserved:** fixture encoding, canonical-calldata rejection, exact expected-value generation for `testsv2`, snapshot regression in CI, the hash-pinned vendored renderer with the signed-int fix, the path/symlink/size hardening in `src/io.ts`, validator parity with merged registry descriptors (see the acceptance metric), and the refusals: no guessing, no binding on a name, no writes on validation failure.
 
 ## Next up (start here after a context reset)
 
 1. **PR reviews pending, nothing to do:** [#3003](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003) (PuddleSwap StakingRewards, tool output, CI green, bot recommendation addressed) and [#2611](https://github.com/ethereum/clear-signing-erc7730-registry/pull/2611) (Permit2 on Monad, rebased 2026-09-20, CI green). When feedback arrives, record it in `docs/DOGFOOD.md`; a merge closes item 10.
-2. **Item 14, EIP-712 `registry add-deployment`** (promoted from Later): most Monad additions to established protocols are EIP-712 (Permit2 proved it). Prove the address by matching the live `DOMAIN_SEPARATOR()` against the descriptor's domain (see `scripts/verify-address.sh` in the skill for the three domain shapes), append the deployment to the shared/common file, render a test case with the renderer's `formatTypedData`, minimal diff, lint, runners. Acceptance: #2611's change reproduced by one command.
-3. **Item 15, warning noise.** Over the merged corpus the validator emits 575 `UNDISPLAYED_ARGUMENT`, 343 `CORPUS_DISAGREEMENT`, 129 `INTENT_LENGTH` warnings. Correct, but a fresh draft will show dozens and teams will tune them out. Rank or group warnings in `check` output, and require more than one prior before `CORPUS_DISAGREEMENT` fires.
-4. **Item 13, advisory semantic verifier**, last, and only after measuring its disagreement rate on the corpus.
-5. **The test no code substitutes for:** one outside team running the skill cold on a verified contract.
+2. **Item 15, warning noise.** Over the merged corpus the validator emits 575 `UNDISPLAYED_ARGUMENT`, 343 `CORPUS_DISAGREEMENT`, 129 `INTENT_LENGTH` warnings. Correct, but a fresh draft will show dozens and teams will tune them out. Rank or group warnings in `check` output, and require more than one prior before `CORPUS_DISAGREEMENT` fires.
+3. **Item 13, advisory semantic verifier**, last, and only after measuring its disagreement rate on the corpus.
+4. **The test no code substitutes for:** one outside team running the skill cold on a verified contract.
 
 ## Verified gaps (2026-09-19, tested against puddleswap)
 
@@ -109,7 +108,7 @@ The build already requests `devdoc` and `userdoc` and nothing reads them; `broad
 
 ## Roadmap, phase 2
 
-Phase 1 (items 1-6) shipped as 0.3.0-preview.1 on 2026-09-19. Items 7-12 and the validator parity pass are on `main`, unreleased; bump to 0.4.0-preview.1 before the next publish (engine unchanged since subset 3, so no forced `upgrade`). Phase 2 is ordered by what a Monad team actually needs first.
+Phase 1 (items 1-6) shipped as 0.3.0-preview.1 on 2026-09-19. Items 7-12, 14 and the validator parity pass are on `main`, unreleased; bump to 0.4.0-preview.1 before the next publish (engine unchanged since subset 3, so no forced `upgrade`). Phase 2 is ordered by what a Monad team actually needs first.
 
 ### 7. Add a chain to an existing registry descriptor — `done` (2026-09-19)
 
@@ -143,9 +142,16 @@ Upstream lint and the schemas run today; the Sourcify and Rust runners do not. T
 - Acceptance: a merged registry PR whose files came out of `export` unchanged, or a written list of what the maintainers asked to change.
 - Progress (2026-09-19): StakingRewards, WMON and StableFaucet verified on Sourcify from the repo build; router and TokenRegistry source no longer match their deployments (router: pair init code hash constant; details in `docs/DOGFOOD.md`). StakingRewards taken from `init --address` to an exported bundle that passes format, lint, both schemas and both runners; staged as branch `puddleswap-staking-rewards` on the owner's fork and opened as [registry PR #3003](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003) with the exported files unchanged. Export now runs `erc7730 format` so the registry's format bot leaves the PR alone. Human steps recorded in `docs/DOGFOOD.md`. 2026-09-19: the registry's advisory bot asked for `interpolatedIntent`; support was added, the branch regenerated from the decisions file, all 13 checks green again and the bot withdrew. 2026-09-20: #2611 (Permit2, EIP-712, manual) rebased and green; its Monad address proven by `DOMAIN_SEPARATOR()`. 2026-09-22: validator parity pass (see acceptance metric). Maintainer review of both PRs still pending.
 
+### 14. EIP-712 `registry add-deployment` — `done` (2026-09-23)
+
+Most Monad additions to established protocols are EIP-712 (Permit2 proved it); item 7 covered calldata only.
+
+- Acceptance: #2611's change reproduced by one command.
+- Result: `add-deployment` dispatches on `eip712-*.json` (`addTypedDataDeployment` in `src/registry-edit.ts`). It follows `includes` to the file holding `context.eip712.deployments` and merges the chain with the renderer's `mergeDescriptors`. The proof takes `--rpc-url` (required) and checks `eth_chainId` equals `--chain-id`, `eth_getCode` is non-empty, and `DOMAIN_SEPARATOR()` equals a candidate domain for that chain and address. Candidates come only from registry files: the descriptor's `context.eip712.domain`, each existing test's `EIP712Domain` type and domain, and the 2-field shape; shapes that do not bind chainId and verifyingContract are skipped. Failures are `RPC_REQUIRED`, `RPC_CHAIN_MISMATCH`, `NO_CODE`, `DOMAIN_UNVERIFIABLE` and `DOMAIN_MISMATCH` (lists every candidate hash), and none of them writes anything. An existing typed-data test is retargeted (domain chainId and verifyingContract). `--set <path>=<value>` overrides existing message leaves only (a typo is refused) and `--template` picks the case. It renders through `formatTypedData` with a zero-address account and fails on any top-level warning, as the registry's Sourcify runner does. `templateAddresses` lists message addresses still copied from the template's chain, since `dataProvider` tokens are not chain-keyed. Deployments are now inserted in chain-id order when the list is sorted (`insertIntoArray` in `src/json-edit.ts`; calldata benefits too), and a copied multi-line neighbour keeps its indentation. Lint runs on every descriptor whose include chain reaches the edited file. `--token` entries are written in the schema's key order (symbol, decimals, name). Live: against registry `8f56072` with `https://rpc.monad.xyz`, the #2611 command produced the same four-line common-file hunk and a testsv2 file byte-identical to the PR head. Lint showed 0 errors across the 5 affected descriptors (8 warnings, all in the UniswapX descriptors this edit does not change), and both runners passed 6/6. Limit: a matching domain proves the contract signs under that domain, not that its bytecode matches the other deployments; the result says so in `verification.caveat`.
+
 ### Later
 
-- EIP-712 authoring (104 descriptors in the registry corpus): a separate decoding and review model. The narrower `registry add-deployment` for `eip712-*.json` is promoted to item 14 in Next up.
+- EIP-712 authoring (104 descriptors in the registry corpus): a separate decoding and review model. Adding a chain to an existing EIP-712 descriptor is done (item 14).
 - Physical-device acceptance and independent human review, still open from the 0.2.0 tracker.
 - Persisting provenance into the review record so `review --accept` acknowledges sources explicitly.
 
@@ -210,7 +216,7 @@ https://portdeveloper.github.io/clear-signing-helper/ is built from `site/index.
 
 ## Decisions
 
-- Network access is limited to explicit, user-requested moments: `init --address` and `registry add-deployment` (Sourcify, then Etherscan with a key), upstream `erc7730 lint` during export or add-deployment (via `uvx`), and the one-time clone-and-build of the registry runners behind `--registry-runners` / `--runners` / `registry setup-runners`. Everything else stays offline. Record any new exception here.
+- Network access is limited to explicit, user-requested moments: `init --address` and `registry add-deployment` (Sourcify, then Etherscan with a key; for EIP-712 descriptors, read-only `eth_chainId`, `eth_getCode` and `eth_call` against the `--rpc-url` the user names, never a built-in endpoint), upstream `erc7730 lint` during export or add-deployment (via `uvx`), and the one-time clone-and-build of the registry runners behind `--registry-runners` / `--runners` / `registry setup-runners`. Everything else stays offline. Record any new exception here.
 
 - Calldata only for now. EIP-712 stays in the agent skill until the CLI path is solid.
 - Portability findings remain warnings by default and hard failures only under `--strict-portability`. They are evidence-backed and should not be removed, but they must not block ordinary authoring.

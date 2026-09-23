@@ -45,6 +45,17 @@ clear-signing registry add-deployment --registry registry-clone \
 
 The CLI fetches the verified ABI at the address (Sourcify, then Etherscan with `ETHERSCAN_API_KEY`), proves every function the descriptor formats exists there, appends the deployment, renders a test case for the new chain from an existing one, runs lint, and prints the `git`/`gh` commands. It refuses and changes nothing if the address is a different contract, if the address is unverified, or if a test cannot be rendered; read the reason. Token symbols differ per chain, so when it asks for `--token`, look the token up and pass it. `--no-test` adds the deployment alone when no existing case is usable. Then go to step 5.
 
+If an `eip712-*.json` matched (Permit2, UniswapX, most permit-style protocols), the same command takes an RPC endpoint for the new chain instead of a verified ABI:
+
+```sh
+clear-signing registry add-deployment --registry registry-clone \
+  --descriptor registry/<entity>/eip712-<Name>.json \
+  --chain-id <id> --address <addr> --rpc-url <endpoint for that chain> \
+  [--set <message.path>=<value>] [--token <tokenAddr>=<SYMBOL>:<decimals>] [--template "<existing test description>"] [--description "<new test description>"]
+```
+
+It follows `includes` to the file that holds the deployments (often a shared `common-*.json`), checks the endpoint serves that chain and there is code at the address, and requires the live `DOMAIN_SEPARATOR()` to equal a domain the descriptor or its existing tests record. Then it inserts the deployment in chain-id order, retargets an existing test case at the new chain and address, renders it the way the registry's runner does, and lints every descriptor that includes the edited file. Read `templateAddresses` in the result: those are message addresses (tokens, spenders) still copied from the template's chain. Point them at this chain's contracts with `--set details.token=0x… --set spender=0x…` and give the token with `--token`. Otherwise the test shows a mainnet address on the new chain. The proof shows the contract signs under this domain; it does not compare bytecode, so say in the PR how you know the address is the canonical deployment.
+
 Only author a new descriptor if nothing matched.
 
 ## 2. Generate the draft
@@ -118,7 +129,7 @@ Every function you kept needs at least one passing fixture. Fixture metadata (`t
 
 ## EIP-712 signed messages
 
-The CLI does not author EIP-712 descriptors. Follow https://clearsigning.org/build/ by hand: read the exact domain from the contract, confirm the address with `scripts/verify-address.sh <chainId> <address> <rpcUrl> [name] [version]` (matches the live `DOMAIN_SEPARATOR()` against the 2-, 3- and 4-field domain shapes), write `eip712-<Name>.json` with the `$schema` of the folder you write into, add a `testsv2` case, and run `uvx erc7730 lint <file>`. Do not add an `excluded` key; it is a v1 concept the v2 schema rejects.
+The CLI does not author new EIP-712 descriptors (adding a chain to an existing one is step 1). Follow https://clearsigning.org/build/ by hand: read the exact domain from the contract, confirm the address with `scripts/verify-address.sh <chainId> <address> <rpcUrl> [name] [version]` (matches the live `DOMAIN_SEPARATOR()` against the 2-, 3- and 4-field domain shapes), write `eip712-<Name>.json` with the `$schema` of the folder you write into, add a `testsv2` case, and run `uvx erc7730 lint <file>`. Do not add an `excluded` key; it is a v1 concept the v2 schema rejects.
 
 ## Quality bar
 

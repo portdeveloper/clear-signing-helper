@@ -14,6 +14,10 @@ export function testCase(description: string, f: Fixture, r: Rendering, owner: s
   const tx=Transaction.from({type:2,chainId:f.chainId,to:f.to,data:f.data,value:BigInt(f.value),nonce:0,gasLimit:1_000_000n,maxFeePerGas:0,maxPriorityFeePerGas:0});
   return {description,rawTx:tx.unsignedSerialized,...(f.from?{from:f.from}:{}),expected:{intent:r.intent,...(r.interpolatedIntent!==undefined?{interpolatedIntent:r.interpolatedIntent}:{}),owner,fields:flattenFields(r.fields)}};
 }
+// One registry v2 EIP-712 test case: the typed data plus the fields the renderer produced.
+export function typedDataTestCase(description: string, data: unknown, model: {intent: string; interpolatedIntent?: string; fields?: any[]}, owner: string) {
+  return {description,data,expected:{intent:model.intent,...(model.interpolatedIntent!==undefined?{interpolatedIntent:model.interpolatedIntent}:{}),owner,fields:flattenFields(model.fields??[])}};
+}
 export function registryTests(descriptorName: string, descriptor: Descriptor, fixtures: {name:string;fixture:Fixture;rendering:Rendering}[]) {
   const tokens: Record<string,unknown>={}, addressNames: Record<string,string>={}, ensNames: Record<string,string>={}, nftCollectionNames: Record<string,string>={}, blockTimestamps: Record<string,number>={};
   function merge(target: Record<string,unknown>, values: Record<string,unknown>) {

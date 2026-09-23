@@ -88,14 +88,17 @@ registry.command('add-deployment').description('Add a verified deployment (and a
   .requiredOption('--descriptor <path>','Descriptor path inside the clone, e.g. registry/uniswap/calldata-UniswapV3Router02.json')
   .requiredOption('--chain-id <number>','Chain ID of the new deployment')
   .requiredOption('--address <address>','Deployed address on that chain (a verified proxy is followed to its implementation)')
-  .option('--abi <file>','Trust this ABI file instead of fetching the verified one (recorded as unverified)')
+  .option('--abi <file>','Calldata: trust this ABI file instead of fetching the verified one (recorded as unverified)')
+  .option('--rpc-url <url>','EIP-712: read-only endpoint for the new chain; the address is proven by its DOMAIN_SEPARATOR()')
+  .option('--template <description>','EIP-712: retarget this existing test case instead of the first one that renders')
+  .option('--set <path=value>','EIP-712: override an existing message field in the retargeted test, e.g. spender=0x… (repeatable)',select,[])
   .option('--token <address=SYMBOL:decimals>','Token metadata for the new chain, used by the rendered test (repeatable)',select,[])
   .option('--address-name <address=Name>','Local address name for the new chain, used by the rendered test (repeatable)',select,[])
   .option('--description <text>','Description for the new test case')
   .option('--no-test','Add the deployment only; do not touch testsv2')
   .option('--no-lint','Skip running the pinned upstream erc7730 lint')
   .option('--runners','Also run the registry CI\'s Sourcify and Rust implementations on the updated test file (pins read from the clone)')
-  .action(async options=>output(await addDeployment({registry:options.registry,descriptor:options.descriptor,chainId:Number(options.chainId),address:options.address,abiFile:options.abi,tokens:options.token,addressNames:options.addressName,description:options.description,test:options.test!==false,lint:options.lint!==false,runners:options.runners===true,log:progress})));
+  .action(async options=>output(await addDeployment({registry:options.registry,descriptor:options.descriptor,chainId:Number(options.chainId),address:options.address,abiFile:options.abi,rpcUrl:options.rpcUrl,template:options.template,set:options.set,tokens:options.token,addressNames:options.addressName,description:options.description,test:options.test!==false,lint:options.lint!==false,runners:options.runners===true,log:progress})));
 registry.command('setup-runners').description('Clone and build the registry CI\'s Sourcify and Rust implementations once, for later --registry-runners / --runners use')
   .option('--registry <directory>','Read runner revisions from this registry clone\'s CI definition')
   .action(options=>{const tc=setupRunners(options.registry?pinsFromRegistry(options.registry):DEFAULT_PINS,progress);output({runners:tc.dir,sourcify:{cli:tc.sourcifyCli,ref:tc.pins.sourcify.ref},rust:{binary:tc.rustBinary,ref:tc.pins.rust.ref}});});

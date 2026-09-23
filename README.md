@@ -186,6 +186,19 @@ clear-signing registry add-deployment \
 
 The address is proven to be the same contract before anything changes: its verified ABI is fetched from Sourcify (Etherscan V2 with `ETHERSCAN_API_KEY` as fallback, a verified proxy followed to its implementation) and every function the descriptor formats must exist in it by selector. The deployment is appended, and a test case for the new chain is rendered from an existing case's calldata through the pinned renderer, so expected values are computed rather than copied. Token symbols and address names differ between chains and are never guessed; supply them with `--token <address>=<SYMBOL>:<decimals>` and `--address-name <address>=<Name>`, or pass `--no-test` to add the deployment alone. Edits are inserted into the existing file text, copying the formatting of the neighbouring entry, so the pull request diff is the added lines and nothing else. If no existing test case can be rendered on the new chain, the command says why for each one and leaves both files untouched. Upstream lint runs on the result, and the exact `git` and `gh` commands are printed; the tool never commits or opens the pull request.
 
+EIP-712 descriptors have no ABI to check, so the proof is the contract's own domain separator, read through an RPC endpoint you name:
+
+```sh
+clear-signing registry add-deployment \
+  --registry clear-signing-erc7730-registry \
+  --descriptor registry/uniswap/eip712-uniswap-permit2.json \
+  --chain-id 143 --address 0x000000000022D473030F116dDEE9F6B43aC78BA3 --rpc-url https://rpc.monad.xyz \
+  --set details.token=0x754704Bc059F8C67012fEd69BC8A327a5aafb603 --set spender=0x1b81D678ffb9C0263b24A97847620C99d213eB14 \
+  --token 0x754704Bc059F8C67012fEd69BC8A327a5aafb603=USDC:6
+```
+
+The tool follows `includes` to the file that lists the deployments, checks that the endpoint serves `--chain-id` and that there is code at the address, and requires `DOMAIN_SEPARATOR()` to equal the descriptor's domain (or one of its existing tests' domains) for that chain and address. It then inserts the deployment in chain-id order and retargets an existing test case at the new chain. `--set <path>=<value>` overrides an existing message field, and `--template` picks the case. The case is rendered through the pinned renderer the way the registry's Sourcify runner does, and upstream lint runs on every descriptor that includes the edited file. Message addresses still copied from the template are listed as `templateAddresses`, because test token metadata is not keyed by chain. The only RPC calls are `eth_chainId`, `eth_getCode` and `eth_call`. A matching domain shows the contract signs under that domain; it is not a bytecode comparison. The command above reproduces registry PR #2611 byte for byte.
+
 ## Decisions: the slots only judgment can fill
 
 Everything the scaffold cannot prove is exposed as one editable file per contract, so a person or an agent fills it without touching descriptor JSON:
@@ -324,7 +337,7 @@ Human previews escape terminal controls and bidirectional overrides as visible t
 
 Missing token metadata is visible as warnings and raw fallback in preview, and blocks test acceptance/export. Empty-array notices and unnamed `addressName` values are informational: the address renders in full, as wallets show it, and the warning remains in expectations. Dates beyond the renderer's supported range fail instead of being silently accepted. Registry test runners use their own chain tables; an `amount` field on a chain they do not know will render raw there.
 
-Unsupported features fail explicitly: EIP-712, nested transaction decoding, external includes/references, display definitions, constant-value fields, encryption, interpolated intents, factory bindings, and automatic registry access. Apart from `init --address`, `registry add-deployment`, the upstream lint run on export, and the one-time runner build behind `--registry-runners`, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
+Unsupported features fail explicitly: EIP-712 authoring (adding a chain to an existing EIP-712 descriptor is supported), nested transaction decoding, external includes/references, display definitions, constant-value fields, encryption, interpolated intents, factory bindings, and automatic registry access. Apart from `init --address`, `registry add-deployment` (including the read-only RPC calls behind `--rpc-url`), the upstream lint run on export, and the one-time runner build behind `--registry-runners`, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
 
 ## Use with an agent
 

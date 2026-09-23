@@ -1,9 +1,9 @@
 import { getAddress, isAddress } from 'ethers';
-import { fail } from './io.js';
+import { fail, Failure } from './io.js';
 
 // The one place this tool talks to the network, and only when the user asks for a verified ABI by
-// address. Sourcify first: a match there means the on-chain bytecode was compiled from the source
-// behind the ABI. Etherscan V2 is the fallback when an API key is present.
+// address or names an RPC endpoint. Sourcify first: a match there means the on-chain bytecode was
+// compiled from the source behind the ABI. Etherscan V2 is the fallback when an API key is present.
 export interface VerifiedContract {
   name: string; abi: any[]; userdoc?: any; devdoc?: any;
   source: 'sourcify' | 'etherscan'; url: string; match?: string; fetchedAt: string;
@@ -61,4 +61,23 @@ export async function fetchVerifiedContract(chainId: number, address: string): P
   const found = await fromSourcify(chainId, checksummed) ?? await fromEtherscan(chainId, checksummed);
   if (!found) fail('SOURCE_UNVERIFIED', `${chainId}:${checksummed} is not verified on Sourcify${process.env.ETHERSCAN_API_KEY ? ' or Etherscan' : ', and ETHERSCAN_API_KEY is not set for the Etherscan fallback'}. Verify the contract on https://sourcify.dev or pass --abi <file> with the ABI you trust.`, 2);
   return found;
+}
+
+// A read-only JSON-RPC call against an endpoint the user named. Never signs or sends.
+export async function rpcCall(url: string, method: 'eth_chainId' | 'eth_getCode' | 'eth_call', params: unknown[], timeoutMs = 30_000): Promise<string> {
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs);
+  const shown = url.replace(/\/\/[^/]*@/, '//***@').replace(/([?&][^=]*key[^=]*=)[^&]*/gi, '$1***');
+  try {
+    const response = await fetch(url, {method: 'POST', signal: controller.signal, headers: {'content-type': 'application/json', accept: 'application/json'}, body: JSON.stringify({jsonrpc: '2.0', id: 1, method, params})});
+    const text = await response.text();
+    if (text.length > 1024 * 1024) fail('FETCH_TOO_LARGE', `${shown} returned more than 1 MiB for ${method}.`, 2);
+    let body: any = null; try { body = JSON.parse(text); } catch { body = null; }
+    if (body?.error) fail('RPC_ERROR', `${method} on ${shown}: ${String(body.error.message ?? JSON.stringify(body.error)).slice(0, 300)}`, 1);
+    if (response.status !== 200 || typeof body?.result !== 'string' || !/^0x[0-9a-fA-F]*$/.test(body.result)) fail('RPC_FAILED', `${method} on ${shown} returned HTTP ${response.status} without a hex result.`, 2);
+    return body.result;
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') fail('FETCH_TIMEOUT', `${shown} did not answer ${method} within ${timeoutMs / 1000}s.`, 2);
+    if (e instanceof Failure) throw e;
+    fail('FETCH_FAILED', `${shown}: ${(e as Error).message}`, 2);
+  } finally { clearTimeout(timer); }
 }
