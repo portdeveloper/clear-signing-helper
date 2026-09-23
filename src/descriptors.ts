@@ -131,21 +131,24 @@ export interface Provenance {signature: string; path?: string; source: 'natspec'
 const firstSentence = (text: string) => text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, '').trim();
 // The registry linter warns above 30 characters because Ledger devices truncate longer intents.
 export const MAX_INTENT = 30, MAX_LABEL = 32;
-const ERC20_CONVENTIONS: Record<string, (params: string[]) => {intent: string; interpolatedIntent?: string; fields: Field[]}> = {
-  'approve(address,uint256)': ([spender, amount]) => ({intent: 'Approve', interpolatedIntent: `Allow {${spender}} to spend {${amount}}`, fields: [
+// interpolatedIntent lists phrasings in order of preference, the registry's own first; the scaffold takes the
+// first that fits MAX_INTENT with the contract's parameter names, or none (see scaffoldFormatWithProvenance).
+type Convention = (params: string[]) => {intent: string; interpolatedIntent: string[]; fields: Field[]};
+const ERC20_CONVENTIONS: Record<string, Convention> = {
+  'approve(address,uint256)': ([spender, amount]) => ({intent: 'Approve', interpolatedIntent: [`Allow {${spender}} to spend {${amount}}`, `Let {${spender}} spend {${amount}}`], fields: [
     {path: spender, label: 'Spender', format: 'addressName', params: {types: ['eoa', 'contract']}},
     {path: amount, label: 'Amount', format: 'tokenAmount', params: {tokenPath: '@.to', threshold: '0x8000000000000000000000000000000000000000000000000000000000000000', message: 'Unlimited'}}]}),
-  'transfer(address,uint256)': ([to, amount]) => ({intent: 'Send', interpolatedIntent: `Send {${amount}} to {${to}}`, fields: [
+  'transfer(address,uint256)': ([to, amount]) => ({intent: 'Send', interpolatedIntent: [`Send {${amount}} to {${to}}`], fields: [
     {path: to, label: 'To', format: 'addressName', params: {types: ['eoa', 'wallet']}},
     {path: amount, label: 'Amount', format: 'tokenAmount', params: {tokenPath: '@.to'}}]}),
-  'transferFrom(address,address,uint256)': ([from, to, amount]) => ({intent: 'Send from', interpolatedIntent: `Send {${amount}} from {${from}} to {${to}}`, fields: [
+  'transferFrom(address,address,uint256)': ([from, to, amount]) => ({intent: 'Send from', interpolatedIntent: [`Send {${amount}} from {${from}} to {${to}}`, `{${from}} sends {${amount}} to {${to}}`], fields: [
     {path: from, label: 'From', format: 'addressName', params: {types: ['eoa', 'wallet']}},
     {path: to, label: 'To', format: 'addressName', params: {types: ['eoa', 'wallet']}},
     {path: amount, label: 'Amount', format: 'tokenAmount', params: {tokenPath: '@.to'}}]})
 };
-const WETH_CONVENTIONS: Record<string, (params: string[]) => {intent: string; interpolatedIntent?: string; fields: Field[]}> = {
-  'deposit()': () => ({intent: 'Wrap', interpolatedIntent: 'Wrap {@.value}', fields: [{path: '@.value', label: 'Amount', format: 'amount'}]}),
-  'withdraw(uint256)': ([amount]) => ({intent: 'Unwrap', interpolatedIntent: `Unwrap {${amount}}`, fields: [{path: amount, label: 'Amount', format: 'tokenAmount', params: {tokenPath: '@.to'}}]})
+const WETH_CONVENTIONS: Record<string, Convention> = {
+  'deposit()': () => ({intent: 'Wrap', interpolatedIntent: ['Wrap {@.value}'], fields: [{path: '@.value', label: 'Amount', format: 'amount'}]}),
+  'withdraw(uint256)': ([amount]) => ({intent: 'Unwrap', interpolatedIntent: [`Unwrap {${amount}}`], fields: [{path: amount, label: 'Amount', format: 'tokenAmount', params: {tokenPath: '@.to'}}]})
 };
 export function scaffoldFormat(f: FunctionFragment, evidence?: Evidence, enumKeys?: Map<string, string>) {
   return scaffoldFormatWithProvenance(f, evidence, enumKeys).format;
@@ -177,9 +180,11 @@ export function scaffoldFormatWithProvenance(f: FunctionFragment, evidence?: Evi
   const paramNames = parsed.inputs.map((p, i) => p.name || `arg${i}`);
   const convention = evidence?.conventions.weth && WETH_CONVENTIONS[sig] ? {kind: 'WETH', make: WETH_CONVENTIONS[sig]} : evidence?.conventions.erc20 && ERC20_CONVENTIONS[sig] ? {kind: 'ERC-20', make: ERC20_CONVENTIONS[sig]} : undefined;
   if (convention) {
-    const format = convention.make(paramNames);
+    const {interpolatedIntent: phrasings, ...rest} = convention.make(paramNames);
+    const interpolatedIntent = phrasings.find(p => p.length <= MAX_INTENT);
     provenance.push({signature: sig, source: 'convention', detail: `${convention.kind} registry convention applied to intent and fields; the contract itself is the token`});
-    return {format, provenance};
+    if (!interpolatedIntent) provenance.push({signature: sig, source: 'convention', detail: `interpolatedIntent not set: every phrasing is longer than ${MAX_INTENT} characters with these parameter names (${phrasings.join('; ')})`});
+    return {format: {...rest, ...(interpolatedIntent ? {interpolatedIntent} : {})}, provenance};
   }
   let intent = humanize(f.name);
   const notice = evidence?.notices[sig] ? firstSentence(evidence.notices[sig]) : '';
@@ -235,11 +240,25 @@ export function reviewQuestions(c: Contract) {
   ]}));
 }
 export const errorsOf = (list: Diagnostic[]) => list.filter(d => d.severity !== 'warning');
+// Warnings in the order check prints them: what the signer sees wrong first, then what registry lint
+// reports, then advice. Each code carries its own remedy; a code missing here sorts last.
+export const WARNING_REMEDY: Record<string, string> = {
+  UNDISPLAYED_ARGUMENT: 'Display the argument, or record a reason under hidden in clear-signing.toml if leaving it out is deliberate.',
+  TOKEN_MAPPING: 'Set token or tokenPath so the amount renders with its symbol and decimals.',
+  FORMAT_TYPE: 'Use a format that matches the argument type, or raw.',
+  INVALID_INTERPOLATION: 'Reference only displayed fields in interpolatedIntent.',
+  MISSING_INTENT: 'Add an intent.',
+  INTENT_LENGTH: `Shorten it to ${MAX_INTENT} characters or fewer; the registry linter warns above that and Ledger devices truncate.`,
+  MISSING_METADATA: 'Set metadata.owner to the project owner.',
+  INVALID_BINDING: 'Remove the duplicate deployment.',
+  CORPUS_DISAGREEMENT: 'Compare with the registry priors init lists; keep the difference if it is deliberate.'
+};
+export const WARNING_RANK = Object.keys(WARNING_REMEDY);
 export const warningsOf = (list: Diagnostic[]) => list.filter(d => d.severity === 'warning');
 // Returns errors and warnings together; callers separate them with errorsOf/warningsOf.
 export function validateDescriptor(d: Descriptor, c: Contract, selection: Selection): Diagnostic[] {
   const errors: Diagnostic[] = [];
-  const add = (code: string, message: string, sig?: string, severity?: 'warning') => errors.push({code, message, file: selection.descriptor, signature: sig, remedy: severity ? 'Display the argument, or record a reason under hidden in clear-signing.toml if leaving it out is deliberate.' : 'Edit the descriptor or record an explicit exclusion in clear-signing.toml, then run check.', ...(severity ? {severity} : {})});
+  const add = (code: string, message: string, sig?: string, severity?: 'warning') => errors.push({code, message, file: selection.descriptor, signature: sig, remedy: severity ? WARNING_REMEDY[code] ?? 'Review it; warnings do not block export.' : 'Edit the descriptor or record an explicit exclusion in clear-signing.toml, then run check.', ...(severity ? {severity} : {})});
   try { assertTreeBudget(d); } catch (e) { if (e instanceof Failure) { add(e.code, e.message); return errors; } throw e; }
   if (!schemaValidate(d)) {
     for (const error of (schemaValidate.errors ?? []).slice(0, 12)) add('SCHEMA_INVALID', `${error.instancePath || '/'} ${error.message}`);
@@ -291,7 +310,9 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         const leafMap = new Map(leaves(f.inputs).map(x => [x.path, x.type]));
         // A trailing byte slice such as .[-20:] or .[0:4] addresses part of a leaf; the renderer slices the bytes.
         const typeOf = (p: string) => leafMap.get(leafKey(p)) ?? TRANSACTION_FIELDS[p];
-        const seen = new Set<string>(), displayedLeaves = new Set<string>(), declaredHidden = new Set<string>();
+        // referenced: leaves a displayed field reads through a parameter (the token of a tokenAmount, an NFT
+        // collection, a chain id). The registry linter counts them as displayed; so does UNDISPLAYED_ARGUMENT.
+        const seen = new Set<string>(), displayedLeaves = new Set<string>(), declaredHidden = new Set<string>(), referenced = new Set<string>();
         const resolved = resolveFields(spec.fields, definitions, group => {
           assertKeys(group, ['path','label','fields','iteration','$id'], `group in ${sig}`);
           if (group.iteration && group.iteration !== 'sequential') fail('UNSUPPORTED_FEATURE', 'Only sequential group iteration is supported.');
@@ -320,6 +341,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           seen.add(field.path); displayedLeaves.add(leaf!);
           if (field.format === undefined) fail('UNSUPPORTED_FORMAT', `${field.path} has no format; the pinned renderer needs one (use raw).`);
           const params = field.params ?? {};
+          for (const k of ['token', 'tokenPath', 'collection', 'collectionPath', 'chainIdPath']) { const v = params[k]; if (typeof v === 'string' && !v.startsWith('@.') && !v.startsWith('$.') && !isAddress(v)) coveredLeaves(leafKey(v), leafMap.keys()).forEach(l => referenced.add(l)); }
           if (field.format in UNSUPPORTED_FORMAT_REASON) fail('UNSUPPORTED_FORMAT', `${field.format} on ${field.path}: ${UNSUPPORTED_FORMAT_REASON[field.format]}.`);
           if (!(SUPPORTED_FORMATS as readonly string[]).includes(field.format)) fail('UNSUPPORTED_FORMAT', `${field.format} is not a format the pinned renderer implements.`);
           // The renderer reads addresses out of address, bytes and integer values; other mismatches render raw with a warning.
@@ -358,7 +380,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           else if (displayedLeaves.has(leaf)) add('HIDDEN_AND_DISPLAYED', `${sig} displays ${leaf} but also lists it under hidden.`, key);
           if (typeof reason !== 'string' || !reason.trim()) add('HIDDEN_REASON', `${sig} hidden path ${leaf} needs a reason.`, key);
         }
-        for (const leaf of leafMap.keys()) if (!displayedLeaves.has(leaf) && !hiddenHere[leaf] && !declaredHidden.has(leaf)) add('UNDISPLAYED_ARGUMENT', `${sig} does not display ${leaf}. Signers will not see this argument.`, key, 'warning');
+        for (const leaf of leafMap.keys()) if (!displayedLeaves.has(leaf) && !referenced.has(leaf) && !hiddenHere[leaf] && !declaredHidden.has(leaf)) add('UNDISPLAYED_ARGUMENT', `${sig} does not display ${leaf}. Signers will not see this argument.`, key, 'warning');
         if (spec.interpolatedIntent !== undefined) {
           if (typeof spec.interpolatedIntent !== 'string' || !spec.interpolatedIntent.trim()) fail('INVALID_INTERPOLATION', `${sig} interpolatedIntent must be a nonempty string.`);
           // The registry linter applies its 30-character rule to the template text as well.
@@ -369,7 +391,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
             if (!seen.has(target) && !seen.has(normalizePath(target)) && !TRANSACTION_FIELDS[target]) add('INVALID_INTERPOLATION', `${sig} interpolatedIntent references {${ph}}, which is not a displayed field; the renderer will fall back to the plain intent.`, key, 'warning');
           }
         }
-        for (const dis of disagreements(key, spec.fields, definitions)) add('CORPUS_DISAGREEMENT', `${sig} shows ${dis.path} as ${dis.ours}, but all ${dis.among} registry format(s) for this selector have it ${dis.prior}. See the priors listed by init, or accept the difference.`, key, 'warning');
+        for (const dis of disagreements(key, spec.fields, definitions)) add('CORPUS_DISAGREEMENT', `${sig} shows ${dis.path} as ${dis.ours}, but all ${dis.among} registry format(s) for this selector, from ${dis.entities} entities, have it ${dis.prior}. See the priors listed by init, or accept the difference.`, key, 'warning');
         if (actual.stateMutability === 'payable' && !seen.has('@.value')) fail('UNDISPLAYED_NATIVE_VALUE', `${sig} can transfer native currency and must display @.value.`);
       } catch(e) { if (e instanceof Failure) add(e.code, e.message, key); else throw e; }
     }

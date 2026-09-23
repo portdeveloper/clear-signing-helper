@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Interface, FunctionFragment } from 'ethers';
 import { priorsFor, leafViews, disagreements, summarizePrior, PRIORS_META } from '../src/priors.js';
-import { scaffold, validateDescriptor, warningsOf } from '../src/descriptors.js';
+import { scaffold, scaffoldFormatWithProvenance, validateDescriptor, warningsOf } from '../src/descriptors.js';
 import type { Contract } from '../src/foundry.js';
 
 function contract(signature:string):Contract {
@@ -36,4 +36,27 @@ test('a selector the registry has never described produces no prior and no warni
   const c=contract('frobnicate(uint256 widgets,address who)');
   const d=scaffold(c,'Example');
   assert.deepEqual(disagreements('frobnicate(uint256 widgets,address who)',d.display.formats['frobnicate(uint256 widgets,address who)'].fields),[]);
+});
+test('one entity\'s prior is a hint, not a warning: disagreement needs agreement across projects',()=>{
+  // mint(address,uint256) is described by a single registry entity, for an unrelated contract.
+  const mint=priorsFor('0x40c10f19');
+  assert.ok(mint.length>=1&&new Set(mint.map(p=>p.entity)).size===1,JSON.stringify(mint.map(p=>p.entity)));
+  const c=contract('mint(address to,uint256 amount)'),d=scaffold(c,'Example'),key='mint(address to,uint256 amount)';
+  assert.deepEqual(disagreements(key,d.display.formats[key].fields),[]);
+  assert.ok(!warningsOf(validateDescriptor(d,c,{id:c.id,descriptor:'t.json',exclusions:{}})).some(x=>x.code==='CORPUS_DISAGREEMENT'));
+});
+test('ERC-20 conventions never scaffold an interpolatedIntent their own check flags as too long',()=>{
+  const evidence={notices:{},paramDocs:{},enums:{},constants:{},conventions:{erc20:true,weth:false}};
+  const draft=(sig:string):{format:any;provenance:{detail:string}[]}=>scaffoldFormatWithProvenance(FunctionFragment.from(`function ${sig}`),evidence);
+  // The registry's phrasing when it fits, a shorter one when it does not, none when nothing fits.
+  assert.equal(draft('approve(address guy,uint256 wad)').format.interpolatedIntent,'Allow {guy} to spend {wad}');
+  assert.equal(draft('approve(address spender,uint256 value)').format.interpolatedIntent,'Let {spender} spend {value}');
+  assert.equal(draft('transferFrom(address from,address to,uint256 value)').format.interpolatedIntent,'{from} sends {value} to {to}');
+  const long=draft('transferFrom(address sender,address recipient,uint256 amount)');
+  assert.equal(long.format.interpolatedIntent,undefined);
+  assert.ok(long.provenance.some(p=>/interpolatedIntent not set/.test(p.detail)),JSON.stringify(long.provenance));
+  for(const sig of ['approve(address spender,uint256 value)','transferFrom(address from,address to,uint256 value)','transfer(address to,uint256 value)']){
+    const c=contract(sig),d=scaffold(c,'Example');d.display.formats={[sig]:draft(sig).format};
+    assert.ok(!warningsOf(validateDescriptor(d,c,{id:c.id,descriptor:'t.json',exclusions:{}})).some(x=>x.code==='INTENT_LENGTH'),sig);
+  }
 });

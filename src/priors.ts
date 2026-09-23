@@ -29,17 +29,21 @@ export function summarizePrior(p: Prior): string {
   const parts = views ? views.map(v => `${v.path.split('.').pop()}=${v.kind === 'hidden' ? 'hidden' : v.format}${v.params && 'tokenPath' in v.params ? `(${v.params.tokenPath})` : v.params && 'token' in v.params ? '(fixed token)' : ''}`) : [];
   return `${p.entity}: intent "${p.intent ?? ''}"${parts.length ? `; ${parts.join(', ')}` : ''}`;
 }
-// Where every prior agrees on a leaf's kind and the draft differs, report it. Returns one line per disagreeing leaf.
-export function disagreements(key: string, fields: (Field | Group)[], definitions: Record<string, Field> = {}): {path: string; ours: LeafKind; prior: LeafKind; among: number}[] {
+export const MIN_PRIOR_ENTITIES = 2;
+// Where every prior, from at least MIN_PRIOR_ENTITIES entities, agrees on a leaf's kind and the draft differs, report it. Returns one line per disagreeing leaf.
+export function disagreements(key: string, fields: (Field | Group)[], definitions: Record<string, Field> = {}): {path: string; ours: LeafKind; prior: LeafKind; among: number; entities: number}[] {
   let selector: string; try { selector = parseSignature(key).selector.toLowerCase(); } catch { return []; }
   const ours = leafViews(key, fields, definitions); if (!ours) return [];
-  const priorViews = priorsFor(selector).map(p => leafViews(p.key, p.fields)).filter((v): v is LeafView[] => !!v && v.length === ours.length);
-  if (!priorViews.length) return [];
+  const aligned = priorsFor(selector).map(p => ({entity: p.entity, views: leafViews(p.key, p.fields)})).filter((p): p is {entity: string; views: LeafView[]} => !!p.views && p.views.length === ours.length);
+  // One entity is one project's choice for its own contract, often an unrelated function that shares the
+  // selector; it stays a hint in init and decisions, and only agreement across projects is worth a warning.
+  if (new Set(aligned.map(p => p.entity)).size < MIN_PRIOR_ENTITIES) return [];
+  const priorViews = aligned.map(p => p.views);
   return ours.flatMap((view, i) => {
     const kinds = new Set(priorViews.map(v => v[i].kind));
     if (kinds.size !== 1) return [];
     const [prior] = [...kinds];
-    return prior !== view.kind ? [{path: view.path, ours: view.kind, prior, among: priorViews.length}] : [];
+    return prior !== view.kind ? [{path: view.path, ours: view.kind, prior, among: priorViews.length, entities: new Set(aligned.map(p => p.entity)).size}] : [];
   });
 }
 export type { ParamType };

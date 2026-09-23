@@ -1,7 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {FunctionFragment, Interface} from 'ethers';
-import {ENGINE,scaffold,validateDescriptor, type Descriptor} from '../src/descriptors.js';
+import {ENGINE,scaffold,validateDescriptor,WARNING_REMEDY, type Descriptor} from '../src/descriptors.js';
+import {humanOutput} from '../src/output.js';
 import {renderFixture} from '../src/fixtures.js';
 import {previewHtml,servePreview} from '../src/preview.js';
 import type {Contract} from '../src/foundry.js';
@@ -79,9 +80,14 @@ await test('registry-style swap descriptor: typed addressName, tokenPath into pa
     {path:'deadline',label:'Expires',format:'date',params:{encoding:'timestamp'}}]};
   const selection={id:c.id,descriptor:'swap.json',exclusions:{},hidden:{'swapExactETHForTokens(uint256,address[],address,uint256)':{'path.[]':'Route is implied by the amounts'}}};
   assert.deepEqual(validateDescriptor(d,c,selection),[]);
-  // Without the hidden entry the omission is a warning, never an error.
+  // The route is read by tokenPath, which the registry linter counts as displayed; so no warning without the hidden entry.
+  assert.deepEqual(validateDescriptor(d,c,{...selection,hidden:{}}),[]);
+  // A true omission is a warning, never an error.
+  const fields=d.display.formats[key].fields;
+  d.display.formats[key].fields=fields.filter((f:any)=>f.path!=='deadline');
   const diagnostics=validateDescriptor(d,c,{...selection,hidden:{}});
-  assert.deepEqual(diagnostics.map(x=>[x.code,x.severity]),[['UNDISPLAYED_ARGUMENT','warning']]);
+  assert.deepEqual(diagnostics.map(x=>[x.code,x.severity,x.remedy]),[['UNDISPLAYED_ARGUMENT','warning','Display the argument, or record a reason under hidden in clear-signing.toml if leaving it out is deliberate.']]);
+  d.display.formats[key].fields=fields;
   const iface=new Interface(c.abi);
   const r=await renderFixture({contract:c.id,chainId:10143,to:address,data:iface.encodeFunctionData('swapExactETHForTokens',[990000n,[address,other],'0x000000000000000000000000000000000000dEaD',1790000000n]),value:'2000000000000000000',localBinding:true,
     chain:{name:'Monad Testnet',nativeCurrency:{name:'Monad',symbol:'MON',decimals:18}},tokens:{[other]:{name:'USD Coin',symbol:'USDC',decimals:6}},ensNames:{'0x000000000000000000000000000000000000dEaD':'burn.eth'}},d,c);
@@ -157,4 +163,13 @@ await test('registry idioms validate and render: #. roots, $id, $ref definitions
 // renderer, schema nor validator subset must keep all three valid, so the tool version stays out of it.
 await test('the engine identity excludes the tool version',()=>{
   assert.deepEqual(Object.keys(ENGINE).sort(),['renderer','schema','subset']);
+});
+
+await test('check output groups warnings by descriptor and code, most signer-relevant first, each remedy once',()=>{
+  const w=(file:string,code:string,message:string)=>({code,message,file,severity:'warning',remedy:WARNING_REMEDY[code]});
+  const out=humanOutput({review:'current',contracts:[],warnings:[
+    w('b.json','CORPUS_DISAGREEMENT','m1'),w('a.json','INTENT_LENGTH','i1'),w('a.json','UNDISPLAYED_ARGUMENT','u1'),w('a.json','INTENT_LENGTH','i2'),w('b.json','INTENT_LENGTH','i3')]});
+  assert.equal(out,['Local checks passed. Review is current.','','5 warning(s), none blocking: 1 UNDISPLAYED_ARGUMENT, 3 INTENT_LENGTH, 1 CORPUS_DISAGREEMENT.',
+    '  a.json',`    UNDISPLAYED_ARGUMENT (1): ${WARNING_REMEDY.UNDISPLAYED_ARGUMENT}`,'      u1',`    INTENT_LENGTH (2): ${WARNING_REMEDY.INTENT_LENGTH}`,'      i1','      i2',
+    '  b.json',`    INTENT_LENGTH (1): ${WARNING_REMEDY.INTENT_LENGTH}`,'      i3',`    CORPUS_DISAGREEMENT (1): ${WARNING_REMEDY.CORPUS_DISAGREEMENT}`,'      m1'].join('\n'));
 });

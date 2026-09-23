@@ -1,9 +1,25 @@
+import { WARNING_RANK } from './descriptors.js';
 // Make terminal control sequences and bidirectional overrides visible as text.
 // Keep the original values in JSON/expectations; this is presentation escaping.
 export const displayText = (value: unknown): string => String(value).replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
 export function humanOutput(data: any): string {
   const sanitize = (value: any): any => typeof value === 'string' ? displayText(value) : Array.isArray(value) ? value.map(sanitize) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, sanitize(v)])) : value;
   return formatHumanOutput(sanitize(data));
+}
+// Warnings grouped by descriptor, then by code in WARNING_RANK order, with the code's remedy printed once.
+function warningLines(warnings: any[] = []): string[] {
+  if (!warnings.length) return [];
+  const rank = (code: string) => { const i = WARNING_RANK.indexOf(code); return i < 0 ? WARNING_RANK.length : i; };
+  const counts = new Map<string, number>(); for (const w of warnings) counts.set(w.code, (counts.get(w.code) ?? 0) + 1);
+  const codes = [...counts.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  const files = [...new Set(warnings.map(w => w.file ?? ''))].sort();
+  return [`\n${warnings.length} warning(s), none blocking: ${codes.map(c => `${counts.get(c)} ${c}`).join(', ')}.`, ...files.flatMap(file => {
+    const here = warnings.filter(w => (w.file ?? '') === file);
+    return [...(file ? [`  ${file}`] : []), ...codes.filter(c => here.some(w => w.code === c)).flatMap(code => {
+      const items = here.filter(w => w.code === code);
+      return [`    ${code} (${items.length}): ${items[0].remedy ?? ''}`.trimEnd(), ...items.map(w => `      ${w.message}`)];
+    })];
+  })];
 }
 function formatHumanOutput(data: any): string {
   const portability = (data.portability?.findings??[]).map((f:any)=>`Portability ${f.code} (${f.signature}, ${f.path}): ${f.message}`);
@@ -19,7 +35,7 @@ function formatHumanOutput(data: any): string {
   }
   if (data.url) return `Preview: ${data.url}\nPress Ctrl+C to stop.\n\n${formatHumanOutput(data.rendering)}`;
   if (data.upgraded !== undefined) return data.note;
-  if (data.applied) return [`Applied decisions by ${data.author} to ${data.applied}: ${data.functions} function(s), ${data.excluded} excluded, ${data.hidden} hidden field(s); ${data.recorded} changed value(s) recorded in provenance.`,...(data.warnings??[]).map((w:any)=>`Warning ${w.code}${w.signature?` (${w.signature})`:''}: ${w.message}`),data.next].join('\n');
+  if (data.applied) return [`Applied decisions by ${data.author} to ${data.applied}: ${data.functions} function(s), ${data.excluded} excluded, ${data.hidden} hidden field(s); ${data.recorded} changed value(s) recorded in provenance.`,...warningLines(data.warnings),data.next].join('\n');
   if (data.runners && data.sourcify && data.rust) return `Registry runners ready under ${data.runners}\n  Sourcify: ${data.sourcify.cli} (${data.sourcify.ref.slice(0,8)})\n  Rust: ${data.rust.binary} (${data.rust.ref.slice(0,8)})`;
   if (data.deployment && data.next) return [
     `Added ${data.deployment.chainId}:${data.deployment.address} to ${data.descriptor}.`,
@@ -53,6 +69,6 @@ function formatHumanOutput(data: any): string {
       '\nDrafts use raw values. Review the action, recipients, limits, units, and token relationships.', data.next].join('\n');
   }
   if (data.added) return [`Added ${data.added.length} format(s).`, ...data.added.map((s:string)=>`  ${s}`), ...data.diagnostics.map((d:any)=>`${d.code}: ${d.message}`), data.note].join('\n');
-  if (data.review === 'current') return [`Local checks passed. Review is current.`, ...data.contracts.map((c:any)=>`  ${c.contract}: ${c.covered} covered, ${c.excluded.length} excluded${c.excluded.length ? '\n' + c.excluded.map((e:any)=>`    ${e.signature}: ${e.reason}`).join('\n') : ''}`),...(data.warnings??[]).map((w:any)=>`Warning ${w.code}${w.signature ? ` (${w.signature})` : ''}: ${w.message}`),...portability].join('\n');
+  if (data.review === 'current') return [`Local checks passed. Review is current.`, ...data.contracts.map((c:any)=>`  ${c.contract}: ${c.covered} covered, ${c.excluded.length} excluded${c.excluded.length ? '\n' + c.excluded.map((e:any)=>`    ${e.signature}: ${e.reason}`).join('\n') : ''}`),...warningLines(data.warnings),...portability].join('\n');
   return JSON.stringify(data, null, 2);
 }
