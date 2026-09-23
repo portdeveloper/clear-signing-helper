@@ -374,8 +374,8 @@ export async function exportBundle(state: State, out: string, strictPortability=
 // Decisions: the judgment slots the scaffold cannot fill, as a file any agent or person can edit.
 // `decisions` writes the template from the current descriptor plus every hint the tool has;
 // `apply` writes the descriptor, exclusions, hidden reasons and provenance from a filled file.
-export interface DecisionField {type: string; show: boolean; hideReason?: string | null; label: string; format: string; params?: Record<string, unknown> | null; hints?: Record<string, unknown>}
-export interface DecisionFunction {signature: string; decision: 'describe' | 'exclude'; excludeReason?: string | null; intent: string; interpolatedIntent?: string | null; fields: Record<string, DecisionField>; hints?: Record<string, unknown>}
+export interface DecisionField {type: string; show: boolean; hideReason?: string | null; label: string; format: string; params?: Record<string, unknown> | null; author?: string | null; hints?: Record<string, unknown>}
+export interface DecisionFunction {signature: string; decision: 'describe' | 'exclude'; excludeReason?: string | null; intent: string; interpolatedIntent?: string | null; author?: string | null; fields: Record<string, DecisionField>; hints?: Record<string, unknown>}
 export interface Decisions {version: 1; contract: string; descriptor: string; author: string | null; generatedAt: string; owner: string; url: string | null; functions: Record<string, DecisionFunction>; guidance: string[]}
 const decisionsDir = 'clear-signing/decisions';
 // A leaf the descriptor itself hides with visible "never" is reported as hidden with this reason, and apply
@@ -383,7 +383,9 @@ const decisionsDir = 'clear-signing/decisions';
 const DESCRIPTOR_NEVER = 'visible "never" in the descriptor';
 // Leaves hidden by a visible "never" field, including every leaf of a hidden struct or array.
 const neverHidden = (resolved: ResolvedField[], leafKeys: string[]) => new Set(resolved.filter(r => r.hidden && r.key).flatMap(r => coveredLeaves(r.key!, leafKeys)));
-export function writeDecisions(state: State, id: string, out?: string) {
+// The decisions template for the current descriptor. apply compares a filled file against it, so only
+// values someone changed are recorded as decided; unchanged values keep the provenance init gave them.
+function buildDecisions(state: State, id: string): Decisions {
   const selection = selectContracts(state, [id])[0];
   const c = getContract(state.project, id), d = state.descriptors.get(id)!, evidence = gatherEvidence(state.project, c);
   const formats = new Map(Object.entries(d.display.formats).map(([k, v]) => [parseSignature(k).format('sighash'), {key: k, spec: v}]));
@@ -417,8 +419,11 @@ export function writeDecisions(state: State, id: string, out?: string) {
       intent: existing?.spec.intent ?? (f.name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/^./, x => x.toUpperCase())), interpolatedIntent: existing?.spec.interpolatedIntent ?? null, fields,
       hints: {...(evidence.notices[sig] ? {natspec: evidence.notices[sig]} : {}), ...(priors.length ? {registryPriors: priors.slice(0, 5).map(summarizePrior), registryPriorCount: priors.length} : {}), ...(priorInterpolations.length ? {registryInterpolatedIntents: priorInterpolations} : {}), intentLimit: 30, interpolatedIntent: 'Optional sentence with {path} placeholders naming shown fields (e.g. "Stake {amount}", "Send {amount} to {to}"). Wallets prefer it; the registry recommends one on every format and warns when the template exceeds 30 characters.'}};
   }
-  const decisions: Decisions = {version: 1, contract: id, descriptor: selection.descriptor, author: null, generatedAt: new Date().toISOString().slice(0, 10), owner: d.metadata.owner, url: d.metadata.info?.url ?? null, functions,
-    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml.', 'Per field: show true/false (hideReason required when false), label, format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'interpolatedIntent is optional but recommended by the registry: a sentence embedding shown field values with {path}; set null to omit.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.']};
+  return {version: 1, contract: id, descriptor: selection.descriptor, author: null, generatedAt: new Date().toISOString().slice(0, 10), owner: d.metadata.owner, url: d.metadata.info?.url ?? null, functions,
+    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance for every value you change. Unchanged values keep their existing provenance.', 'A function or field may carry its own "author" that overrides the file author for that function (decision, intent, interpolatedIntent) or that field. Tag each value with whoever decided it.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml.', 'Per field: show true/false (hideReason required when false), label, format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'interpolatedIntent is optional but recommended by the registry: a sentence embedding shown field values with {path}; set null to omit.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.']};
+}
+export function writeDecisions(state: State, id: string, out?: string) {
+  const c = getContract(state.project, id), decisions = buildDecisions(state, id);
   const file = out ?? `${decisionsDir}/${c.name}.json`;
   writeJson(safePath(state.project.root, file), decisions);
   return {created: file, functions: Object.keys(functions).length, next: `Fill intents, formats, denominations and show/hide reasons in ${file}, set author, then run apply --decisions ${file}.`};

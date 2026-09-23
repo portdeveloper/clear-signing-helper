@@ -5,6 +5,16 @@
 - Refresh the advisory registry prior: `npm run priors:snapshot -- <fresh registry clone>` and commit `src/data/registry-priors.json`; its `commit` and `generatedAt` fields are shown to users.
 - Run `npm run registry:acceptance -- <fresh registry clone>` and record the accepted count in CLAUDE.md. Any new rejection class other than the `calldata` format is a regression against what the registry accepts.
 
+## 0.4.0-preview.1 (2026-09-23)
+
+- [x] Refreshed the registry prior at registry `8f56072` (280 descriptors, 533 selectors); acceptance at the same commit: 258 of 280 (recorded in CLAUDE.md).
+- [x] Tag `v0.4.0-preview.1` on `main` at `a14880b`; CI run [35866670558](https://github.com/portdeveloper/clear-signing-helper/actions/runs/35866670558) passed on Node 22.22.3 and 24.20.0, ubuntu-24.04 and macos-15. All four CI candidate packages have the same SHA-256 as the local candidate.
+- [x] `npm run release:verify` produced `clear-signing-helper-0.4.0-preview.1.tgz`, SHA-256 `89fd6798119f9ceba2cc74bbdb18b40f9acc0b2ccebdcdb418055741c60449fe`, and `release-verification.json` (upgrade and rollback exercised against the 0.3.0-preview.1 candidate).
+- [x] [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.4.0-preview.1) created with the tarball, checksum and verification record. The downloaded asset matched the checksum, installed with lifecycle scripts disabled and reported `0.4.0-preview.1`.
+- [x] Published the identical tarball to npm as [`clear-signing-helper@0.4.0-preview.1`](https://www.npmjs.com/package/clear-signing-helper/v/0.4.0-preview.1) with `--tag preview --ignore-scripts --access public`, then moved `latest` to it. Registry integrity `sha512-hqhtpUxnwhSr8rRFK50JSsGoq5K4z4fmDcHwPAPmP7Bkmn46X+7Wex6p7eoLnKz3Bv1LheEM8F5C2asGGNtpfQ==` equals the GitHub asset. A credential-free `npx --package=clear-signing-helper@preview` returned `0.4.0-preview.1`, previewed the example fixture from a fresh clone of the tag, and passed its signing test. Pass the tarball as `./release/<file>.tgz`: without `./`, npm reads `release/<file>` as a GitHub shorthand.
+- [x] README, DISTRIBUTION and site point at the npm version.
+- [ ] Revoke the npm token used for this publication on npmjs.com.
+
 ## 0.3.0-preview.1 (2026-09-19)
 
 - [x] Tag `v0.3.0-preview.1` on `main` at `7c14b70`; CI run [35440995617](https://github.com/portdeveloper/clear-signing-helper/actions/runs/35440995617) passed on Node 22.22.3 and 24.20.0, ubuntu-24.04 and macos-15.
