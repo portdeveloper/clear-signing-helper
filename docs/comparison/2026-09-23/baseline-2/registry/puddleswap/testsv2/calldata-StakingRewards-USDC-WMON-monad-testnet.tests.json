@@ -1,0 +1,121 @@
+{
+  "$schema": "../../../specs/erc7730-tests-v2.schema.json",
+  "descriptor": "../calldata-StakingRewards-USDC-WMON-monad-testnet.json",
+  "dataProvider": {
+    "tokens": {
+      "0x1fbc7b6b54726d735ff1b47df75535b4b9021902": { "symbol": "UNI-V2", "decimals": 18, "name": "Uniswap V2" },
+      "0x97b3070f9da6c002343862b35e68bd8e22608943": { "symbol": "WMON", "decimals": 18, "name": "Wrapped Monad" },
+      "0x534b2f3a21130d7a60830c2df862319e593943a3": { "symbol": "USDC", "decimals": 6, "name": "USD Coin" }
+    }
+  },
+  "tests": [
+    {
+      "description": "Stake 0.000017576958417518 UNI-V2 LP tokens",
+      "rawTx": "0x02f85082279f0e85012a05f200852fbaf3c2008303177894e23b3825f950637256e8de1bf39743e8f29d97f180a4a694fc3a00000000000000000000000000000000000000000000000000000ffc745cda6ec0",
+      "txHash": "0x7bf3f021997ca53ffedd4022406a6b084acec8b8ab82ec4812dd91dff6bef8f0",
+      "expected": {
+        "intent": "Stake USDC/WMON LP",
+        "interpolatedIntent": "Stake 0.000017576958417518 UNI-V2 (USDC/WMON)",
+        "owner": "PuddleSwap",
+        "fields": [{ "label": "Amount to stake", "value": "0.000017576958417518 UNI-V2" }]
+      }
+    },
+    {
+      "description": "Unstake 0.000008788479208759 UNI-V2 LP tokens",
+      "rawTx": "0x02f84f82279f1084ee6b2801852f7f58f8018302ece394e23b3825f950637256e8de1bf39743e8f29d97f180a42e1a7d4d000000000000000000000000000000000000000000000000000007fe3a2e6d37c0",
+      "txHash": "0x783edb0d395b09429da6bebd219625e0a4d77abcbf606b59e4d9b218e9cf7e29",
+      "expected": {
+        "intent": "Unstake USDC/WMON LP",
+        "interpolatedIntent": "Unstake 0.000008788479208759 UNI-V2 (USDC/WMON)",
+        "owner": "PuddleSwap",
+        "fields": [{ "label": "Amount to unstake", "value": "0.000008788479208759 UNI-V2" }]
+      }
+    },
+    {
+      "description": "Claim accrued WMON rewards",
+      "rawTx": "0x02f082279f0f8503309569008531c1833900830318f594e23b3825f950637256e8de1bf39743e8f29d97f180843d18b912c0",
+      "txHash": "0xe5b8c9c975a463c2ba0cd38cba2845344b5176b95a1d29ab4783a738b653fc8c",
+      "expected": { "intent": "Claim rewards", "interpolatedIntent": "Claim WMON staking rewards", "owner": "PuddleSwap", "fields": [] }
+    },
+    {
+      "description": "Unstake everything and claim rewards (synthetic)",
+      "rawTx": "0x02f182279f82038484773594008517bfac7c0083030d4094e23b3825f950637256e8de1bf39743e8f29d97f18084e9fad8eec0",
+      "expected": {
+        "intent": "Unstake all and claim rewards",
+        "interpolatedIntent": "Unstake all and claim rewards",
+        "owner": "PuddleSwap",
+        "fields": []
+      }
+    },
+    {
+      "description": "Operator starts a 1000 WMON reward period",
+      "rawTx": "0x02f85082279f03850227d65c3d8530b8c42c3d8303320f94e23b3825f950637256e8de1bf39743e8f29d97f180a43c6b16ab00000000000000000000000000000000000000000000003635c9adc5dea00000c0",
+      "txHash": "0x32544fc17c97f0ea9554c40dac1f55a3d9104fe52c271ded36711dc5647024af",
+      "expected": {
+        "intent": "Start reward period",
+        "interpolatedIntent": "Start 1000 WMON reward period",
+        "owner": "PuddleSwap",
+        "fields": [{ "label": "Reward amount", "value": "1000 WMON" }]
+      }
+    },
+    {
+      "description": "Admin sets the reward period to 14 days (synthetic)",
+      "rawTx": "0x02f85182279f82038584773594008517bfac7c0083030d4094e23b3825f950637256e8de1bf39743e8f29d97f180a4cc1a378f0000000000000000000000000000000000000000000000000000000000127500c0",
+      "expected": {
+        "intent": "Set reward period duration",
+        "interpolatedIntent": "Set period 336:00:00",
+        "owner": "PuddleSwap",
+        "fields": [{ "label": "Period duration", "value": "336:00:00" }]
+      }
+    },
+    {
+      "description": "Admin recovers 5 USDC sent to the contract by mistake (synthetic)",
+      "rawTx": "0x02f89282279f82038684773594008517bfac7c0083030d4094e23b3825f950637256e8de1bf39743e8f29d97f180b8641171bda9000000000000000000000000534b2f3a21130d7a60830c2df862319e593943a30000000000000000000000003eecb6532b0c9ce1e5759e1a23300baabb37abfe00000000000000000000000000000000000000000000000000000000004c4b40c0",
+      "expected": {
+        "intent": "Recover tokens",
+        "interpolatedIntent": "Recover 5 USDC to 0x3eeCb6532B0C9CE1E5759E1a23300bAABb37aBfE",
+        "owner": "PuddleSwap",
+        "fields": [{ "label": "Amount", "value": "5 USDC" }, { "label": "Recipient", "value": "0x3eeCb6532B0C9CE1E5759E1a23300bAABb37aBfE" }]
+      }
+    },
+    {
+      "description": "Admin grants OPERATOR_ROLE (synthetic)",
+      "rawTx": "0x02f87282279f82038784773594008517bfac7c0083030d4094e23b3825f950637256e8de1bf39743e8f29d97f180b8442f2ff15d97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b9290000000000000000000000001111111111111111111111111111111111111111c0",
+      "expected": {
+        "intent": "Grant role",
+        "interpolatedIntent": "Grant role 0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929 to 0x1111111111111111111111111111111111111111",
+        "owner": "PuddleSwap",
+        "fields": [
+          { "label": "Role", "value": "0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929" },
+          { "label": "Account", "value": "0x1111111111111111111111111111111111111111" }
+        ]
+      }
+    },
+    {
+      "description": "Admin revokes OPERATOR_ROLE (synthetic)",
+      "rawTx": "0x02f87282279f82038884773594008517bfac7c0083030d4094e23b3825f950637256e8de1bf39743e8f29d97f180b844d547741f97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b9290000000000000000000000001111111111111111111111111111111111111111c0",
+      "expected": {
+        "intent": "Revoke role",
+        "interpolatedIntent": "Revoke 0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929 from 0x1111111111111111111111111111111111111111",
+        "owner": "PuddleSwap",
+        "fields": [
+          { "label": "Role", "value": "0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929" },
+          { "label": "Account", "value": "0x1111111111111111111111111111111111111111" }
+        ]
+      }
+    },
+    {
+      "description": "Holder renounces OPERATOR_ROLE (synthetic)",
+      "rawTx": "0x02f87282279f82038984773594008517bfac7c0083030d4094e23b3825f950637256e8de1bf39743e8f29d97f180b84436568abe97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b9290000000000000000000000003eecb6532b0c9ce1e5759e1a23300baabb37abfec0",
+      "expected": {
+        "intent": "Renounce role",
+        "interpolatedIntent": "Renounce role 0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929",
+        "owner": "PuddleSwap",
+        "fields": [
+          { "label": "Role", "value": "0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929" },
+          { "label": "Account", "value": "0x3eeCb6532B0C9CE1E5759E1a23300bAABb37aBfE" }
+        ]
+      }
+    }
+  ]
+}

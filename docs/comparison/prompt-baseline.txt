@@ -1,0 +1,16 @@
+You are helping the PuddleSwap team make their StakingRewards contract clear-signable in hardware and software wallets using ERC-7730, and preparing the files for a pull request to the clear-signing registry at https://github.com/ethereum/clear-signing-erc7730-registry.
+
+Contract: 0xe23B3825F950637256e8DE1BF39743E8f29D97F1 on Monad testnet (chain id 10143). Its source is verified on Sourcify. Owner / protocol name: PuddleSwap.
+
+Work only inside the current directory (call it WORK).
+
+Deliverable: WORK/out/registry/<entity>/ containing every file the registry needs for this contract (the descriptor and whatever else the registry requires), laid out exactly as it would sit in a registry clone, ready to copy in and open as a PR. Aim for a PR that passes the registry's CI and review on the first try.
+
+Rules for this run (it is part of a controlled experiment, so follow them exactly):
+- The user is not available. Where a human would normally decide (intent wording, which token an amount is denominated in, what to show or hide), decide yourself and record each decision and why in WORK/out/NOTES.md.
+- Do not open PRs, push, fork, comment, or write anywhere on GitHub. Do not use the `gh` CLI. Do not look at existing pull requests, branches or forks about PuddleSwap or this contract. Do not read anything under /home/ubuntu/repos.
+- Do not use the clear-signing-helper project (github.com/portdeveloper/clear-signing-helper, the npm package clear-signing-helper, or its site). This run measures working without it. Any other public tool or documentation is fine.
+- Do not install anything globally. Put installs, clones and caches under WORK. Available on the machine: node 22, npm, uv/uvx, cargo, git, Foundry (forge, cast), curl, network access.
+- In WORK/out/NOTES.md also keep a log: every check you ran (command) and its result; each time a check failed, what failed and what you changed (number these fix iterations); anything you could not do or verify.
+
+Final message: a short summary listing the files delivered, each check run with pass/fail, the number of fix iterations, and anything you are unsure about.

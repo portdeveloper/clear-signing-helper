@@ -19,8 +19,8 @@ function project(example='standard') {
   fs.cpSync(path.join(repo,'examples',example),root,{recursive:true,filter:src=>!['out','cache','artifacts','forge-cache','clear-signing','.clear-signing-cache','clear-signing.toml'].includes(path.basename(src))});
   return root;
 }
-function run(root:string,args:string[],expected=0) {
-  const r=spawnSync(process.execPath,[cli,'--root',root,'--json',...args],{encoding:'utf8',timeout:30_000});
+function run(root:string,args:string[],expected=0,env?:NodeJS.ProcessEnv) {
+  const r=spawnSync(process.execPath,[cli,'--root',root,'--json',...args],{encoding:'utf8',timeout:30_000,...(env?{env}:{})});
   assert.equal(r.status,expected,`CLI ${args.join(' ')}\n${r.stdout}\n${r.stderr}`);
   try{return JSON.parse(r.stdout);}catch{assert.fail(`Invalid JSON: ${r.stdout} ${r.stderr}`);}
 }
@@ -164,6 +164,13 @@ await test('production export is gated and produces valid registry test input',t
   const exported=read(path.join(root,'bundle/registry/example/testsv2/calldata-ClearToken.tests.json'));assert.equal(exported.descriptor,'../calldata-ClearToken.json');assert.equal(exported.tests[0].description,'transfer - chain 1');
   assert.match(exported.tests[0].rawTx,/^0x02/);assert.equal(exported.tests[0].expected.intent,'Send');assert.equal(exported.tests[0].expected.fields[1].value,'0.000001 CLR');
   assert.ok(codes(run(root,['export','--out','bundle'],2)).includes('OUTPUT_EXISTS'));
+  // The registry's format bot rewrites testsv2 files as well, so export formats them with the descriptor.
+  const bin=fs.mkdtempSync(path.join(os.tmpdir(),'csh-fake-uvx-'));t.after(()=>fs.rmSync(bin,{recursive:true,force:true}));
+  const calls=path.join(bin,'calls.txt');
+  fs.writeFileSync(path.join(bin,'uvx'),`#!/bin/sh\necho "$*" >> ${calls}\nexit 0\n`);fs.chmodSync(path.join(bin,'uvx'),0o755);
+  run(root,['export','--out','bundle-formatted'],0,{...process.env,PATH:`${bin}:${process.env.PATH}`});
+  const format=fs.readFileSync(calls,'utf8').split('\n').find(l=>/ erc7730 format /.test(l));
+  assert.ok(format?.includes('registry/example/calldata-ClearToken.json')&&format.includes('registry/example/testsv2/calldata-ClearToken.tests.json'),`format call: ${format}`);
   assert.ok(codes(run(root,['export','--out','../outside'],1)).includes('UNSAFE_PATH'));
   assert.ok(codes(run(root,['export','--out','bad','--no-lint','--entity','Not A Slug'],1)).includes('ENTITY_INVALID'));
   const withAbi=run(root,['export','--out','with-abi','--no-lint','--inline-abi','--entity','clear']).result;assert.equal(withAbi.entity,'clear');

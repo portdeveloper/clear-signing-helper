@@ -170,6 +170,30 @@ clear-signing registry add-deployment --registry ./registry-clone \
 </div>
 <p>Use Cyfrin's tool to read what a transaction does or to compute Safe and ERC-8213 hashes, Ledger's builder for a device-shaped preview in a browser, <code>erc7730</code> to author EIP-712 descriptors, and this tool for the last mile the others stop before: the test file, the registry's own checks before the PR, and the one-command chain addition.</p>
 
+<h2>Compared with an agent alone</h2>
+<p>We gave the same task to Claude Code (<code>claude-opus-5-5</code>, effort <code>high</code>) twice with the tool and twice without it: take PuddleSwap StakingRewards on Monad testnet to registry-ready files. Every run started in a clean directory with no project context and could not ask the user anything. Each tool run built the registry's runners from an empty cache. We scored every output with the registry's own pull-request checks at registry <code>8f56072</code> (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/comparison/score.sh">score.sh</a>).</p>
+<div class="tablewrap">
+<table>
+<tr><th></th><th>tool-1</th><th>tool-2</th><th>baseline-1</th><th>baseline-2</th></tr>
+<tr><td>Wall-clock</td><td>8.2 min</td><td>7.6 min</td><td>22.5 min</td><td>11.6 min</td></tr>
+<tr><td>Cost (Claude Code's estimate)</td><td>$2.66</td><td>$2.58</td><td>$4.36</td><td>$2.72</td></tr>
+<tr><td>Output tokens</td><td>33,641</td><td>31,615</td><td>58,883</td><td>36,539</td></tr>
+<tr><td>Turns</td><td>46</td><td>39</td><td>83</td><td>57</td></tr>
+<tr><td>Fixes after a failing check</td><td>3</td><td>1</td><td>5</td><td>1</td></tr>
+<tr><td>Lint, schemas, coverage, format bot</td><td>pass</td><td>pass</td><td>pass</td><td>pass</td></tr>
+<tr><td>Both registry runners</td><td>10/10</td><td>10/10</td><td>13/13</td><td>10/10</td></tr>
+<tr><td>Real on-chain transactions in tests</td><td>0</td><td>0</td><td>5</td><td>4</td></tr>
+</table>
+</div>
+<p><strong>What it shows:</strong></p>
+<ul>
+  <li><strong>All four passed every registry check, and all made the same semantic calls</strong> (which token each amount is in, nothing hidden). On this contract, the baselines reached a green PR by reading the registry's CI and building its runners themselves.</li>
+  <li><strong>With the tool, runs were faster, cheaper and consistent:</strong> 7.6 to 8.2 min and $2.58 to $2.66, against 11.6 to 22.5 min and $2.72 to $4.36 without it.</li>
+  <li><strong>It ruled out one mistake:</strong> a baseline first formatted a <code>bytes32</code> role as an <code>enum</code>, which both runners reject, and had to redo it. The tool only offers valid formats.</li>
+  <li><strong>The baselines' files were richer:</strong> real transactions and named token constants. The tool cannot yet do either from an address. That gap is on the roadmap, and a formatting bug the runs found is already fixed.</li>
+</ul>
+<p>This is one contract with two runs per arm, not a benchmark. The prompts, raw metrics, every output and the limits are in <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/COMPARISON.md">COMPARISON.md</a> and <a href="https://github.com/portdeveloper/clear-signing-helper/tree/main/docs/comparison/2026-09-23">the run data</a>.</p>
+
 <h2>Status</h2>
 <ul class="status">
   <li><strong>Published:</strong> <a href="https://www.npmjs.com/package/clear-signing-helper/v/0.4.0-preview.1">0.4.0-preview.1 on npm</a> and as a <a href="https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.4.0-preview.1">GitHub prerelease</a>, byte-for-byte identical (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/RELEASE-HANDOFF.md">release record</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/scripts/verify-release.mjs">verification script</a>).</li>

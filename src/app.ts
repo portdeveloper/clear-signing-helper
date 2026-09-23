@@ -314,7 +314,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
   fs.mkdirSync(stage,{recursive:true});
   let lint: LintResult;
   const runnerResults:(RunnerResult&{testsFile:string})[]=[];
-  const registryDir=path.join(stage,'registry',entity), descriptorFiles:string[]=[];
+  const registryDir=path.join(stage,'registry',entity), descriptorFiles:string[]=[], testsFiles:string[]=[];
   try {
     const names=new Set<string>();
     for(const s of selections) {
@@ -328,7 +328,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
       if(options.inlineAbi) descriptor.context.contract.abi=c.abi;
       writeJson(path.join(registryDir,name),descriptor); descriptorFiles.push(path.join('registry',entity,name));
       const fixtures = tests.renders.filter(r=>r.rendering.contract===s.id).map(r=>({name:r.file,fixture:readJson<Fixture>(safePath(state.project.root,r.file)),rendering:r.rendering}));
-      if(fixtures.length) writeJson(path.join(registryDir,'testsv2',name.replace(/\.json$/,'.tests.json')),registryTests(name,source,fixtures));
+      if(fixtures.length) { const testsName=name.replace(/\.json$/,'.tests.json'); writeJson(path.join(registryDir,'testsv2',testsName),registryTests(name,source,fixtures)); testsFiles.push(path.join('registry',entity,'testsv2',testsName)); }
     }
     for(const r of tests.renders) {
       const name=path.relative('clear-signing/fixtures',r.file);
@@ -338,7 +338,8 @@ export async function exportBundle(state: State, out: string, strictPortability=
     // Canonical registry formatting first, so lint and the runners see exactly what the PR will contain.
     // The registry CI's own erc7730 package and lint flags: from a clone with --ci-pins, else the built-in pin.
     const lintPin = options.ciPins ? lintPinFromRegistry(options.ciPins) : DEFAULT_LINT_PIN;
-    const formatted = options.lint===false ? {ran:false, reason:'skipped with --no-lint'} : runUpstreamFormat(stage, descriptorFiles, lintPin);
+    // The format bot rewrites testsv2 files too, so they are formatted with the descriptors.
+    const formatted = options.lint===false ? {ran:false, reason:'skipped with --no-lint'} : runUpstreamFormat(stage, [...descriptorFiles, ...testsFiles], lintPin);
     lint = options.lint===false ? skippedLint(descriptorFiles, lintPin) : runUpstreamLint(stage, descriptorFiles, lintPin);
     (lint as LintResult & {formatted?: typeof formatted}).formatted = formatted;
     if(lint.ran && lint.exitCode!==0) throw new Failure('UPSTREAM_LINT_FAILED',`erc7730 lint rejected the exported descriptor(s).`,1,[{code:'UPSTREAM_LINT_FAILED',message:(lint.output??[]).join(' | '),remedy:`Fix the descriptor and export again, or reproduce with: ${lint.command}`}]);

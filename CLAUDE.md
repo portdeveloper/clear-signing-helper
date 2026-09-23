@@ -34,8 +34,9 @@ It never signs, sends, publishes, verifies bytecode beyond a Sourcify match, or 
 2. **Item 15, warning noise.** At registry `8f56072` the validator emits 496 `UNDISPLAYED_ARGUMENT`, 129 `INTENT_LENGTH` and 14 `CORPUS_DISAGREEMENT` warnings (the last was 326 until 2026-09-23: 312 were false positives from comparing fields without their `$ref` definitions). A fresh draft still shows dozens and teams will tune them out. Rank or group warnings in `check` output; re-measure `CORPUS_DISAGREEMENT` before adding a multi-prior threshold.
 3. **Item 16, detect a protocol already in the registry.** Today only the skill's grep (`find-in-registry.sh`) looks, and it misses a new-chain address or a differently named entity folder. See item 16.
 4. **Architecture review follow-ups (2026-09-23).** Done: engine identity without the tool version, `add-deployment` fails on lint errors and restores the clone on lint or runner failure, one field resolver (`resolveFields` in `src/descriptors.ts`) for validation, decisions, apply, priors and the scaffold. Done too: export and calldata `add-deployment` require the registry runners (or `--skip-registry-runners "<reason>"`) when a displayed field is a signed int or nested array (`runnerDivergence` in `src/portability.ts`; see Decisions). Not covered: EIP-712 test cases, since the portability findings are ABI-shape based. Done 2026-09-23 as well: the lint pin follows registry CI. `DEFAULT_LINT_PIN` is the Sourcify fork at `f2fafe1` with `--require-verified` (registry PR #3038, open at the time; master still ran `e7bdf84` without the flag); `export --ci-pins <clone>` and `registry add-deployment` read `.github/requirements.txt` and `pull_request.yml` from the clone instead. Update `DEFAULT_LINT_PIN` whenever the registry bumps its requirement. Tested at `f2fafe1`: `--require-verified` checks calldata deployments only; an unverified (even code-less) EIP-712 deployment still lints clean, so #2611 was not at risk. Permit2 on Monad (143, `0x000000000022D473030F116dDEE9F6B43aC78BA3`) was verified on Sourcify anyway on 2026-09-23 from the chain-1 standard JSON input (full creation and runtime match, match id 51549487; code identical to mainnet outside immutables). Lower: `registry-edit.ts` duplicates the renderer data provider and runner diagnostics from `fixtures.ts`/`app.ts`.
-5. **Item 13, advisory semantic verifier**, last, and only after measuring its disagreement rate on the corpus.
-6. **The test no code substitutes for:** one outside team running the skill cold on a verified contract.
+5. **Item 17, gaps from the agent comparison** (`docs/COMPARISON.md`): real transactions and named constants in address mode, and one flag name for the runner pins.
+6. **Item 13, advisory semantic verifier**, last, and only after measuring its disagreement rate on the corpus.
+7. **The test no code substitutes for:** one outside team running the skill cold on a verified contract.
 
 ## Verified gaps (2026-09-19, tested against puddleswap)
 
@@ -160,6 +161,15 @@ Adding a chain beats a new descriptor, but nothing in the CLI notices that a con
 - Acceptance: a Uniswap V2 router ABI suggests the registry's V2 router descriptor(s); puddleswap StakingRewards suggests nothing or a clearly low-overlap list; WMON gets the WETH convention, not a suggestion. EIP-712 is out of scope (priors are calldata only).
 - 2026-09-23: `find-in-registry.sh` used to tell agents to add the deployment by hand; it now points to `registry add-deployment`, which proves the address first.
 
+### 17. Close the gaps the agent comparison exposed — `todo`
+
+`docs/COMPARISON.md` (2026-09-23): with the tool, Opus 5.5 finished in 7.6 to 8.2 min for $2.58 to $2.66; without it, in 11.6 to 22.5 min for $2.72 to $4.36. All four outputs passed every registry check. The baselines' files were richer in three ways the tool should match.
+
+- Real transactions in address mode: `fixture --from-chain <address> --rpc-url <url>` (or similar) finds recent calls to each selector with `eth_getLogs` and receipts, then copies them the way `--broadcast-tx` does. It needs a new recorded network exception.
+- Named constants in address mode: read `immutable` address slots from the verified source (Sourcify gives the AST) and resolve them with `eth_call` to the public getter, then offer `$.metadata.constants.*` the way the broadcast path does.
+- `registry setup-runners --registry` against `export --ci-pins`: accept one name for both.
+- Done 2026-09-23: `export` now formats testsv2 files with the descriptors. All three tool runs had hit the format-bot drift.
+
 ### Later
 
 - EIP-712 authoring (104 descriptors in the registry corpus): a separate decoding and review model. Adding a chain to an existing EIP-712 descriptor is done (item 14).
@@ -207,7 +217,7 @@ Not doing: "generate first with AI" (the model would regenerate the provable par
 
 ## Public overview page
 
-https://portdeveloper.github.io/clear-signing-helper/ is built from `site/index.html` by `.github/workflows/pages.yml` on every push to `main` that touches `site/`. Sections: a lead with the goal line, "Use it" (the paste-into-agent prompt and an "If you are an AI agent" card summarizing SKILL.md, mirrored in `site/llms.txt`; keep both in step with the skill), the DOES / does NOT lists (each item linked to the enforcing code), the pipeline diagram with a file legend, "Run it yourself" commands, the comparison with `erc7730`, Ledger's JSON Builder and Cyfrin's `clearsig`, and a status list. Every claim links to a file on `main`. Keep the status list, the acceptance number and the test count there in step with this file; no eyebrow lines, no repeated content.
+https://portdeveloper.github.io/clear-signing-helper/ is built from `site/index.html` by `.github/workflows/pages.yml` on every push to `main` that touches `site/`. Sections: a lead with the goal line, "Use it" (the paste-into-agent prompt and an "If you are an AI agent" card summarizing SKILL.md, mirrored in `site/llms.txt`; keep both in step with the skill), the DOES / does NOT lists (each item linked to the enforcing code), the pipeline diagram with a file legend, "Run it yourself" commands, the comparison with `erc7730`, Ledger's JSON Builder and Cyfrin's `clearsig`, "Compared with an agent alone" (numbers from `docs/COMPARISON.md`; update both together if the comparison is re-run), and a status list. Every claim links to a file on `main`. Keep the status list, the acceptance number and the test count there in step with this file; no eyebrow lines, no repeated content.
 
 ## Working conventions
 

@@ -1,0 +1,15 @@
+read https://github.com/portdeveloper/clear-signing-helper and use it to make my contract clear-signable: 0xe23B3825F950637256e8DE1BF39743E8f29D97F1 on Monad testnet (chain id 10143)
+
+Context: the contract is PuddleSwap's StakingRewards, verified on Sourcify. Owner / protocol name: PuddleSwap. The goal is the files for a pull request to https://github.com/ethereum/clear-signing-erc7730-registry.
+
+Work only inside the current directory (call it WORK).
+
+Deliverable: WORK/out/registry/<entity>/ containing every file the registry needs for this contract, laid out exactly as it would sit in a registry clone, ready to copy in and open as a PR. Aim for a PR that passes the registry's CI and review on the first try.
+
+Rules for this run (it is part of a controlled experiment, so follow them exactly):
+- The user is not available. Where the instructions say to ask the user (intent wording, which token an amount is denominated in, what to show or hide), decide yourself, and record each decision and why in WORK/out/NOTES.md. Tag those decisions as your own, not the user's.
+- Do not open PRs, push, fork, comment, or write anywhere on GitHub. Do not use the `gh` CLI. Do not look at existing pull requests, branches or forks about PuddleSwap or this contract. Do not read anything under /home/ubuntu/repos (read the project from GitHub instead).
+- Do not install anything globally. Put installs, clones and caches under WORK (for example `npm install --prefix WORK/cli --ignore-scripts clear-signing-helper@preview` and add WORK/cli/node_modules/.bin to PATH). Available on the machine: node 22, npm, uv/uvx, cargo, git, Foundry (forge, cast), curl, network access.
+- In WORK/out/NOTES.md also keep a log: every check you ran (command) and its result; each time a check failed, what failed and what you changed (number these fix iterations); anything you could not do or verify.
+
+Final message: a short summary listing the files delivered, each check run with pass/fail, the number of fix iterations, and anything you are unsure about.

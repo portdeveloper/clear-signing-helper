@@ -1,0 +1,132 @@
+{
+  "$schema": "../../../specs/erc7730-tests-v2.schema.json",
+  "descriptor": "../calldata-StakingRewards.json",
+  "dataProvider": {
+    "tokens": {
+      "0x97b3070f9da6c002343862b35e68bd8e22608943": { "name": "Wrapped Monad", "symbol": "WMON", "decimals": 18 },
+      "0x534b2f3a21130d7a60830c2df862319e593943a3": { "name": "USDC", "symbol": "USDC", "decimals": 6 },
+      "0x1fbc7b6b54726d735ff1b47df75535b4b9021902": { "name": "Uniswap V2", "symbol": "UNI-V2", "decimals": 18 }
+    },
+    "addressNames": {}
+  },
+  "tests": [
+    {
+      "description": "exit - chain 10143",
+      "rawTx": "0x02e682279f808080830f424094e23b3825f950637256e8de1bf39743e8f29d97f18084e9fad8eec0",
+      "from": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+      "expected": {
+        "intent": "Unstake all and claim rewards",
+        "interpolatedIntent": "Unstake all and claim rewards",
+        "owner": "PuddleSwap",
+        "fields": []
+      }
+    },
+    {
+      "description": "getReward - chain 10143",
+      "rawTx": "0x02e682279f808080830f424094e23b3825f950637256e8de1bf39743e8f29d97f180843d18b912c0",
+      "from": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+      "expected": { "intent": "Claim rewards", "interpolatedIntent": "Claim staking rewards", "owner": "PuddleSwap", "fields": [] }
+    },
+    {
+      "description": "grantRole - chain 10143",
+      "rawTx": "0x02f86782279f808080830f424094e23b3825f950637256e8de1bf39743e8f29d97f180b8442f2ff15d97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b9290000000000000000000000008ba1f109551bd432803012645ac136ddd64dba72c0",
+      "from": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+      "expected": {
+        "intent": "Grant role",
+        "interpolatedIntent": "Grant role to 0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+        "owner": "PuddleSwap",
+        "fields": [
+          { "label": "Role", "value": "0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929" },
+          { "label": "Account", "value": "0x8ba1f109551bD432803012645Ac136ddd64DBA72" }
+        ]
+      }
+    },
+    {
+      "description": "notifyRewardAmount - chain 10143",
+      "rawTx": "0x02f84682279f808080830f424094e23b3825f950637256e8de1bf39743e8f29d97f180a43c6b16ab00000000000000000000000000000000000000000000003635c9adc5dea00000c0",
+      "from": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+      "expected": {
+        "intent": "Start reward period",
+        "interpolatedIntent": "Start 1000 WMON reward period",
+        "owner": "PuddleSwap",
+        "fields": [{ "label": "Reward amount", "value": "1000 WMON" }]
+      }
+    },
+    {
+      "description": "recoverERC20 - chain 10143",
+      "rawTx": "0x02f88782279f808080830f424094e23b3825f950637256e8de1bf39743e8f29d97f180b8641171bda9000000000000000000000000534b2f3a21130d7a60830c2df862319e593943a30000000000000000000000008ba1f109551bd432803012645ac136ddd64dba7200000000000000000000000000000000000000000000000000000000017d7840c0",
+      "from": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+      "expected": {
+        "intent": "Recover tokens",
+        "interpolatedIntent": "Recover 25 USDC to 0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+        "owner": "PuddleSwap",
+        "fields": [
+          { "label": "Token", "value": "0x534b2f3A21130d7a60830c2Df862319e593943A3" },
+          { "label": "Recipient", "value": "0x8ba1f109551bD432803012645Ac136ddd64DBA72" },
+          { "label": "Amount", "value": "25 USDC" }
+        ]
+      }
+    },
+    {
+      "description": "renounceRole - chain 10143",
+      "rawTx": "0x02f86782279f808080830f424094e23b3825f950637256e8de1bf39743e8f29d97f180b84436568abe97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b9290000000000000000000000008ba1f109551bd432803012645ac136ddd64dba72c0",
+      "from": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+      "expected": {
+        "intent": "Renounce role",
+        "interpolatedIntent": "Renounce role",
+        "owner": "PuddleSwap",
+        "fields": [
+          { "label": "Role", "value": "0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929" },
+          { "label": "Your account", "value": "0x8ba1f109551bD432803012645Ac136ddd64DBA72" }
+        ]
+      }
+    },
+    {
+      "description": "revokeRole - chain 10143",
+      "rawTx": "0x02f86782279f808080830f424094e23b3825f950637256e8de1bf39743e8f29d97f180b844d547741f97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b9290000000000000000000000008ba1f109551bd432803012645ac136ddd64dba72c0",
+      "from": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+      "expected": {
+        "intent": "Revoke role",
+        "interpolatedIntent": "Revoke role from 0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+        "owner": "PuddleSwap",
+        "fields": [
+          { "label": "Role", "value": "0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929" },
+          { "label": "Account", "value": "0x8ba1f109551bD432803012645Ac136ddd64DBA72" }
+        ]
+      }
+    },
+    {
+      "description": "setRewardsDuration - chain 10143",
+      "rawTx": "0x02f84682279f808080830f424094e23b3825f950637256e8de1bf39743e8f29d97f180a4cc1a378f0000000000000000000000000000000000000000000000000000000000093a80c0",
+      "from": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+      "expected": {
+        "intent": "Set reward duration",
+        "interpolatedIntent": "Set period: 168:00:00",
+        "owner": "PuddleSwap",
+        "fields": [{ "label": "Reward duration", "value": "168:00:00" }]
+      }
+    },
+    {
+      "description": "stake - chain 10143",
+      "rawTx": "0x02f84682279f808080830f424094e23b3825f950637256e8de1bf39743e8f29d97f180a4a694fc3a00000000000000000000000000000000000000000000000014d1120d7b160000c0",
+      "from": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+      "expected": {
+        "intent": "Stake LP tokens",
+        "interpolatedIntent": "Stake 1.5 UNI-V2",
+        "owner": "PuddleSwap",
+        "fields": [{ "label": "Amount to stake", "value": "1.5 UNI-V2" }]
+      }
+    },
+    {
+      "description": "withdraw - chain 10143",
+      "rawTx": "0x02f84682279f808080830f424094e23b3825f950637256e8de1bf39743e8f29d97f180a42e1a7d4d00000000000000000000000000000000000000000000000006f05b59d3b20000c0",
+      "from": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+      "expected": {
+        "intent": "Unstake LP tokens",
+        "interpolatedIntent": "Unstake 0.5 UNI-V2",
+        "owner": "PuddleSwap",
+        "fields": [{ "label": "Amount to unstake", "value": "0.5 UNI-V2" }]
+      }
+    }
+  ]
+}

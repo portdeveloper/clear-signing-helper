@@ -1,0 +1,115 @@
+{
+  "$schema": "../../specs/erc7730-v2.schema.json",
+  "context": {
+    "$id": "PuddleSwap USDC/WMON LP Staking Rewards",
+    "contract": { "deployments": [{ "chainId": 10143, "address": "0xe23B3825F950637256e8DE1BF39743E8f29D97F1" }] }
+  },
+  "metadata": {
+    "owner": "PuddleSwap",
+    "contractName": "StakingRewards",
+    "info": { "url": "https://puddleswap.org", "deploymentDate": "2026-06-24T15:43:35Z" },
+    "constants": {
+      "stakingToken": "0x1FBC7b6B54726D735fF1B47Df75535B4B9021902",
+      "rewardsToken": "0x97B3070F9Da6C002343862b35E68Bd8e22608943"
+    }
+  },
+  "display": {
+    "formats": {
+      "stake(uint256 amount)": {
+        "intent": "Stake USDC/WMON LP",
+        "interpolatedIntent": "Stake {amount} (USDC/WMON)",
+        "fields": [
+          {
+            "path": "amount",
+            "label": "Amount to stake",
+            "format": "tokenAmount",
+            "params": { "token": "$.metadata.constants.stakingToken" }
+          }
+        ]
+      },
+      "withdraw(uint256 amount)": {
+        "intent": "Unstake USDC/WMON LP",
+        "interpolatedIntent": "Unstake {amount} (USDC/WMON)",
+        "fields": [
+          {
+            "path": "amount",
+            "label": "Amount to unstake",
+            "format": "tokenAmount",
+            "params": { "token": "$.metadata.constants.stakingToken" }
+          }
+        ]
+      },
+      "getReward()": { "intent": "Claim rewards", "interpolatedIntent": "Claim WMON staking rewards", "fields": [] },
+      "exit()": { "intent": "Unstake all and claim rewards", "interpolatedIntent": "Unstake all and claim rewards", "fields": [] },
+      "notifyRewardAmount(uint256 reward)": {
+        "intent": "Start reward period",
+        "interpolatedIntent": "Start {reward} reward period",
+        "fields": [
+          {
+            "path": "reward",
+            "label": "Reward amount",
+            "format": "tokenAmount",
+            "params": { "token": "$.metadata.constants.rewardsToken" }
+          }
+        ]
+      },
+      "setRewardsDuration(uint256 rewardsDuration_)": {
+        "intent": "Set reward period duration",
+        "interpolatedIntent": "Set period {rewardsDuration_}",
+        "fields": [{ "path": "rewardsDuration_", "label": "Period duration", "format": "duration" }]
+      },
+      "recoverERC20(address token,address to,uint256 amount)": {
+        "intent": "Recover tokens",
+        "interpolatedIntent": "Recover {amount} to {to}",
+        "fields": [
+          { "path": "amount", "label": "Amount", "format": "tokenAmount", "params": { "tokenPath": "token" } },
+          {
+            "path": "to",
+            "label": "Recipient",
+            "format": "addressName",
+            "params": { "types": ["eoa", "contract"], "sources": ["local", "ens"] }
+          }
+        ]
+      },
+      "grantRole(bytes32 role,address account)": {
+        "intent": "Grant role",
+        "interpolatedIntent": "Grant role {role} to {account}",
+        "fields": [
+          { "path": "role", "label": "Role", "format": "raw" },
+          {
+            "path": "account",
+            "label": "Account",
+            "format": "addressName",
+            "params": { "types": ["eoa", "contract"], "sources": ["local", "ens"] }
+          }
+        ]
+      },
+      "revokeRole(bytes32 role,address account)": {
+        "intent": "Revoke role",
+        "interpolatedIntent": "Revoke {role} from {account}",
+        "fields": [
+          { "path": "role", "label": "Role", "format": "raw" },
+          {
+            "path": "account",
+            "label": "Account",
+            "format": "addressName",
+            "params": { "types": ["eoa", "contract"], "sources": ["local", "ens"] }
+          }
+        ]
+      },
+      "renounceRole(bytes32 role,address callerConfirmation)": {
+        "intent": "Renounce role",
+        "interpolatedIntent": "Renounce role {role}",
+        "fields": [
+          { "path": "role", "label": "Role", "format": "raw" },
+          {
+            "path": "callerConfirmation",
+            "label": "Account",
+            "format": "addressName",
+            "params": { "types": ["eoa", "contract"], "sources": ["local", "ens"] }
+          }
+        ]
+      }
+    }
+  }
+}
