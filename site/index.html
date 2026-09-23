@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clear Signing Helper</title>
 <meta name="description" content="Go from a deployed contract to an ERC-7730 clear-signing registry submission that passes the registry's own checks.">
+<link rel="alternate" type="text/plain" href="llms.txt" title="Instructions for AI agents">
 <style>
   :root{color-scheme:light dark;--bg:#fbfaf7;--fg:#1c1c1a;--muted:#5d5b55;--line:#e3dfd6;--card:#ffffff;--accent:#0b5e4a;--accent-soft:#e6f2ee;--code:#f1efe9}
   @media (prefers-color-scheme:dark){:root{--bg:#121413;--fg:#ececea;--muted:#a8a7a1;--line:#2a2e2c;--card:#1a1d1c;--accent:#7fd1b5;--accent-soft:#17302a;--code:#202422}}
@@ -43,10 +44,28 @@
 <main>
 <header>
   <h1>Clear Signing Helper</h1>
-  <p class="lead">Wallets show raw hex unless a protocol has published an <a href="https://eips.ethereum.org/EIPS/eip-7730">ERC-7730 descriptor</a> in the Ethereum Foundation's registry. This tool takes a contract to that registry submission: it derives what the ABI, compiler output, deployment records and verified source prove, asks a human only for what they cannot, and runs the registry's own checks before you open the pull request. Every claim on this page links to the code behind it.</p>
+  <p class="lead">Clear Signing Helper turns a deployed contract into an <a href="https://eips.ethereum.org/EIPS/eip-7730">ERC-7730</a> descriptor and test file for the <a href="https://github.com/ethereum/clear-signing-erc7730-registry">clear-signing registry</a>. It computes everything that has one right answer, leaves the intent wording, token denominations and what to hide for a person or agent to decide, and runs the registry's own checks before you open the pull request.</p>
+  <p class="lead">The goal is a registry PR that passes on the first try, where anything a person or model decided is written down, and everything else is computed. Every claim on this page links to the code behind it.</p>
   <p><span class="pill">0.4.0-preview.1</span><span class="pill">npm</span><span class="pill">MIT</span> <a href="https://github.com/portdeveloper/clear-signing-helper">GitHub</a> · <a href="https://www.npmjs.com/package/clear-signing-helper">npm</a> · <a href="https://github.com/ethereum/clear-signing-erc7730-registry">the registry</a></p>
 </header>
 
+
+<h2>Use it</h2>
+<p>Paste this into Claude Code, Cursor or another coding agent:</p>
+<pre><code>read https://github.com/portdeveloper/clear-signing-helper and use it to make my contract clear-signable: &lt;address&gt; on &lt;chain&gt;</code></pre>
+<p>The agent checks whether the registry already covers your protocol, runs the tool, asks you only the questions the contract cannot answer, and stops at a reviewed draft. You open the PR. To keep it installed as a skill: <code>npx skills add portdeveloper/clear-signing-helper</code>.</p>
+<div class="card">
+  <h3>If you are an AI agent</h3>
+  <p>Follow the playbook in <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/.claude/skills/clear-signing-helper/SKILL.md">SKILL.md</a> (<a href="https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/.claude/skills/clear-signing-helper/SKILL.md">raw</a>). In short:</p>
+  <ol>
+    <li>Search the registry first. If the protocol is there, add the chain with <code>clear-signing registry add-deployment</code>.</li>
+    <li>Otherwise run <code>clear-signing init</code>, then <code>decisions</code>, fill the decisions file, and <code>apply</code>. Do not write descriptor JSON by hand.</li>
+    <li>Ask the user for intent wording, which token an amount is in, and what to hide whenever the hints do not settle it. Do not guess.</li>
+    <li>Set <code>"author": "llm:&lt;your model&gt;"</code>. Put <code>"author": "human"</code> only on the values the user decided.</li>
+    <li>Run <code>fixture</code>, <code>preview</code>, <code>check</code> and <code>export</code>. Let the user look at the preview before <code>review --accept</code>.</li>
+    <li>Stop at the exported bundle and show the user the diff and the <code>git</code> commands. Open the PR only if the user explicitly asks, from an account tied to the contract owner; maintainers check ownership.</li>
+  </ol>
+</div>
 
 <h2>What this tool does, and does not do</h2>
 <div class="grid rfc">
@@ -112,7 +131,7 @@ flowchart TD
 </div>
 <p class="legend"><strong>Where each stage lives:</strong> inputs <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/foundry.ts">foundry.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/abi-project.ts">abi-project.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fetch.ts">fetch.ts</a> · scaffold <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">descriptors.ts</a> with evidence from <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/evidence.ts">evidence.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/ast.ts">ast.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/broadcast.ts">broadcast.ts</a> · decisions and apply in <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">app.ts</a> · validator <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">descriptors.ts</a> and priors <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/priors.ts">priors.ts</a> · fixtures and rendering <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fixtures.ts">fixtures.ts</a> over the <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/vendor/clear-signing/PROVENANCE.md">vendored renderer</a> · export, lint and runners <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">app.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/lint.ts">lint.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/runners.ts">runners.ts</a> · add-deployment <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/registry-edit.ts">registry-edit.ts</a>.</p>
 
-<h2>Get started</h2>
+<h2>Run it yourself</h2>
 <pre><code># Node 22+. Foundry only for Foundry projects. uv enables the registry's linter.
 npm install --global --ignore-scripts clear-signing-helper@preview
 

@@ -197,7 +197,7 @@ Not doing: "generate first with AI" (the model would regenerate the provable par
 
 ## Public overview page
 
-https://portdeveloper.github.io/clear-signing-helper/ is built from `site/index.html` by `.github/workflows/pages.yml` on every push to `main` that touches `site/`. Five sections: a lead, the DOES / does NOT lists (each item linked to the enforcing code), the pipeline diagram with a file legend, get-started commands, the comparison with `erc7730`, Ledger's JSON Builder and Cyfrin's `clearsig`, and a status list. Every claim links to a file on `main`. Keep the status list, the acceptance number and the test count there in step with this file; no eyebrow lines, no repeated content.
+https://portdeveloper.github.io/clear-signing-helper/ is built from `site/index.html` by `.github/workflows/pages.yml` on every push to `main` that touches `site/`. Sections: a lead with the goal line, "Use it" (the paste-into-agent prompt and an "If you are an AI agent" card summarizing SKILL.md, mirrored in `site/llms.txt`; keep both in step with the skill), the DOES / does NOT lists (each item linked to the enforcing code), the pipeline diagram with a file legend, "Run it yourself" commands, the comparison with `erc7730`, Ledger's JSON Builder and Cyfrin's `clearsig`, and a status list. Every claim links to a file on `main`. Keep the status list, the acceptance number and the test count there in step with this file; no eyebrow lines, no repeated content.
 
 ## Working conventions
 

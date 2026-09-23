@@ -1,0 +1,18 @@
+# Clear Signing Helper
+
+> A CLI that turns a deployed contract into an ERC-7730 descriptor and test file for the clear-signing registry (https://github.com/ethereum/clear-signing-erc7730-registry). It computes everything that has one right answer and leaves intent wording, token denominations and what to hide for a person or agent to decide.
+
+If you are an AI agent helping someone make a contract clear-signable, follow the playbook:
+https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/.claude/skills/clear-signing-helper/SKILL.md
+
+In short:
+1. Search the registry first. If the protocol is there, add the chain with `clear-signing registry add-deployment`.
+2. Otherwise run `clear-signing init`, then `decisions`, fill the decisions file, and `apply`. Do not write descriptor JSON by hand.
+3. Ask the user for intent wording, which token an amount is in, and what to hide whenever the hints do not settle it. Do not guess.
+4. Set "author": "llm:<your model>". Put "author": "human" only on the values the user decided.
+5. Run `fixture`, `preview`, `check` and `export`. Let the user look at the preview before `review --accept`.
+6. Stop at the exported bundle and show the user the diff and the git commands. Open the PR only if the user explicitly asks, from an account tied to the contract owner; maintainers check ownership.
+
+- Repository and README: https://github.com/portdeveloper/clear-signing-helper
+- Install: npm install --global --ignore-scripts clear-signing-helper@preview (Node 22+)
+- Overview: https://portdeveloper.github.io/clear-signing-helper/
