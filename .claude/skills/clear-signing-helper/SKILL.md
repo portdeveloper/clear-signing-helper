@@ -14,8 +14,11 @@ The spec and build guide are https://clearsigning.org/build/ and the EIP. Defer 
 ```sh
 npm install --global --ignore-scripts clear-signing-helper@preview   # Node 22+
 clear-signing --version
-uv --version   # optional; lets the CLI run the registry's erc7730 lint via uvx
+uv --version   # lets the CLI run the registry's erc7730 lint via uvx
+cargo --version && clear-signing registry setup-runners   # builds the registry CI's two test runners once (needs git, npm, cargo; minutes on a cold cache)
 ```
+
+Run the registry's test runners on every export and add-deployment (`--registry-runners`, `--runners` below). They are what check that each test's expected output matches what registry CI renders; lint alone does not. If `uv` or `cargo` is missing and the user cannot install it, say in the PR which check did not run.
 
 Add `--json` to any CLI command for machine-readable output with stable diagnostic codes.
 
@@ -39,7 +42,7 @@ If a `calldata-*.json` matched and only the chain is missing:
 ```sh
 clear-signing registry add-deployment --registry registry-clone \
   --descriptor registry/<entity>/calldata-<Name>.json \
-  --chain-id <id> --address <addr> \
+  --chain-id <id> --address <addr> --runners \
   [--token <tokenAddr>=<SYMBOL>:<decimals>] [--address-name <addr>=<Name>]
 ```
 
@@ -50,7 +53,7 @@ If an `eip712-*.json` matched (Permit2, UniswapX, most permit-style protocols), 
 ```sh
 clear-signing registry add-deployment --registry registry-clone \
   --descriptor registry/<entity>/eip712-<Name>.json \
-  --chain-id <id> --address <addr> --rpc-url <endpoint for that chain> \
+  --chain-id <id> --address <addr> --rpc-url <endpoint for that chain> --runners \
   [--set <message.path>=<value>] [--token <tokenAddr>=<SYMBOL>:<decimals>] [--template "<existing test description>"] [--description "<new test description>"]
 ```
 
@@ -116,10 +119,10 @@ clear-signing preview --fixture clear-signing/fixtures/<n>.json           # add 
 clear-signing check --contract <id>
 clear-signing review --accept --contract <id>
 clear-signing test --update --contract <id>
-clear-signing export --contract <id> --strict-portability --out bundle [--entity <registry-folder>]
+clear-signing export --contract <id> --strict-portability --registry-runners --ci-pins registry-clone --out bundle [--entity <registry-folder>]
 ```
 
-Every function you kept needs at least one passing fixture. Fixture metadata (`tokens`, `addressNames`, `chain`) is local and never fetched; put the real symbol and decimals in. `export` writes `bundle/registry/<entity>/calldata-<Name>.json` and `testsv2/` exactly as the registry wants them, runs `erc7730 lint`, and records everything under `bundle/review/`. `--strict-portability` rejects ABI shapes with recorded wallet failures (signed ints, nested arrays, multi-field tuple arrays); if it fires, exclude that function or drop strict mode and say so in the PR.
+Every function you kept needs at least one passing fixture. Fixture metadata (`tokens`, `addressNames`, `chain`) is local and never fetched; put the real symbol and decimals in. `export` writes `bundle/registry/<entity>/calldata-<Name>.json` and `testsv2/` exactly as the registry wants them, runs `erc7730 lint` and both registry test runners at the pins in the clone's CI files, and records everything under `bundle/review/`. Any failure produces no bundle. `--strict-portability` rejects ABI shapes with recorded wallet failures (signed ints, nested arrays, multi-field tuple arrays); if it fires, exclude that function or drop strict mode and say so in the PR.
 
 `review --accept` and `test --update` are the human's acknowledgement; run them only after you have looked at the preview.
 

@@ -65,7 +65,7 @@
     <li>Otherwise run <code>clear-signing init</code>, then <code>decisions</code>, fill the decisions file, and <code>apply</code>. Do not write descriptor JSON by hand.</li>
     <li>Ask the user for intent wording, which token an amount is in, and what to hide whenever the hints do not settle it. Do not guess.</li>
     <li>Set <code>"author": "llm:&lt;your model&gt;"</code>. Put <code>"author": "human"</code> only on the values the user decided.</li>
-    <li>Run <code>fixture</code>, <code>preview</code>, <code>check</code> and <code>export</code>. Let the user look at the preview before <code>review --accept</code>.</li>
+    <li>Run <code>fixture</code>, <code>preview</code>, <code>check</code>, and <code>export --registry-runners</code> so the registry CI's test runners check the expected output. Let the user look at the preview before <code>review --accept</code>.</li>
     <li>Stop at the exported bundle and show the user the diff and the <code>git</code> commands. Open the PR only if the user explicitly asks, from an account tied to the contract owner; maintainers check ownership.</li>
   </ol>
 </div>
