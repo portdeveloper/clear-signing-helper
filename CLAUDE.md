@@ -200,6 +200,13 @@ https://portdeveloper.github.io/clear-signing-helper/ is built from `site/index.
 - Any change to `schemas/`, `vendor/clear-signing/`, or `ENGINE` in `src/descriptors.ts` changes the engine fingerprint and invalidates every user's review. Do it deliberately and bump the version.
 - Do not weaken: canonical-calldata rejection, size and depth limits, path-escape checks, or the hash check in `scripts/verify-renderer.mjs`.
 - Machine note: if forge reports `Exec format error` for solc, the `~/.local/share/svm` cache holds binaries for the wrong CPU architecture. Delete the affected version directories and let forge redownload.
+- Local state that lives outside the repo and how to recreate it:
+  - **Registry runners** build once into `~/.cache/clear-signing-helper/runners/` (or `$CLEAR_SIGNING_RUNNERS_DIR`); `setupRunners` takes the fast path when both artifacts exist. Rebuild with `clear-signing registry setup-runners` (needs `git`, `npm`, `cargo`; about 20 s warm, minutes cold).
+  - **Registry clone** for `add-deployment`, the acceptance metric and prior snapshots: `git clone --depth 1 https://github.com/ethereum/clear-signing-erc7730-registry.git <dir>`. Run `git -C <dir> checkout -- .` between experiments so the clone stays clean.
+  - **puddleswap working copy**: `cp -r ../puddleswap/contracts <scratch>/puddle && (cd <scratch>/puddle && forge build --force)`, then point the CLI at it with `--root`. Never run the CLI against `../puddleswap` itself; it writes `clear-signing/` and `clear-signing.toml`.
+  - **ABI-mode scratch projects** need only an empty directory; `init --address` fetches everything. Known verified Monad testnet addresses: StakingRewards `0xe23B3825F950637256e8DE1BF39743E8f29D97F1`, WMON `0x97B3070F9Da6C002343862b35E68Bd8e22608943`, StableFaucet `0x50959dd2a4ef310f9aa2df9498cE9aC0aB956276`. The router `0x430c…6660` and TokenRegistry are not verified (see `docs/DOGFOOD.md`).
+  - **Toolchain present on this machine:** Node 22, Foundry 1.7.1, `uv`/`uvx`, `cargo`, `gh` authenticated as the owner. `ETHERSCAN_API_KEY` is not set; Sourcify is the only ABI source unless it is.
+  - Scratch belongs under the session scratchpad or `/tmp`, never in the repo; `*.tgz`, `release/*.tar.gz` and example build outputs are gitignored.
 
 ## Decisions
 
