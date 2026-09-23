@@ -7,7 +7,7 @@ import { parseSignature } from './descriptors.js';
 import { renderFixture, blockingWarnings, INFORMATIONAL_WARNINGS, type Fixture } from './fixtures.js';
 import { fetchVerifiedContract, rpcCall, type VerifiedContract } from './fetch.js';
 import { testCase, typedDataTestCase, validateRegistryTests } from './registry.js';
-import { runUpstreamLint, lintCommand, type LintResult } from './lint.js';
+import { runUpstreamLint, skippedLint, lintPinFromRegistry, type LintResult } from './lint.js';
 import { setupRunners, runRegistryRunners, pinsFromRegistry, type RunnerResult } from './runners.js';
 import { KNOWN_CHAINS } from './chains.js';
 import { runnerDivergence, type PortabilityFinding } from './portability.js';
@@ -322,7 +322,9 @@ function addProviderExtras(tests: any, extraTokens: Record<string, unknown>, ext
 function writeChecked(o: AddDeploymentOptions, registry: string, writes: {file: string; original: string; updated: string}[], lintFiles: string[], testsFile: string): {lint: LintResult; runners: RunnerResult[] | null} {
   for (const w of writes) writeText(w.file, w.updated);
   try {
-    const lint: LintResult = o.lint === false ? {ran: false, command: lintCommand(lintFiles).join(' '), reason: 'skipped with --no-lint'} : runUpstreamLint(registry, lintFiles);
+    // The clone's own CI definition decides the erc7730 package and flags, as it does for the runners.
+    const pin = lintPinFromRegistry(registry);
+    const lint: LintResult = o.lint === false ? skippedLint(lintFiles, pin) : runUpstreamLint(registry, lintFiles, pin);
     if (lint.ran && lint.exitCode !== 0) throw new Failure('UPSTREAM_LINT_FAILED', `erc7730 lint rejected ${lintFiles.join(', ')} after the edit. Nothing was changed.`, 1, [{code: 'UPSTREAM_LINT_FAILED', message: (lint.output ?? []).join(' | '), remedy: `Reproduce with the edit applied: ${lint.command}. An error in a descriptor this edit does not touch also blocks it; check the clone is at a clean upstream commit.`}]);
     return {lint, runners: runRunners(o, registry, testsFile)};
   } catch (e) {

@@ -156,7 +156,7 @@ await test('production export is gated and produces valid registry test input',t
   const ff=path.join(root,'clear-signing/fixtures/transfer.json'),f=read(ff);delete f.localBinding;write(ff,f);
   run(root,['review','--accept']);run(root,['test','--update']);
   const exportedResult=run(root,['export','--out','bundle','--no-lint']).result;
-  assert.equal(exportedResult.entity,'example');assert.equal(exportedResult.lint.ran,false);assert.match(exportedResult.lint.command,/uvx --from erc7730==\d+\.\d+\.\d+ erc7730 lint registry\/example\/calldata-ClearToken.json/);
+  assert.equal(exportedResult.entity,'example');assert.equal(exportedResult.lint.ran,false);assert.match(exportedResult.lint.command,/uvx --from 'erc7730 @ git\+https:\/\/github.com\/sourcifyeth\/python-erc7730@[0-9a-f]{40}' erc7730 lint --require-verified registry\/example\/calldata-ClearToken.json/);assert.match(exportedResult.lint.pinSource,/built-in/);
   const result=read(path.join(root,'bundle/review/validation.json'));assert.equal(result.deploymentVerification,'not performed');
   // Registry layout: entity folder, contract-named descriptor with the registry's relative schema, tests beside it.
   assert.deepEqual(fs.readdirSync(path.join(root,'bundle/registry/example')).sort(),['calldata-ClearToken.json','testsv2']);

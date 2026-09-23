@@ -10,7 +10,7 @@ import {portabilityFindings, runnerDivergence, PORTABILITY_REFERENCE} from './po
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
 import { renderFixture, validateFixture, blockingWarnings, type Fixture, type Rendering } from './fixtures.js';
 import { registryTests } from './registry.js';
-import { runUpstreamLint, runUpstreamFormat, lintCommand, type LintResult } from './lint.js';
+import { runUpstreamLint, runUpstreamFormat, skippedLint, lintPinFromRegistry, DEFAULT_LINT_PIN, type LintResult } from './lint.js';
 import { setupRunners, runRegistryRunners, pinsFromRegistry, DEFAULT_PINS, type RunnerResult } from './runners.js';
 import { loadAbiProject, importAbiFile, importVerified, ABI_DIR } from './abi-project.js';
 import { fetchVerifiedContract } from './fetch.js';
@@ -277,7 +277,7 @@ export async function runTests(state: State, update=false, ids?: string[]) {
   for(const u of updates) writeJson(u.file,u.rendering);
   return {passed:renders.length, updated:updates.length, renders};
 }
-export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; inlineAbi?: boolean; lint?: boolean; registryRunners?: boolean; skipRegistryRunners?: string; runnerPins?: string; log?: (line: string) => void}
+export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; inlineAbi?: boolean; lint?: boolean; registryRunners?: boolean; skipRegistryRunners?: string; ciPins?: string; log?: (line: string) => void}
 // Registry entity folders are kebab-case slugs of the owner name, e.g. "Morpho DAO" -> "morpho-dao".
 export const entitySlug = (owner: string) => owner.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const REGISTRY_SCHEMA = '../../specs/erc7730-v2.schema.json';
@@ -336,13 +336,15 @@ export async function exportBundle(state: State, out: string, strictPortability=
       writeJson(path.join(stage,'review','renderings',name),r.rendering);
     }
     // Canonical registry formatting first, so lint and the runners see exactly what the PR will contain.
-    const formatted = options.lint===false ? {ran:false, reason:'skipped with --no-lint'} : runUpstreamFormat(stage, descriptorFiles);
-    lint = options.lint===false ? {ran:false, command:lintCommand(descriptorFiles).join(' '), reason:'skipped with --no-lint'} : runUpstreamLint(stage, descriptorFiles);
+    // The registry CI's own erc7730 package and lint flags: from a clone with --ci-pins, else the built-in pin.
+    const lintPin = options.ciPins ? lintPinFromRegistry(options.ciPins) : DEFAULT_LINT_PIN;
+    const formatted = options.lint===false ? {ran:false, reason:'skipped with --no-lint'} : runUpstreamFormat(stage, descriptorFiles, lintPin);
+    lint = options.lint===false ? skippedLint(descriptorFiles, lintPin) : runUpstreamLint(stage, descriptorFiles, lintPin);
     (lint as LintResult & {formatted?: typeof formatted}).formatted = formatted;
     if(lint.ran && lint.exitCode!==0) throw new Failure('UPSTREAM_LINT_FAILED',`erc7730 lint rejected the exported descriptor(s).`,1,[{code:'UPSTREAM_LINT_FAILED',message:(lint.output??[]).join(' | '),remedy:`Fix the descriptor and export again, or reproduce with: ${lint.command}`}]);
     // The registry's own implementations, when asked for. The bundle's registry/ directory is a registry root.
     if(options.registryRunners) {
-      const tc=setupRunners(options.runnerPins?pinsFromRegistry(options.runnerPins):DEFAULT_PINS, options.log);
+      const tc=setupRunners(options.ciPins?pinsFromRegistry(options.ciPins):DEFAULT_PINS, options.log);
       const failures:Diagnostic[]=[];
       for(const file of fs.existsSync(path.join(registryDir,'testsv2'))?fs.readdirSync(path.join(registryDir,'testsv2')).filter(f=>f.endsWith('.tests.json')):[]) {
         const results=runRegistryRunners(tc,path.join(registryDir,'testsv2',file),stage,path.join(stage,'review','runners',file.replace(/\.tests\.json$/,'')));

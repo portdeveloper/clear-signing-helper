@@ -81,8 +81,8 @@ program.command('export').description('Validate and write a submission bundle; d
   .option('--no-lint','Skip running the pinned upstream erc7730 lint')
   .option('--registry-runners','Also run the registry CI\'s Sourcify and Rust implementations on the exported tests (builds them once; needs git, npm, cargo)')
   .option('--skip-registry-runners <reason>','Export without the registry runners although a displayed field uses a shape where this tool and the registry CI render differently; the reason is recorded')
-  .option('--runner-pins <registry-clone>','Read runner revisions from a registry clone\'s CI definition instead of the built-in pins')
-  .action(async options=>output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,inlineAbi:options.inlineAbi===true,lint:options.lint!==false,registryRunners:options.registryRunners===true,skipRegistryRunners:options.skipRegistryRunners,runnerPins:options.runnerPins,log:progress})));
+  .option('--ci-pins <registry-clone>','Read the erc7730 package, lint flags and runner revisions from a registry clone\'s CI definition instead of the built-in pins')
+  .action(async options=>output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,inlineAbi:options.inlineAbi===true,lint:options.lint!==false,registryRunners:options.registryRunners===true,skipRegistryRunners:options.skipRegistryRunners,ciPins:options.ciPins,log:progress})));
 const registry=program.command('registry').description('Edit an existing registry clone; never commits or opens pull requests');
 registry.command('add-deployment').description('Add a verified deployment (and a rendered test case) to a descriptor already in the registry')
   .requiredOption('--registry <directory>','Path to a clone of ethereum/clear-signing-erc7730-registry')
