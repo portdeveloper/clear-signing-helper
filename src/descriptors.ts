@@ -2,14 +2,16 @@ import { FunctionFragment, ParamType, isAddress } from 'ethers';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import schema from '../schemas/erc7730-v2.schema.json' with {type: 'json'};
-import packageJson from '../package.json' with {type: 'json'};
 import { Contract } from './foundry.js';
 import type { Evidence } from './evidence.js';
 import { disagreements, priorsFor, summarizePrior } from './priors.js';
 import { assertKeys, assertTreeBudget, Diagnostic, fail, Failure, hash } from './io.js';
 
 export const SCHEMA_URL = 'https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json';
-export const ENGINE = {tool: packageJson.version, renderer: '@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1', schema: hash(schema), subset: 3};
+// The engine is what decides rendering and validation: renderer, schema and the validator subset. The tool
+// version is not part of it, so a release that changes none of these keeps configs, reviews and expectations
+// valid. Bump subset when validator semantics change.
+export const ENGINE = {renderer: '@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1', schema: hash(schema), subset: 3};
 export type Field = {path?: string; value?: unknown; label?: string; format?: string; params?: Record<string, any>; separator?: string; visible?: unknown; $id?: string; $ref?: string};
 export type Group = {path: string; label?: string; fields: (Field | Group)[]; iteration?: 'sequential'; $id?: string};
 export type Descriptor = {
@@ -91,6 +93,38 @@ export function mergeDefinition(field: Field, definitions: Record<string, Field>
 }
 // A concrete index such as path.[0] or path.[-1] addresses the same ABI leaf as path.[].
 export const normalizePath = (p: string) => p.replace(/\.\[-?\d+\]/g, '.[]');
+// One reading of a display field tree, shared by validation, decisions, priors and the scaffold, so
+// they cannot disagree on what a field displays. A group scopes its children's paths and path-valued
+// parameters; $ref merges the display definition over the field; "#." roots are stripped; transaction
+// fields (@.) are never scoped.
+export const joinPath = (prefix: string, p: string) => p.startsWith('@.') ? p : prefix + stripRoot(p);
+export function scopeParams(params: Record<string, any> | undefined, prefix: string) {
+  if (!params || !prefix) return params;
+  return Object.fromEntries(Object.entries(params).map(([k, v]) => [k, PATH_PARAMS.has(k) && typeof v === 'string' && !v.startsWith('@.') && !v.startsWith('$.') && !isAddress(v) ? joinPath(prefix, v) : v]));
+}
+// The ABI leaf (or transaction field) a resolved path displays: concrete indices and a trailing byte
+// slice such as .[-20:] address the same leaf.
+export const leafKey = (p: string) => p.startsWith('@.') ? p : normalizePath(stripRoot(p).replace(/\.\[-?\d*:-?\d*\]$/, ''));
+// field: merged with its definition, path and parameters scoped. source: the object as written, for
+// callers that edit the tree in place. key: leafKey of the path. hidden: visible "never".
+export interface ResolvedField {field: Field; source: Field; key?: string; hidden: boolean}
+export function resolveFields(items: (Field | Group)[], definitions: Record<string, Field> = {}, onGroup?: (group: Group) => void, prefix = '', depth = 0): ResolvedField[] {
+  if (depth > 32) fail('UNSUPPORTED_FEATURE', 'Field grouping exceeds the supported depth.');
+  return items.flatMap(item => {
+    if (!item || typeof item !== 'object') fail('INVALID_FIELDS', 'Fields must be objects.');
+    if ('fields' in item) {
+      onGroup?.(item);
+      if (typeof item.path !== 'string' || !item.path || !Array.isArray(item.fields)) fail('INVALID_PATH', 'Groups require a path and fields array.');
+      return resolveFields(item.fields, definitions, onGroup, joinPath(prefix, item.path) + '.', depth + 1);
+    }
+    const merged = mergeDefinition(item, definitions);
+    const params = scopeParams(merged.params, prefix);
+    const field: Field = {...merged, ...(params ? {params} : {}), ...(typeof merged.path === 'string' ? {path: joinPath(prefix, merged.path)} : {})};
+    return [{field, source: item, ...(typeof field.path === 'string' ? {key: leafKey(field.path)} : {}), hidden: field.visible === 'never'}];
+  });
+}
+// The leaves a path covers: itself, or every leaf of the struct or array it names.
+export const coveredLeaves = (key: string, leafKeys: Iterable<string>) => [...leafKeys].filter(l => l === key || l.startsWith(key + '.'));
 // Where a scaffolded value came from, so reviewers can tell author text and proofs from conventions.
 export interface Provenance {signature: string; path?: string; source: 'natspec' | 'ast' | 'broadcast' | 'convention' | 'registry' | 'human' | 'llm'; detail: string}
 const firstSentence = (text: string) => text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, '').trim();
@@ -153,12 +187,10 @@ export function scaffoldFormatWithProvenance(f: FunctionFragment, evidence?: Evi
   const built = [...fields(parsed.inputs), ...(f.stateMutability === 'payable' ? [{path:'@.value',label:'Native amount',format:'amount'}] : [])];
   // Enum-typed leaves become enum formats referencing metadata.enums; the key is chosen by the caller.
   const enumsHere = new Map((evidence?.enums[sig] ?? []).map(e => [e.path, e]));
-  const apply = (items: (Field | Group)[], prefix = '') => { for (const item of items) {
-    if ('fields' in item) { apply(item.fields, prefix + item.path + '.'); continue; }
-    const full = prefix + item.path, e = enumsHere.get(full), key = e && enumKeys.get(e.canonicalName);
-    if (e && key) { item.format = 'enum'; item.params = {$ref: `$.metadata.enums.${key}`}; provenance.push({signature: sig, path: full, source: 'ast', detail: `enum ${e.canonicalName} with members ${e.members.join(', ')}`}); }
-  } };
-  apply(built);
+  for (const r of resolveFields(built)) {
+    const e = r.key ? enumsHere.get(r.key) : undefined, key = e && enumKeys.get(e.canonicalName);
+    if (e && key) { r.source.format = 'enum'; r.source.params = {$ref: `$.metadata.enums.${key}`}; provenance.push({signature: sig, path: r.key, source: 'ast', detail: `enum ${e.canonicalName} with members ${e.members.join(', ')}`}); }
+  }
   // Advisory: what other registry descriptors do with this selector. Reported, never applied.
   const priors = priorsFor(f.selector);
   if (priors.length) provenance.push({signature: sig, source: 'registry', detail: `${priors.length} registry format(s) describe this selector; e.g. ${priors.slice(0, 2).map(summarizePrior).join(' | ')}`});
@@ -257,28 +289,13 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         if (!Array.isArray(spec.fields)) fail('INVALID_FIELDS', `${sig} fields must be an array.`);
         const leafMap = new Map(leaves(f.inputs).map(x => [x.path, x.type]));
         // A trailing byte slice such as .[-20:] or .[0:4] addresses part of a leaf; the renderer slices the bytes.
-        const sliceBase = (p: string) => p.replace(/\.\[-?\d*:-?\d*\]$/, '');
-        const typeOf = (p: string) => leafMap.get(normalizePath(stripRoot(sliceBase(p)))) ?? TRANSACTION_FIELDS[p];
+        const typeOf = (p: string) => leafMap.get(leafKey(p)) ?? TRANSACTION_FIELDS[p];
         const seen = new Set<string>(), displayedLeaves = new Set<string>(), declaredHidden = new Set<string>();
-        const join = (prefix: string, p: string) => p.startsWith('@.') ? p : prefix + stripRoot(p);
-        const flatten = (items: (Field | Group)[], prefix = '', depth = 0): Field[] => {
-          if (depth > 32) fail('UNSUPPORTED_FEATURE', 'Field grouping exceeds the supported depth.');
-          return items.flatMap(item => {
-            if (!item || typeof item !== 'object') fail('INVALID_FIELDS', 'Fields must be objects.');
-            if ('fields' in item) {
-              assertKeys(item, ['path','label','fields','iteration','$id'], `group in ${sig}`);
-              if (typeof item.path !== 'string' || !item.path || !Array.isArray(item.fields)) fail('INVALID_PATH', 'Groups require a path and fields array.');
-              if (item.iteration && item.iteration !== 'sequential') fail('UNSUPPORTED_FEATURE', 'Only sequential group iteration is supported.');
-              return flatten(item.fields, join(prefix, item.path) + '.', depth + 1);
-            }
-            // $ref merges the field over its display definition, key by key, as the renderer does.
-            const merged = mergeDefinition(item, definitions);
-            // Inside a group, relative parameter paths are scoped to the group, exactly like field paths.
-            const params = merged.params && prefix ? Object.fromEntries(Object.entries(merged.params).map(([k, v]) => [k, PATH_PARAMS.has(k) && typeof v === 'string' && !v.startsWith('@.') && !v.startsWith('$.') && !isAddress(v) ? join(prefix, v) : v])) : merged.params;
-            return [{...merged, ...(params ? {params} : {}), ...(typeof merged.path === 'string' ? {path: join(prefix, merged.path)} : {})}];
-          });
-        };
-        for (const field of flatten(spec.fields)) {
+        const resolved = resolveFields(spec.fields, definitions, group => {
+          assertKeys(group, ['path','label','fields','iteration','$id'], `group in ${sig}`);
+          if (group.iteration && group.iteration !== 'sequential') fail('UNSUPPORTED_FEATURE', 'Only sequential group iteration is supported.');
+        });
+        for (const {field, key: leaf} of resolved) {
           assertKeys(field, ['path', 'value', 'label', 'format', 'params', 'separator', 'visible', '$id', '$ref'], `field in ${sig}`);
           if (field.visible !== undefined && !['always', 'never', 'default', 'optional'].includes(String(field.visible)) && !isVisibilityRule(field.visible)) fail('UNSUPPORTED_FEATURE', `visible must be "always", "never", "optional", "default", or a rule object with ifNotIn or mustMatch.`);
           if (typeof field.label !== 'string' || !field.label.trim()) fail('MISSING_LABEL', `${field.path ?? field.value} requires a label.`);
@@ -291,8 +308,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           if (typeof field.path !== 'string') fail('INVALID_PATH', 'Every field requires a path or a value.');
           if (field.visible === 'never') {
             // Hidden in the descriptor itself. A whole struct or array may be hidden this way.
-            const base = normalizePath(stripRoot(field.path));
-            const covered = [...leafMap.keys()].filter(l => l === base || l.startsWith(base + '.'));
+            const covered = coveredLeaves(leaf!, leafMap.keys());
             if (!covered.length && !TRANSACTION_FIELDS[field.path]) fail('INVALID_PATH', `${field.path} is not an argument of ${sig}.`);
             covered.forEach(l => declaredHidden.add(l));
             continue;
@@ -300,7 +316,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           const type = typeOf(field.path);
           if (!type) fail('INVALID_PATH', `${field.path} is not a leaf argument or supported transaction field of ${sig}.`);
           if (seen.has(field.path)) fail('DUPLICATE_FIELD', `${field.path} is displayed more than once.`);
-          seen.add(field.path); displayedLeaves.add(normalizePath(field.path));
+          seen.add(field.path); displayedLeaves.add(leaf!);
           if (field.format === undefined) fail('UNSUPPORTED_FORMAT', `${field.path} has no format; the pinned renderer needs one (use raw).`);
           const params = field.params ?? {};
           if (field.format in UNSUPPORTED_FORMAT_REASON) fail('UNSUPPORTED_FORMAT', `${field.format} on ${field.path}: ${UNSUPPORTED_FORMAT_REASON[field.format]}.`);
@@ -352,7 +368,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
             if (!seen.has(target) && !seen.has(normalizePath(target)) && !TRANSACTION_FIELDS[target]) add('INVALID_INTERPOLATION', `${sig} interpolatedIntent references {${ph}}, which is not a displayed field; the renderer will fall back to the plain intent.`, key, 'warning');
           }
         }
-        for (const dis of disagreements(key, spec.fields)) add('CORPUS_DISAGREEMENT', `${sig} shows ${dis.path} as ${dis.ours}, but all ${dis.among} registry format(s) for this selector have it ${dis.prior}. See the priors listed by init, or accept the difference.`, key, 'warning');
+        for (const dis of disagreements(key, spec.fields, definitions)) add('CORPUS_DISAGREEMENT', `${sig} shows ${dis.path} as ${dis.ours}, but all ${dis.among} registry format(s) for this selector have it ${dis.prior}. See the priors listed by init, or accept the difference.`, key, 'warning');
         if (actual.stateMutability === 'payable' && !seen.has('@.value')) fail('UNDISPLAYED_NATIVE_VALUE', `${sig} can transfer native currency and must display @.value.`);
       } catch(e) { if (e instanceof Failure) add(e.code, e.message, key); else throw e; }
     }

@@ -3,7 +3,7 @@ import path from 'node:path';
 import TOML from '@iarna/toml';
 import { Interface } from 'ethers';
 import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
-import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, normalizePath, stripRoot, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group } from './descriptors.js';
+import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
 import { priorsFor, summarizePrior } from './priors.js';
 import { gatherEvidence } from './evidence.js';
 import {portabilityFindings, PORTABILITY_REFERENCE} from './portability.js';
@@ -14,6 +14,7 @@ import { runUpstreamLint, runUpstreamFormat, lintCommand, type LintResult } from
 import { setupRunners, runRegistryRunners, pinsFromRegistry, DEFAULT_PINS, type RunnerResult } from './runners.js';
 import { loadAbiProject, importAbiFile, importVerified, ABI_DIR } from './abi-project.js';
 import { fetchVerifiedContract } from './fetch.js';
+import packageJson from '../package.json' with {type: 'json'};
 
 export interface Config {version: number; profile: string; engine: string; mode?: 'foundry' | 'abi'; contracts: Selection[]}
 export interface Options {root?: string; profile?: string; build?: boolean}
@@ -343,7 +344,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
       }
       if(failures.length) throw new Failure('REGISTRY_RUNNER_FAILED',`${failures.length} registry runner check(s) failed.`,1,failures);
     }
-    writeJson(path.join(stage,'review','validation.json'),{engine:ENGINE, entity, contracts:selections.map(s=>({id:s.id,descriptor:`registry/${entity}/calldata-${getContract(state.project,s.id).name}.json`,exclusions:s.exclusions,hidden:s.hidden??{}})),fixtures:tests.passed, upstreamLint:lint, registryRunners:options.registryRunners?runnerResults:'not run', deploymentVerification:'not performed',publication:'not submitted'});
+    writeJson(path.join(stage,'review','validation.json'),{tool:packageJson.version, engine:ENGINE, entity, contracts:selections.map(s=>({id:s.id,descriptor:`registry/${entity}/calldata-${getContract(state.project,s.id).name}.json`,exclusions:s.exclusions,hidden:s.hidden??{}})),fixtures:tests.passed, upstreamLint:lint, registryRunners:options.registryRunners?runnerResults:'not run', deploymentVerification:'not performed',publication:'not submitted'});
     writeJson(path.join(stage,'review','portability.json'),portability);
     const provenanceFile=safePath(state.project.root,provenanceName);
     if(fs.existsSync(provenanceFile)) { const all=readJson<Record<string,unknown>>(provenanceFile); writeJson(path.join(stage,'review','provenance.json'),Object.fromEntries(selections.filter(s=>s.id in all).map(s=>[s.id,all[s.id]]))); }
@@ -367,6 +368,11 @@ export interface DecisionField {type: string; show: boolean; hideReason?: string
 export interface DecisionFunction {signature: string; decision: 'describe' | 'exclude'; excludeReason?: string | null; intent: string; interpolatedIntent?: string | null; fields: Record<string, DecisionField>; hints?: Record<string, unknown>}
 export interface Decisions {version: 1; contract: string; descriptor: string; author: string | null; generatedAt: string; owner: string; url: string | null; functions: Record<string, DecisionFunction>; guidance: string[]}
 const decisionsDir = 'clear-signing/decisions';
+// A leaf the descriptor itself hides with visible "never" is reported as hidden with this reason, and apply
+// leaves such fields as written instead of moving the decision into clear-signing.toml.
+const DESCRIPTOR_NEVER = 'visible "never" in the descriptor';
+// Leaves hidden by a visible "never" field, including every leaf of a hidden struct or array.
+const neverHidden = (resolved: ResolvedField[], leafKeys: string[]) => new Set(resolved.filter(r => r.hidden && r.key).flatMap(r => coveredLeaves(r.key!, leafKeys)));
 export function writeDecisions(state: State, id: string, out?: string) {
   const selection = selectContracts(state, [id])[0];
   const c = getContract(state.project, id), d = state.descriptors.get(id)!, evidence = gatherEvidence(state.project, c);
@@ -376,21 +382,23 @@ export function writeDecisions(state: State, id: string, out?: string) {
   for (const f of c.functions) {
     const sig = f.format('sighash'), key = signature(f), existing = formats.get(sig);
     const leafList = leaves(f.inputs);
+    // Displayed fields by leaf, merged with their definitions; the first displayed field wins for a leaf shown more than once.
+    const resolved = existing ? resolveFields(existing.spec.fields, d.display.definitions ?? {}) : [];
     const flat = new Map<string, Field>();
-    const walk = (items: (Field | Group)[], prefix = '') => { for (const item of items) { if ('fields' in item) walk(item.fields, prefix + stripRoot(item.path) + '.'); else if (typeof item.path === 'string') flat.set(normalizePath(item.path.startsWith('@.') ? item.path : prefix + stripRoot(item.path)), item); } };
-    if (existing) walk(existing.spec.fields);
+    for (const r of resolved) if (r.key && !r.hidden && !flat.has(r.key)) flat.set(r.key, r.field);
+    const never = neverHidden(resolved, leafList.map(l => l.path));
     const addressLeaves = leafList.filter(l => l.type === 'address').map(l => l.path);
     const fields: Record<string, DecisionField> = {};
     for (const leaf of leafList) {
       const cur = flat.get(leaf.path);
-      const hidden = selection.hidden?.[sig]?.[leaf.path];
+      const hidden = selection.hidden?.[sig]?.[leaf.path] ?? (!cur && never.has(leaf.path) ? DESCRIPTOR_NEVER : undefined);
       const humanized = (leaf.path.split('.').pop() ?? leaf.path).replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' ').trim().replace(/^./, x => x.toUpperCase());
       const hints: Record<string, unknown> = {};
       if (/^u?int\d*$/.test(leaf.type)) hints.denominations = ['@.to (the contract itself is the token)', ...constants.map(k => `$.metadata.constants.${k}`), ...addressLeaves.map(a => `tokenPath ${a}`), 'token <literal address>'];
       if (evidence.paramDocs[sig]?.[leaf.path.split('.')[0]]) hints.natspec = evidence.paramDocs[sig][leaf.path.split('.')[0]];
       const formatsForType = leaf.type === 'address' ? ['addressName', 'tokenTicker', 'raw'] : /^u?int\d*$/.test(leaf.type) ? ['tokenAmount', 'amount', 'date', 'duration', 'unit', 'enum', 'chainId', 'raw'] : leaf.type === 'bool' ? ['enum', 'raw'] : ['raw'];
       hints.formatsForType = formatsForType;
-      fields[leaf.path] = {type: leaf.type, show: !!cur || !hidden, ...(hidden ? {hideReason: hidden} : {}), label: cur?.label ?? humanized, format: cur?.format ?? 'raw', params: cur?.params ?? null, hints};
+      fields[leaf.path] = {type: leaf.type, show: !!cur || !hidden, ...(hidden && !cur ? {hideReason: hidden} : {}), label: cur?.label ?? humanized, format: cur?.format ?? 'raw', params: cur?.params ?? null, hints};
     }
     if (f.stateMutability === 'payable') { const cur = flat.get('@.value'); fields['@.value'] = {type: 'uint256', show: true, label: cur?.label ?? 'Native amount', format: cur?.format ?? 'amount', params: cur?.params ?? null, hints: {note: 'Payable: must stay shown.'}}; }
     const priors = priorsFor(f.selector);
@@ -438,26 +446,50 @@ export function applyDecisions(state: State, file: string) {
     if (typeof fd.interpolatedIntent === 'string' && fd.interpolatedIntent.trim()) { spec.interpolatedIntent = fd.interpolatedIntent.trim(); provenance.push({contract: dec.contract, signature: sig, source, detail: `interpolatedIntent: ${spec.interpolatedIntent}`}); }
     else delete spec.interpolatedIntent;
     // Edit leaves in place to keep existing grouping; drop hidden ones; append newly shown ones flat.
+    // Paths resolve exactly as the validator reads them (resolveFields): group scope, $ref definitions, "#." roots.
+    const definitions = d.display.definitions ?? {};
+    const never = neverHidden(resolveFields(spec.fields, definitions), leaves(f.inputs).map(l => l.path));
     const hiddenHere: Record<string, string> = {};
     const present = new Set<string>();
     const edit = (items: (Field | Group)[], prefix = ''): (Field | Group)[] => items.flatMap((item): (Field | Group)[] => {
-      if ('fields' in item) { const inner = edit(item.fields, prefix + stripRoot(item.path) + '.'); return inner.length ? [{...item, fields: inner}] : []; }
-      if (typeof item.path !== 'string') return [item];
-      const full = item.path.startsWith('@.') ? item.path : normalizePath(prefix + stripRoot(item.path));
+      if ('fields' in item) { const inner = edit(item.fields, joinPath(prefix, item.path) + '.'); return inner.length ? [{...item, fields: inner}] : []; }
+      const merged = mergeDefinition(item, definitions);
+      if (typeof merged.path !== 'string') return [item];
+      const full = leafKey(joinPath(prefix, merged.path));
       const decision = fd.fields?.[full];
       if (!decision) return [item];
       present.add(full);
-      if (decision.show === false) { if (full === '@.value') fail('DECISIONS_NATIVE_VALUE', `${sig}: @.value must stay shown.`, 2); if (!decision.hideReason?.trim()) fail('DECISIONS_REASON', `${sig} ${full}: show=false needs a hideReason.`, 2); hiddenHere[full] = decision.hideReason!.trim(); return []; }
+      if (decision.show === false) {
+        if (full === '@.value') fail('DECISIONS_NATIVE_VALUE', `${sig}: @.value must stay shown.`, 2);
+        if (!decision.hideReason?.trim()) fail('DECISIONS_REASON', `${sig} ${full}: show=false needs a hideReason.`, 2);
+        // Already hidden by the descriptor: keep it as written.
+        if (merged.visible === 'never') return [item];
+        hiddenHere[full] = decision.hideReason!.trim(); return [];
+      }
       const format = decision.format ?? 'raw';
       if (!(SUPPORTED_FORMATS as readonly string[]).includes(format)) fail('UNSUPPORTED_FORMAT', `${sig} ${full}: ${format} is not a supported format.`, 2);
-      const next: Field = {...item, label: decision.label?.trim() || item.label, format};
-      if (decision.params && Object.keys(decision.params).length) next.params = decision.params as Record<string, any>; else delete next.params;
+      const label = decision.label?.trim() || merged.label;
+      const params = decision.params && Object.keys(decision.params).length ? decision.params as Record<string, any> : undefined;
+      // A $ref field may carry only path, $ref, params and visible. Unchanged, it stays as written; a
+      // change the reference cannot express inlines the merged definition.
+      if (typeof item.$ref === 'string' && label === merged.label && format === merged.format && canonical(params ?? null) === canonical(merged.params ?? null)) {
+        if (item.visible !== 'never') return [item];
+        const {visible: _, ...shown} = item; return [shown];
+      }
+      const {$ref: _ref, ...base} = typeof item.$ref === 'string' ? merged : item;
+      const next: Field = {...base, label, format};
+      if (next.visible === 'never') delete next.visible;
+      if (params) next.params = params; else delete next.params;
       return [next];
     });
     spec.fields = edit(spec.fields);
     for (const [full, decision] of Object.entries(fd.fields ?? {})) {
       if (present.has(full)) continue;
-      if (decision.show === false) { if (!decision.hideReason?.trim()) fail('DECISIONS_REASON', `${sig} ${full}: show=false needs a hideReason.`, 2); hiddenHere[full] = decision.hideReason!.trim(); continue; }
+      if (decision.show === false) {
+        if (!decision.hideReason?.trim()) fail('DECISIONS_REASON', `${sig} ${full}: show=false needs a hideReason.`, 2);
+        if (!never.has(full)) hiddenHere[full] = decision.hideReason!.trim();
+        continue;
+      }
       const format = decision.format ?? 'raw';
       if (!(SUPPORTED_FORMATS as readonly string[]).includes(format)) fail('UNSUPPORTED_FORMAT', `${sig} ${full}: ${format} is not a supported format.`, 2);
       spec.fields.push({path: full, label: decision.label?.trim() || full, format, ...(decision.params && Object.keys(decision.params).length ? {params: decision.params as Record<string, any>} : {})});

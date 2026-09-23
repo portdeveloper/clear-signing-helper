@@ -298,6 +298,35 @@ await test('drafts use NatSpec, AST enums, broadcast constructor constants, ERC-
   assert.ok(codes(run(root,['fixture','--name','nope','--contract',vault,'--broadcast-tx','0x'+'ff'.repeat(32)],2)).includes('BROADCAST_TX_NOT_FOUND'));
 });
 
+// decisions and apply read fields exactly as the validator does: definitions merged, descriptor-level
+// visible "never" respected. An untouched decisions file must round-trip to the same descriptor.
+await test('decisions read $ref definitions and visible never, and an untouched decisions file applies without change',t=>{
+  const root=setup();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const file=descriptor(root),d=read(file);
+  d.display.definitions={amount:{label:'Amount',format:'tokenAmount',params:{token:asset}},beneficiary:{path:'receiver',label:'Beneficiary',format:'addressName',params:{types:['eoa']}}};
+  d.display.formats['deposit(uint256 assets,address receiver)'].fields=[{path:'assets',$ref:'$.display.definitions.amount'},{$ref:'$.display.definitions.beneficiary'}];
+  d.display.formats['withdraw(uint256 assets,address receiver,address owner)'].fields=[{path:'assets',label:'Amount',format:'raw'},{path:'receiver',label:'Receiver',format:'raw'},{path:'owner',label:'Owner',visible:'never'}];
+  write(file,d);
+  const created=run(root,['decisions','--contract',vault]).result,dfile=path.join(root,created.created),dec=read(dfile);
+  const dep=dec.functions['deposit(uint256,address)'].fields,wd=dec.functions['withdraw(uint256,address,address)'].fields;
+  assert.deepEqual([dep.assets.show,dep.assets.label,dep.assets.format,dep.assets.params],[true,'Amount','tokenAmount',{token:asset}],'a $ref field reports its merged definition');
+  assert.deepEqual([dep.receiver.show,dep.receiver.label,dep.receiver.format],[true,'Beneficiary','addressName'],'a path taken from a definition is found');
+  assert.deepEqual([wd.owner.show,wd.owner.hideReason],[false,'visible "never" in the descriptor'],'visible never is reported as hidden');
+  dec.author='human';write(dfile,dec);
+  run(root,['apply','--decisions',created.created]);
+  const after=read(file);
+  assert.deepEqual(after.display.formats['deposit(uint256 assets,address receiver)'].fields,[{path:'assets',$ref:'$.display.definitions.amount'},{$ref:'$.display.definitions.beneficiary'}],'unchanged $ref fields stay as written, no duplicate appended');
+  assert.deepEqual(after.display.formats['withdraw(uint256 assets,address receiver,address owner)'].fields[2],{path:'owner',label:'Owner',visible:'never'},'a descriptor-hidden field stays as written');
+  assert.equal(fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8').includes('owner'),false,'no hidden entry duplicated into clear-signing.toml');
+  // Showing it again removes visible never; relabelling a $ref field inlines its definition.
+  const again=read(dfile),w=again.functions['withdraw(uint256,address,address)'].fields,dp=again.functions['deposit(uint256,address)'].fields;
+  w.owner={...w.owner,show:true,format:'addressName'};dp.receiver={...dp.receiver,label:'Recipient'};write(dfile,again);
+  run(root,['apply','--decisions',created.created]);
+  const final=read(file).display.formats;
+  assert.deepEqual(final['withdraw(uint256 assets,address receiver,address owner)'].fields[2],{path:'owner',label:'Owner',format:'addressName'});
+  assert.deepEqual(final['deposit(uint256 assets,address receiver)'].fields,[{path:'assets',$ref:'$.display.definitions.amount'},{path:'receiver',label:'Recipient',format:'addressName',params:{types:['eoa']}}]);
+});
+
 await test('decisions template exposes the judgment slots with hints, and apply writes descriptor, exclusions, hidden reasons and provenance',t=>{
   const root=project();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
   const router='src/SwapRouter.sol:SwapRouter';

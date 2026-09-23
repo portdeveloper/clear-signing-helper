@@ -140,3 +140,42 @@ await test('registry add-deployment on an EIP-712 descriptor proves the domain, 
   assert.deepEqual(read(common).context.eip712.deployments.map((x:any)=>x.chainId),[1,10,143,8453]);
   assert.equal(await code(['--address',vault,'--rpc-url',rpc],2),'DEPLOYMENT_EXISTS');
 });
+
+// Lint and the runners run on the edited files; when either rejects the edit, every file goes back.
+await test('registry add-deployment restores the clone when upstream lint or a registry runner rejects the edit',async t=>{
+  const root=registryClone();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const server=createServer((req,res)=>{
+    const url=new URL(req.url!,'http://x');res.writeHead(url.pathname===`/v2/contract/10143/${monadToken}`?200:404,{'content-type':'application/json'});
+    res.end(JSON.stringify(url.pathname===`/v2/contract/10143/${monadToken}`?{match:'exact_match',abi:tokenAbi,compilation:{name:'ClearToken'},proxyResolution:{isProxy:false,implementations:[]}}:{match:null}));
+  });
+  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));t.after(()=>server.close());
+  // Stand-ins: a uvx whose lint reports an error or passes, and runners at the pins the clone's CI names.
+  const bin=fs.mkdtempSync(path.join(os.tmpdir(),'csh-fake-uvx-'));t.after(()=>fs.rmSync(bin,{recursive:true,force:true}));
+  const uvx=(exit:number)=>{fs.writeFileSync(path.join(bin,'uvx'),`#!/bin/sh\n[ "$1" = --version ] && exit 0\necho "registry/example/calldata-ClearToken.json: error: stubbed lint error"\nexit ${exit}\n`);fs.chmodSync(path.join(bin,'uvx'),0o755);};
+  const runners=fs.mkdtempSync(path.join(os.tmpdir(),'csh-runner-stubs-'));t.after(()=>fs.rmSync(runners,{recursive:true,force:true}));
+  const sref='dae3cdabd0eab26173d7f7a31a2ca7e75bf07daf',rref='10605ba78f3d6f3f13102e0f3a3ecbc44ac500dc';
+  for(const [name,repository,ref] of [['run-sourcify-tests','sourcifyeth/clear-signing-test-runner',sref],['run-rust-tests','llbartekll/clear-signing',rref]]) {
+    fs.mkdirSync(path.join(root,'.github/actions',name),{recursive:true});fs.writeFileSync(path.join(root,'.github/actions',name,'action.yml'),`uses: actions/checkout@v4\nwith:\n  repository: ${repository}\n  ref: ${ref}\n`);
+  }
+  const s=path.join(runners,`sourcify-${sref.slice(0,8)}/dist`),r=path.join(runners,`rust-${rref.slice(0,8)}/target/release`);fs.mkdirSync(s,{recursive:true});fs.mkdirSync(r,{recursive:true});
+  fs.writeFileSync(path.join(s,'cli.js'),`const fs=require('fs');const [file,,out]=process.argv.slice(2);const t=JSON.parse(fs.readFileSync(file,'utf8'));fs.writeFileSync(out,JSON.stringify({implementation:'stub',cases:t.tests.map(c=>({description:c.description,status:'fail',message:'stubbed mismatch'}))}));`);
+  fs.writeFileSync(path.join(r,'cs-test'),'#!/bin/sh\nexit 0\n');fs.chmodSync(path.join(r,'cs-test'),0o755);
+  const env={CLEAR_SIGNING_SOURCIFY_URL:`http://127.0.0.1:${(server.address() as any).port}`,ETHERSCAN_API_KEY:'',PATH:`${bin}${path.delimiter}${process.env.PATH}`,CLEAR_SIGNING_RUNNERS_DIR:runners};
+  const desc=path.join(root,'registry/example/calldata-ClearToken.json'),tests=path.join(root,'registry/example/testsv2/calldata-ClearToken.tests.json');
+  const before=[fs.readFileSync(desc,'utf8'),fs.readFileSync(tests,'utf8')];
+  const args=['registry','add-deployment','--registry',root,'--descriptor','registry/example/calldata-ClearToken.json','--chain-id','10143','--address',monadToken,'--token',`${monadToken}=mCLR:18`];
+  uvx(1);
+  const lint=(await runAsync(args,1,env)).diagnostics[0];
+  assert.equal(lint.code,'UPSTREAM_LINT_FAILED');assert.match(lint.message,/stubbed lint error/);
+  assert.deepEqual([fs.readFileSync(desc,'utf8'),fs.readFileSync(tests,'utf8')],before,'a lint error restores the clone');
+  uvx(0);
+  const runner=(await runAsync([...args,'--runners'],1,env)).diagnostics[0];
+  assert.equal(runner.code,'REGISTRY_RUNNER_FAILED');assert.match(runner.message,/stubbed mismatch[\s\S]*Nothing was changed/);
+  assert.deepEqual([fs.readFileSync(desc,'utf8'),fs.readFileSync(tests,'utf8')],before,'a runner failure restores the clone');
+  // Both pass: the edit stays.
+  fs.writeFileSync(path.join(s,'cli.js'),`const fs=require('fs');const [file,,out]=process.argv.slice(2);const t=JSON.parse(fs.readFileSync(file,'utf8'));fs.writeFileSync(out,JSON.stringify({implementation:'stub',cases:t.tests.map(c=>({description:c.description,status:'pass'}))}));`);
+  fs.writeFileSync(path.join(r,'cs-test'),`#!/bin/sh\nnode -e "const fs=require('fs');const t=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));fs.writeFileSync(process.argv[2],JSON.stringify({implementation:'stub',cases:t.tests.map(c=>({description:c.description,status:'pass'}))}))" "$2" "$6"\n`);
+  const ok=(await runAsync([...args,'--runners'],0,env)).result;
+  assert.equal(ok.lint.exitCode,0);assert.deepEqual(ok.registryRunners.map((x:any)=>x.passed),[true,true]);
+  assert.equal(read(desc).context.contract.deployments.length,2);
+});

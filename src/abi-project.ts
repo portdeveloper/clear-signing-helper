@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Interface, FunctionFragment, getAddress, isAddress } from 'ethers';
-import packageJson from '../package.json' with {type: 'json'};
 import { assertKeys, fail, hash, readJson, safePath, walk, writeJson } from './io.js';
 import type { Contract, Project } from './foundry.js';
 import type { BroadcastDeployment } from './broadcast.js';
@@ -56,6 +55,6 @@ export function loadAbiProject(root: string): Project {
   }
   if (!contracts.length) fail('NO_CONTRACTS', `No ABI files under ${ABI_DIR}/. Run init --abi <file> or init --address <addr> --chain-id <id>.`, 2);
   contracts.sort((a, b) => a.id.localeCompare(b.id));
-  const fingerprint = hash({tool: packageJson.version, mode: 'abi', files: files.sort()});
+  const fingerprint = hash({mode: 'abi', files: files.sort()});
   return {root, profile: 'abi', config: {}, forgeVersion: 'none (ABI mode)', contracts, fingerprint, deployments, calls: []};
 }

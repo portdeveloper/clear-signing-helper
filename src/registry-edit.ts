@@ -106,11 +106,11 @@ export async function addDeployment(o: AddDeploymentOptions) {
   }
 
   // 4. Insert into the existing text so the diff is only the change, then run the registry's own checks.
-  writeText(descriptorFile, insertDeployment(original, ['context', 'contract', 'deployments'], o.chainId, address));
-  if (testsOriginal !== undefined) writeText(testsFile, insertTest(testsOriginal, testsUpdated));
   const relDescriptor = path.relative(registry, descriptorFile);
-  const lint: LintResult = o.lint === false ? {ran: false, command: lintCommand([relDescriptor]).join(' '), reason: 'skipped with --no-lint'} : runUpstreamLint(registry, [relDescriptor]);
-  const runners = runRunners(o, registry, testsFile);
+  const {lint, runners} = writeChecked(o, registry, [
+    {file: descriptorFile, original, updated: insertDeployment(original, ['context', 'contract', 'deployments'], o.chainId, address)},
+    ...(testsOriginal !== undefined ? [{file: testsFile, original: testsOriginal, updated: insertTest(testsOriginal, testsUpdated)}] : [])
+  ], [relDescriptor], testsFile);
   const entity = path.basename(entityDir);
   const changed = [relDescriptor, ...(test ? [test.file] : [])];
   const next = nextCommands(registry, entity, o.chainId, changed, verification.name ?? name.replace(/^calldata-|\.json$/g, ''),
@@ -245,12 +245,12 @@ async function addTypedDataDeployment(o: AddDeploymentOptions, registry: string,
 
   // 4. Write positionally, then lint every descriptor that includes the edited file: all of them now
   // resolve on the new chain.
-  writeText(holder.file, holderUpdated);
-  if (testsUpdated) writeText(testsFile, insertTest(testsOriginal!, testsUpdated));
   const affected = walk(path.join(registry, 'registry'), '.json').filter(f => /^(eip712|calldata)-/.test(path.basename(f)) && !f.split(path.sep).includes('tests') && !f.split(path.sep).includes('testsv2'))
     .filter(f => { try { return includeChain(registry, f).some(x => x.file === holder.file); } catch { return false; } }).map(f => path.relative(registry, f));
-  const lint: LintResult = o.lint === false ? {ran: false, command: lintCommand(affected).join(' '), reason: 'skipped with --no-lint'} : runUpstreamLint(registry, affected);
-  const runners = runRunners(o, registry, testsFile);
+  const {lint, runners} = writeChecked(o, registry, [
+    {file: holder.file, original: holder.text, updated: holderUpdated},
+    ...(testsUpdated ? [{file: testsFile, original: testsOriginal!, updated: insertTest(testsOriginal!, testsUpdated)}] : [])
+  ], affected, testsFile);
   const entity = path.basename(path.dirname(descriptorFile));
   const relHolder = path.relative(registry, holder.file);
   const changed = [relHolder, ...(test ? [test.file] : [])];
@@ -309,6 +309,19 @@ function addProviderExtras(tests: any, extraTokens: Record<string, unknown>, ext
   for (const [addr, meta] of Object.entries(extraTokens)) (tests.dataProvider ??= {}).tokens = {...(tests.dataProvider.tokens ?? {}), [addr.toLowerCase()]: meta};
   for (const [addr, label] of Object.entries(extraNames)) (tests.dataProvider ??= {}).addressNames = {...(tests.dataProvider.addressNames ?? {}), [addr.toLowerCase()]: label};
 }
+// Write the edits, then run the registry's own checks on them. A lint error or a runner failure puts
+// every file back byte for byte, so a refusal never leaves the clone half-edited.
+function writeChecked(o: AddDeploymentOptions, registry: string, writes: {file: string; original: string; updated: string}[], lintFiles: string[], testsFile: string): {lint: LintResult; runners: RunnerResult[] | null} {
+  for (const w of writes) writeText(w.file, w.updated);
+  try {
+    const lint: LintResult = o.lint === false ? {ran: false, command: lintCommand(lintFiles).join(' '), reason: 'skipped with --no-lint'} : runUpstreamLint(registry, lintFiles);
+    if (lint.ran && lint.exitCode !== 0) throw new Failure('UPSTREAM_LINT_FAILED', `erc7730 lint rejected ${lintFiles.join(', ')} after the edit. Nothing was changed.`, 1, [{code: 'UPSTREAM_LINT_FAILED', message: (lint.output ?? []).join(' | '), remedy: `Reproduce with the edit applied: ${lint.command}. An error in a descriptor this edit does not touch also blocks it; check the clone is at a clean upstream commit.`}]);
+    return {lint, runners: runRunners(o, registry, testsFile)};
+  } catch (e) {
+    for (const w of writes) writeText(w.file, w.original);
+    throw e;
+  }
+}
 // The registry's implementations, run in the clone itself with pins read from its CI definition.
 function runRunners(o: AddDeploymentOptions, registry: string, testsFile: string): RunnerResult[] | null {
   if (!o.runners || !fs.existsSync(testsFile)) return null;
@@ -316,7 +329,7 @@ function runRunners(o: AddDeploymentOptions, registry: string, testsFile: string
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'csh-runners-'));
   const runners = runRegistryRunners(tc, testsFile, registry, outDir);
   const failed = runners.filter(r => !r.passed);
-  if (failed.length) fail('REGISTRY_RUNNER_FAILED', `${failed.map(r => `${r.name} (${r.implementation ?? r.ref.slice(0, 8)}): ${r.reason ?? JSON.stringify(r.cases)}${r.failures.length ? `; ${r.failures.map(f => `"${f.description}" ${f.status}${f.message ? ` (${f.message})` : ''}`).join('; ')}` : ''}`).join('\n')}\nRendered output is under ${outDir}. The files in the clone were changed; revert them with git if you do not want to keep the edit.`, 1);
+  if (failed.length) fail('REGISTRY_RUNNER_FAILED', `${failed.map(r => `${r.name} (${r.implementation ?? r.ref.slice(0, 8)}): ${r.reason ?? JSON.stringify(r.cases)}${r.failures.length ? `; ${r.failures.map(f => `"${f.description}" ${f.status}${f.message ? ` (${f.message})` : ''}`).join('; ')}` : ''}`).join('\n')}\nRendered output is under ${outDir}. Nothing was changed.`, 1);
   return runners;
 }
 function nextCommands(registry: string, entity: string, chainId: number, changed: string[], what: string, body: string) {

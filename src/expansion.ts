@@ -1,8 +1,7 @@
 import type { FunctionFragment, ParamType } from 'ethers';
 import type { Field, Group } from './descriptors.js';
 import { fail } from './io.js';
-import { stripRoot, PATH_PARAMS } from './descriptors.js';
-import { isAddress } from 'ethers';
+import { stripRoot, scopeParams } from './descriptors.js';
 
 // The upstream renderer only iterates one array level. Lower standard nested
 // groups into concrete indexed paths for this transaction, keeping every leaf
@@ -65,8 +64,7 @@ export function expandNestedFields(input: (Field | Group)[], fn: FunctionFragmen
       if ('fields' in item) return lower(item.fields, context.path + '.', wildPath + '.');
       // Inside a group the renderer scopes relative parameter paths to the group; after lowering there is no
       // group left, so scope them to the concrete element prefix here.
-      const scoped = (item as Field).params && prefix ? Object.fromEntries(Object.entries((item as Field).params!).map(([k, v]) => [k, PATH_PARAMS.has(k) && typeof v === 'string' && !v.startsWith('@.') && !v.startsWith('$.') && !isAddress(v) ? prefix + stripRoot(v) : v])) : (item as Field).params;
-      const params = substituteParams(scoped, indexSubstitutions(wildPath, context.path));
+      const params = substituteParams(scopeParams((item as Field).params, prefix), indexSubstitutions(wildPath, context.path));
       return [{...item,path:context.path, ...(params ? {params} : {}), ...(context.path.includes('.[') ? {separator:context.path} : {})} as Field];
     });
   });

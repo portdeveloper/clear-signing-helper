@@ -52,7 +52,7 @@ External human review, maintainer assessment and physical-wallet acceptance rema
 
 ## Upgrade and rollback
 
-For users moving from an unpublished `0.2.0` candidate, retain the old tarball and back up `clear-signing.toml` and `clear-signing/`. Install the preview and run `clear-signing upgrade`. The explicit prerelease version changes the engine fingerprint, preserving descriptors while clearing old review. Inspect the source and previews before `clear-signing review --accept` and `clear-signing test --update`, then run `clear-signing check --strict-portability` and `clear-signing test`. Restore both the prior tool and its matching authoring files to roll back.
+For users moving from an unpublished `0.2.0` candidate, retain the old tarball and back up `clear-signing.toml` and `clear-signing/`. Install the preview and run `clear-signing upgrade`. The explicit prerelease version changes the engine fingerprint, preserving descriptors while clearing old review. Inspect the source and previews before `clear-signing review --accept` and `clear-signing test --update`, then run `clear-signing check --strict-portability` and `clear-signing test`. From 0.4.0 the engine fingerprint covers only the renderer, schema and validator subset, not the tool version; upgrading to 0.4.0 is the last time a version bump alone requires this procedure. Restore both the prior tool and its matching authoring files to roll back.
 
 
 To upgrade the helper, review the new renderer package and its source hashes,

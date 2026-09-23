@@ -31,9 +31,10 @@ It never signs, sends, publishes, verifies bytecode beyond a Sourcify match, or 
 ## Next up (start here after a context reset)
 
 1. **PR reviews pending, nothing to do:** [#3003](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003) (PuddleSwap StakingRewards, tool output, CI green, bot recommendation addressed) and [#2611](https://github.com/ethereum/clear-signing-erc7730-registry/pull/2611) (Permit2 on Monad, rebased 2026-09-20, CI green). When feedback arrives, record it in `docs/DOGFOOD.md`; a merge closes item 10.
-2. **Item 15, warning noise.** Over the merged corpus the validator emits 575 `UNDISPLAYED_ARGUMENT`, 343 `CORPUS_DISAGREEMENT`, 129 `INTENT_LENGTH` warnings. Correct, but a fresh draft will show dozens and teams will tune them out. Rank or group warnings in `check` output, and require more than one prior before `CORPUS_DISAGREEMENT` fires.
-3. **Item 13, advisory semantic verifier**, last, and only after measuring its disagreement rate on the corpus.
-4. **The test no code substitutes for:** one outside team running the skill cold on a verified contract.
+2. **Item 15, warning noise.** At registry `8f56072` the validator emits 496 `UNDISPLAYED_ARGUMENT`, 129 `INTENT_LENGTH` and 14 `CORPUS_DISAGREEMENT` warnings (the last was 326 until 2026-09-23: 312 were false positives from comparing fields without their `$ref` definitions). A fresh draft still shows dozens and teams will tune them out. Rank or group warnings in `check` output; re-measure `CORPUS_DISAGREEMENT` before adding a multi-prior threshold.
+3. **Architecture review follow-ups (2026-09-23).** Done: engine identity without the tool version, `add-deployment` fails on lint errors and restores the clone on lint or runner failure, one field resolver (`resolveFields` in `src/descriptors.ts`) for validation, decisions, apply, priors and the scaffold. Open: `testsv2` expectations come from the patched renderer on an expanded descriptor, so signed-int and nested-array cases can pass locally and fail registry CI; export should require `--registry-runners` when a portability finding applies. Lower: `registry-edit.ts` duplicates the renderer data provider and runner diagnostics from `fixtures.ts`/`app.ts`.
+4. **Item 13, advisory semantic verifier**, last, and only after measuring its disagreement rate on the corpus.
+5. **The test no code substitutes for:** one outside team running the skill cold on a verified contract.
 
 ## Verified gaps (2026-09-19, tested against puddleswap)
 
@@ -108,7 +109,7 @@ The build already requests `devdoc` and `userdoc` and nothing reads them; `broad
 
 ## Roadmap, phase 2
 
-Phase 1 (items 1-6) shipped as 0.3.0-preview.1 on 2026-09-19. Items 7-12, 14 and the validator parity pass are on `main`, unreleased; bump to 0.4.0-preview.1 before the next publish (engine unchanged since subset 3, so no forced `upgrade`). Phase 2 is ordered by what a Monad team actually needs first.
+Phase 1 (items 1-6) shipped as 0.3.0-preview.1 on 2026-09-19. Items 7-12, 14 and the validator parity pass are on `main`, unreleased; bump to 0.4.0-preview.1 before the next publish. `ENGINE` no longer includes the tool version (2026-09-23), so 0.4.0 forces one last `upgrade`, re-review and `test --update`; releases after it that keep renderer, schema and subset force none. Phase 2 is ordered by what a Monad team actually needs first.
 
 ### 7. Add a chain to an existing registry descriptor — `done` (2026-09-19)
 
@@ -157,7 +158,7 @@ Most Monad additions to established protocols are EIP-712 (Permit2 proved it); i
 
 ## Acceptance metric: does the validator accept what the registry merged?
 
-`npm run registry:acceptance -- <registry clone>` runs `validateDescriptor` over every merged calldata descriptor (includes resolved). 2026-09-22 at registry `9f37816`: **261 of 284 accepted**; the 23 rejections are the `calldata` format (32 fields across 22 files; nested-call resolution is out of scope) and one encrypted field. Before this pass the number was 11 of 284: the validator rejected `#.` root prefixes, `$id`, `$ref` definitions, constant-value fields, `visible: never/optional` and rule objects, byte slices, group-scoped parameter paths, token references to integer leaves, and treated type mismatches and a missing intent or owner as errors where the renderer only warns. All of those now follow the renderer's semantics. Re-run this after any validator change; a new rejection class is a regression against the registry.
+`npm run registry:acceptance -- <registry clone>` runs `validateDescriptor` over every merged calldata descriptor (includes resolved). 2026-09-22 at registry `9f37816`: **261 of 284 accepted**; the 23 rejections are the `calldata` format (32 fields across 22 files; nested-call resolution is out of scope) and one encrypted field. Before this pass the number was 11 of 284: the validator rejected `#.` root prefixes, `$id`, `$ref` definitions, constant-value fields, `visible: never/optional` and rule objects, byte slices, group-scoped parameter paths, token references to integer leaves, and treated type mismatches and a missing intent or owner as errors where the renderer only warns. All of those now follow the renderer's semantics. 2026-09-23 at registry `8f56072` (280 descriptors), before and after moving every field walker onto `resolveFields`: **258 of 280 accepted** both times; the change removed 312 `CORPUS_DISAGREEMENT` and 38 `UNDISPLAYED_ARGUMENT` false positives ($ref definitions and byte slices such as `goodUntil.[-4:]`) and added no diagnostic. Re-run this after any validator change; a new rejection class is a regression against the registry.
 
 ## Roadmap, phase 3: the LLM's place in the pipeline
 
@@ -203,7 +204,8 @@ https://portdeveloper.github.io/clear-signing-helper/ is built from `site/index.
 - Build and test: `npm ci`, `npm run build`, `npx tsx --test test/*.test.ts` (or `npm test`). Tests compile the Foundry projects under `examples/` and drive the built `dist/cli.js`. Anvil is required for `test/anvil.test.ts`.
 - Reference validation target: `../puddleswap/contracts`. Run `forge build --force` there once so solc 0.5.16, 0.6.6, and 0.8.x are cached, then point the CLI at a copy with `--root`.
 - Upstream tooling for comparison: `uvx erc7730 lint <file>` and `COLUMNS=10000 uvx erc7730 generate …`. Lint refuses files without a `calldata-` or `eip712-` prefix.
-- Any change to `schemas/`, `vendor/clear-signing/`, or `ENGINE` in `src/descriptors.ts` changes the engine fingerprint and invalidates every user's review. Do it deliberately and bump the version.
+- Any change to `schemas/`, `vendor/clear-signing/`, or `ENGINE` in `src/descriptors.ts` changes the engine fingerprint and invalidates every user's config, review and expectations. Do it deliberately; bump `subset` for validator semantics. The tool version is deliberately not in `ENGINE`.
+- Field trees are read only through `resolveFields` (group scope, `$ref` merge, `#.` roots, slices, `visible: never`). A new consumer that walks fields by hand is how the validator, decisions and priors drifted apart before.
 - Do not weaken: canonical-calldata rejection, size and depth limits, path-escape checks, or the hash check in `scripts/verify-renderer.mjs`.
 - Machine note: if forge reports `Exec format error` for solc, the `~/.local/share/svm` cache holds binaries for the wrong CPU architecture. Delete the affected version directories and let forge redownload.
 - Local state that lives outside the repo and how to recreate it:

@@ -1,6 +1,6 @@
 import { FunctionFragment, ParamType } from 'ethers';
 import priors from './data/registry-priors.json' with {type: 'json'};
-import { leaves, parseSignature, normalizePath, stripRoot, type Field, type Group } from './descriptors.js';
+import { leaves, parseSignature, resolveFields, type Field, type Group, type ResolvedField } from './descriptors.js';
 
 // What other registry descriptors do with the same function selector. Advisory only: it never
 // changes a draft, it pre-fills suggestions and warns when a draft disagrees in kind with every prior.
@@ -11,18 +11,13 @@ export function priorsFor(selector: string): Prior[] { return ((priors.bySelecto
 export type LeafKind = 'hidden' | 'raw' | 'typed';
 export interface LeafView {path: string; kind: LeafKind; format?: string; params?: Record<string, unknown>}
 // Leaves in ABI order, so two descriptors of the same selector align by index even when their parameter names differ.
-export function leafViews(key: string, fields: (Field | Group)[]): LeafView[] | undefined {
+export function leafViews(key: string, fields: (Field | Group)[], definitions: Record<string, Field> = {}): LeafView[] | undefined {
   let fn: FunctionFragment;
   try { fn = parseSignature(key); } catch { return undefined; }
   const shown = new Map<string, Field>();
-  const walk = (items: any[], prefix = '') => { for (const item of items ?? []) {
-    if (!item || typeof item !== 'object') continue;
-    if ('fields' in item) { walk(item.fields, typeof item.path === 'string' ? prefix + stripRoot(item.path) + '.' : prefix); continue; }
-    if (typeof item.path !== 'string' || item.path.startsWith('@.')) continue;
-    if (item.visible === 'never') continue;
-    shown.set(normalizePath(stripRoot(prefix + stripRoot(item.path))), item);
-  } };
-  walk(fields);
+  // Priors carry no display definitions (the snapshot resolves them); a draft passes its own. A malformed tree yields no view.
+  let resolved: ResolvedField[]; try { resolved = resolveFields(Array.isArray(fields) ? fields : [], definitions); } catch { return undefined; }
+  for (const r of resolved) if (r.key && !r.key.startsWith('@.') && !r.hidden) shown.set(r.key, r.field);
   return leaves(fn.inputs).map(leaf => {
     const f = shown.get(leaf.path);
     if (!f) return {path: leaf.path, kind: 'hidden'};
@@ -35,9 +30,9 @@ export function summarizePrior(p: Prior): string {
   return `${p.entity}: intent "${p.intent ?? ''}"${parts.length ? `; ${parts.join(', ')}` : ''}`;
 }
 // Where every prior agrees on a leaf's kind and the draft differs, report it. Returns one line per disagreeing leaf.
-export function disagreements(key: string, fields: (Field | Group)[]): {path: string; ours: LeafKind; prior: LeafKind; among: number}[] {
+export function disagreements(key: string, fields: (Field | Group)[], definitions: Record<string, Field> = {}): {path: string; ours: LeafKind; prior: LeafKind; among: number}[] {
   let selector: string; try { selector = parseSignature(key).selector.toLowerCase(); } catch { return []; }
-  const ours = leafViews(key, fields); if (!ours) return [];
+  const ours = leafViews(key, fields, definitions); if (!ours) return [];
   const priorViews = priorsFor(selector).map(p => leafViews(p.key, p.fields)).filter((v): v is LeafView[] => !!v && v.length === ours.length);
   if (!priorViews.length) return [];
   return ours.flatMap((view, i) => {

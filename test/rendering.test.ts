@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {FunctionFragment, Interface} from 'ethers';
-import {scaffold,validateDescriptor, type Descriptor} from '../src/descriptors.js';
+import {ENGINE,scaffold,validateDescriptor, type Descriptor} from '../src/descriptors.js';
 import {renderFixture} from '../src/fixtures.js';
 import {previewHtml,servePreview} from '../src/preview.js';
 import type {Contract} from '../src/foundry.js';
@@ -151,4 +151,10 @@ await test('registry idioms validate and render: #. roots, $id, $ref definitions
   assert.deepEqual(r.fields.map((f:any)=>[f.label,f.value]),[['Delegate','Alice'],['Valid until','2026-09-21 14:13:20Z'],['Share ticker','sMON'],['Deposit','1 ETH']]);
   d.display.formats[key].fields[0]={$ref:'$.display.definitions.nope',path:'#.delegate'};
   assert.ok(validateDescriptor(d,c,{id:c.id,descriptor:'s.json',exclusions:{}}).some(x=>x.code==='UNKNOWN_DEFINITION'));
+});
+
+// The engine fingerprint gates configs, reviews and every expectation. A release that changes neither
+// renderer, schema nor validator subset must keep all three valid, so the tool version stays out of it.
+await test('the engine identity excludes the tool version',()=>{
+  assert.deepEqual(Object.keys(ENGINE).sort(),['renderer','schema','subset']);
 });
