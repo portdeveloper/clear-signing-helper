@@ -1,5 +1,6 @@
 import { getAddress, isAddress } from 'ethers';
 import { fail, Failure } from './io.js';
+import { namedImmutables, type NamedImmutable } from './immutables.js';
 
 // The one place this tool talks to the network, and only when the user asks for a verified ABI by
 // address or names an RPC endpoint. Sourcify first: a match there means the on-chain bytecode was
@@ -9,6 +10,7 @@ export interface VerifiedContract {
   source: 'sourcify' | 'etherscan'; url: string; match?: string; fetchedAt: string;
   chainId: number; address: string;
   proxy?: {type: string | null; implementation: {address: string; name?: string}};
+  immutables?: NamedImmutable[];
 }
 const SOURCIFY = process.env.CLEAR_SIGNING_SOURCIFY_URL ?? 'https://sourcify.dev/server';
 const ETHERSCAN = process.env.CLEAR_SIGNING_ETHERSCAN_URL ?? 'https://api.etherscan.io/v2/api';
@@ -20,12 +22,16 @@ async function getJson(url: string, timeoutMs = 30_000): Promise<{status: number
     if (text.length > 16 * 1024 * 1024) fail('FETCH_TOO_LARGE', `${url} returned more than 16 MiB.`, 2);
     let body: any = null; try { body = JSON.parse(text); } catch { body = null; }
     return {status: response.status, body};
-  } catch (e) { if ((e as Error).name === 'AbortError') fail('FETCH_TIMEOUT', `${url} did not answer within ${timeoutMs / 1000}s.`, 2); fail('FETCH_FAILED', `${url}: ${(e as Error).message}`, 2); }
+  } catch (e) { if (e instanceof Failure) throw e; if ((e as Error).name === 'AbortError') fail('FETCH_TIMEOUT', `${url} did not answer within ${timeoutMs / 1000}s.`, 2); fail('FETCH_FAILED', `${url}: ${(e as Error).message}`, 2); }
   finally { clearTimeout(timer); }
 }
 async function fromSourcify(chainId: number, address: string, depth = 0): Promise<VerifiedContract | undefined> {
-  const url = `${SOURCIFY}/v2/contract/${chainId}/${address}?fields=abi,userdoc,devdoc,proxyResolution,compilation`;
-  const {status, body} = await getJson(url);
+  // The bytecode, source map and sources only name immutables (immutables.ts); a record too large to
+  // fetch with them is fetched without, and the draft simply has no named constants.
+  const base = `${SOURCIFY}/v2/contract/${chainId}/${address}?fields=abi,userdoc,devdoc,proxyResolution,compilation`;
+  let url = `${base},runtimeBytecode,sources,stdJsonOutput`, response;
+  try { response = await getJson(url); } catch (e) { if (!(e instanceof Failure && e.code === 'FETCH_TOO_LARGE')) throw e; url = base; response = await getJson(url); }
+  const {status, body} = response;
   if (status === 404 || !body?.match) return undefined;
   if (status !== 200) fail('FETCH_FAILED', `Sourcify returned HTTP ${status} for ${chainId}:${address}.`, 2);
   const proxy = body.proxyResolution;
@@ -37,7 +43,8 @@ async function fromSourcify(chainId: number, address: string, depth = 0): Promis
     return {...impl, chainId, address, url, proxy: {type: proxy.proxyType ?? null, implementation: {address: getAddress(impls[0].address), name: impls[0].name ?? impl.name}}};
   }
   if (!Array.isArray(body.abi)) fail('FETCH_FAILED', `Sourcify match for ${address} has no ABI.`, 2);
-  return {name: body.compilation?.name ?? 'Contract', abi: body.abi, userdoc: body.userdoc, devdoc: body.devdoc, source: 'sourcify', url, match: body.match, fetchedAt: new Date().toISOString(), chainId, address};
+  const immutables = namedImmutables(body, body.abi);
+  return {name: body.compilation?.name ?? 'Contract', abi: body.abi, userdoc: body.userdoc, devdoc: body.devdoc, source: 'sourcify', url, match: body.match, fetchedAt: new Date().toISOString(), chainId, address, ...(immutables.length ? {immutables} : {})};
 }
 async function fromEtherscan(chainId: number, address: string, depth = 0): Promise<VerifiedContract | undefined> {
   const key = process.env.ETHERSCAN_API_KEY;

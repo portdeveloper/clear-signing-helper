@@ -127,7 +127,7 @@ export function resolveFields(items: (Field | Group)[], definitions: Record<stri
 export const coveredLeaves = (key: string, leafKeys: Iterable<string>) => [...leafKeys].filter(l => l === key || l.startsWith(key + '.'));
 // Where a scaffolded value came from, so reviewers can tell author text and proofs from conventions.
 // author: the decisions-file author string ("human", "llm:<model>") for human and llm entries.
-export interface Provenance {signature: string; path?: string; source: 'natspec' | 'ast' | 'broadcast' | 'convention' | 'registry' | 'human' | 'llm'; author?: string; detail: string}
+export interface Provenance {signature: string; path?: string; source: 'natspec' | 'ast' | 'broadcast' | 'verified' | 'convention' | 'registry' | 'human' | 'llm'; author?: string; detail: string}
 const firstSentence = (text: string) => text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, '').trim();
 // The registry linter warns above 30 characters because Ledger devices truncate longer intents.
 export const MAX_INTENT = 30, MAX_LABEL = 32;
@@ -228,7 +228,7 @@ export function scaffoldWithProvenance(c: Contract, owner: string, evidence?: Ev
   const constants = Object.entries(evidence?.constants ?? {});
   if (constants.length) {
     descriptor.metadata.constants = Object.fromEntries(constants.map(([k, v]) => [k, v.value]));
-    for (const [k, v] of constants) provenance.push({signature: '*', source: 'broadcast', detail: `metadata.constants.${k} = ${v.value} (${v.source}); reference it as $.metadata.constants.${k} in token params`});
+    for (const [k, v] of constants) provenance.push({signature: '*', source: v.kind ?? 'broadcast', detail: `metadata.constants.${k} = ${v.value} (${v.source}); reference it as $.metadata.constants.${k} in token params`});
   }
   return {descriptor, provenance};
 }

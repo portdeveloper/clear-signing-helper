@@ -190,3 +190,39 @@ await test('fixture --tx copies a mined transaction as sent, records its hash in
   const tests=read(path.join(root,exported.registryPath,'testsv2/calldata-ClearToken.tests.json'));
   assert.equal(tests.tests[0].txHash,h(1));
 });
+
+await test('init --address names the verified contract\'s address immutables as metadata constants, from the Sourcify record alone',async t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const record=read(path.join(repo,'test/fixtures/sourcify-staking-rewards.json')), staking='0xe23B3825F950637256e8DE1BF39743E8f29D97F1';
+  const server=createServer((req,res)=>{
+    const url=new URL(req.url!,'http://x');res.writeHead(200,{'content-type':'application/json'});
+    if(url.pathname===`/v2/contract/10143/${staking}`) return res.end(JSON.stringify({...record,match:'exact_match',chainId:'10143',address:staking,compilation:{name:'StakingRewards'}}));
+    res.writeHead(404);res.end(JSON.stringify({match:null}));
+  });
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>server.close());
+  const env={CLEAR_SIGNING_SOURCIFY_URL:`http://127.0.0.1:${(server.address() as any).port}`,ETHERSCAN_API_KEY:''};
+  const created=(await runAsync(root,['init','--address',staking,'--chain-id','10143','--owner','PuddleSwap'],0,env)).result;
+  const d=read(path.join(root,created.contracts[0].descriptor));
+  assert.deepEqual(d.metadata.constants,{rewardsToken:'0x97B3070F9Da6C002343862b35E68Bd8e22608943',stakingToken:'0x1FBC7b6B54726D735fF1B47Df75535B4B9021902'});
+  const p=created.provenance.filter((x:any)=>x.source==='verified');
+  assert.equal(p.length,2);assert.match(p[0].detail,/immutable in the verified bytecode/);
+  // The decisions file offers them as denominations, the one edit PR #3003 needed by hand.
+  const dec=run(root,['decisions','--contract',created.contracts[0].id]).result;
+  const decisions=read(path.join(root,dec.created??dec.written??dec.file));
+  assert.match(JSON.stringify(decisions.functions['stake(uint256)']),/\$\.metadata\.constants\.stakingToken/);
+});
+
+await test('a Sourcify record too large to fetch with its sources is fetched without them; the import works, with no named constants',async t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const seen:string[]=[];
+  const server=createServer((req,res)=>{
+    const url=new URL(req.url!,'http://x');seen.push(url.searchParams.get('fields')??'');res.writeHead(200,{'content-type':'application/json'});
+    if(url.searchParams.get('fields')?.includes('sources')) return res.end(' '.repeat(16*1024*1024+1));
+    res.end(JSON.stringify({match:'exact_match',chainId:'1',address:token,abi:tokenAbi,compilation:{name:'ClearToken'}}));
+  });
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>server.close());
+  const env={CLEAR_SIGNING_SOURCIFY_URL:`http://127.0.0.1:${(server.address() as any).port}`,ETHERSCAN_API_KEY:''};
+  const created=(await runAsync(root,['init','--address',token,'--chain-id','1','--owner','Example'],0,env)).result;
+  assert.equal(seen.length,2);assert.ok(!seen[1].includes('sources'));
+  assert.equal(read(path.join(root,created.contracts[0].descriptor)).metadata.constants,undefined);
+});

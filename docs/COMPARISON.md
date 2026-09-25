@@ -60,9 +60,9 @@ The baselines named the pool in the stake intents ("Stake {amount} (USDC/WMON)")
 ## Tool gaps found, and their status
 
 - `export` formatted descriptors but not testsv2 files, so the format bot would have rewritten the test file. All three tool runs across both rounds hit this and fixed it by hand. **Fixed:** export now formats the test files too (`src/app.ts`), and a test checks it.
-- There is no source of real transactions in address mode. Roadmap item 17.
-- Immutable token addresses are not turned into named constants in address mode. Roadmap item 17.
-- `registry setup-runners` takes `--registry` while `export` takes `--ci-pins`, and one run used the wrong one. Roadmap item 17.
+- There is no source of real transactions in address mode. Fixed 2026-09-25: `fixture --tx <hash> --rpc-url <url>`.
+- Immutable token addresses are not turned into named constants in address mode. Fixed 2026-09-25: `init --address` names them from the Sourcify record.
+- `registry setup-runners` takes `--registry` while `export` takes `--ci-pins`, and one run used the wrong one. Fixed 2026-09-25: `--registry` everywhere, `--ci-pins` kept as an alias.
 
 ## An earlier round, discarded
 

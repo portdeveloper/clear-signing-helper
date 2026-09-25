@@ -5,7 +5,7 @@ import { Interface, FunctionFragment } from 'ethers';
 import { fail, hash, readJson, safePath, walk, writeJson } from './io.js';
 import { readBroadcasts, type BroadcastDeployment, type BroadcastCall } from './broadcast.js';
 
-export interface Contract { id: string; name: string; source: string; artifact: string; abi: any[]; functions: FunctionFragment[]; special: string[]; metadata: any; userdoc?: any; devdoc?: any; ast?: any; }
+export interface Contract { id: string; name: string; source: string; artifact: string; abi: any[]; functions: FunctionFragment[]; special: string[]; metadata: any; userdoc?: any; devdoc?: any; ast?: any; immutables?: {name: string; address: string}[]; }
 export interface Project { root: string; profile: string; config: any; forgeVersion: string; contracts: Contract[]; fingerprint: string; deployments: BroadcastDeployment[]; calls: BroadcastCall[]; }
 export function findRoot(start = process.cwd()): string {
   let dir = path.resolve(start);

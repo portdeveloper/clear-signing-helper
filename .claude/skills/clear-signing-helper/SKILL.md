@@ -86,7 +86,7 @@ clear-signing init --address <addr> --chain-id <id> --owner "<Owner>"
 
 A verified proxy is followed to its implementation and the proxy address is bound. If the address is unverified the CLI says so; get the deployer to verify on https://sourcify.dev, or use the ABI you trust with `clear-signing init --abi <file> --name <Name>` and say in the PR that it was not source-verified.
 
-Read the `init` output. It lists every value it derived and its source: NatSpec (author text), AST (enums), broadcast (deployments, constructor constants), convention (ERC-20/WETH defaults). Deployment bindings appear only when the repository proves them; otherwise add `{ "chainId", "address" }` to `context.contract.deployments` yourself, from the protocol's own deployment record.
+Read the `init` output. It lists every value it derived and its source: NatSpec (author text), AST (enums), broadcast (deployments, constructor constants), verified source (address immutables of a Sourcify-verified contract, in address mode), convention (ERC-20/WETH defaults). Deployment bindings appear only when the repository proves them; otherwise add `{ "chainId", "address" }` to `context.contract.deployments` yourself, from the protocol's own deployment record.
 
 ## 3. Author what the tool cannot prove
 
