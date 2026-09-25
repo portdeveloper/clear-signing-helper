@@ -5,6 +5,16 @@
 - Refresh the advisory registry prior: `npm run priors:snapshot -- <fresh registry clone>` and commit `src/data/registry-priors.json`; its `commit` and `generatedAt` fields are shown to users.
 - Run `npm run registry:acceptance -- <fresh registry clone>` and record the accepted count in CLAUDE.md. Any new rejection class other than the `calldata` format is a regression against what the registry accepts.
 
+## 0.5.0-preview.1 (2026-09-25)
+
+- [x] The registry did not move after the morning measurement: prior refreshed and acceptance run at registry `53d86dc` (285 descriptors, 533 selectors; 263 of 285 accepted, same 22 rejections), recorded in CLAUDE.md. `e823abc` is the lint pin on registry master and built in.
+- [x] Tag `v0.5.0-preview.1` on `main` at `852c989`; CI run [36188279647](https://github.com/portdeveloper/clear-signing-helper/actions/runs/36188279647) passed on Node 22.22.3 and 24.20.0, ubuntu-24.04 and macos-15. All four CI candidate packages have the same SHA-256 as the local candidate.
+- [x] `npm run release:verify` produced `clear-signing-helper-0.5.0-preview.1.tgz`, SHA-256 `428bdada06979d6b6956bdc0718247c795bef2c40d49911e55ae62aaa72910fd`, and `release-verification.json`. All nine checks passed, including upgrade and rollback against the prior candidate. The engine fingerprint is unchanged, so no user runs `upgrade`.
+- [x] [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.5.0-preview.1) created with the tarball, checksum and verification record. The downloaded asset matched the checksum.
+- [x] Published that tarball to npm as [`clear-signing-helper@0.5.0-preview.1`](https://www.npmjs.com/package/clear-signing-helper/v/0.5.0-preview.1) with `--tag preview --ignore-scripts --access public`, then moved `latest` to it. Registry integrity `sha512-Ow0x4nERytUlIvvjKJtEpKZygkOFUw/EgGhtJ8FTtYU+Dr+9V5zGf4uzielZnImxnf0QXWVYOcip8FUUkhW6xQ==` equals the GitHub asset. A credential-free `npx --package=clear-signing-helper@preview` reported `0.5.0-preview.1`. From a fresh clone of the tag, with the published package, the example previewed ("Deposit", "1 USDC", "Alice") and its signing test passed. Run npx outside the repository checkout: inside it, npx resolves the local `clear-signing-helper` package and finds no linked binary.
+- [x] README, DISTRIBUTION and site point at the npm version. The token was held in a mode-600 file in the session scratchpad, used with `--userconfig`, and deleted after publication. No copy is in the repository.
+- [ ] Revoke the npm token used for this publication on npmjs.com (it was pasted into the session transcript).
+
 ## 0.4.0-preview.1 (2026-09-23)
 
 - [x] Refreshed the registry prior at registry `8f56072` (280 descriptors, 533 selectors); acceptance at the same commit: 258 of 280 (recorded in CLAUDE.md).
