@@ -341,7 +341,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
       writeJson(path.join(stage,'review','renderings',name),r.rendering);
     }
     // Canonical registry formatting first, so lint and the runners see exactly what the PR will contain.
-    // The registry CI's own erc7730 package and lint flags: from a clone with --ci-pins, else the built-in pin.
+    // The registry CI's own erc7730 package and lint flags: from a clone with --registry, else the built-in pin.
     const lintPin = options.ciPins ? lintPinFromRegistry(options.ciPins) : DEFAULT_LINT_PIN;
     // The format bot rewrites testsv2 files too, so they are formatted with the descriptors.
     const formatted = options.lint===false ? {ran:false, reason:'skipped with --no-lint'} : runUpstreamFormat(stage, [...descriptorFiles, ...testsFiles], lintPin);

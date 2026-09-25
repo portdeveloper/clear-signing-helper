@@ -123,7 +123,7 @@ clear-signing preview --fixture clear-signing/fixtures/<n>.json           # add 
 clear-signing check --contract <id>
 clear-signing review --accept --contract <id>
 clear-signing test --update --contract <id>
-clear-signing export --contract <id> --strict-portability --registry-runners --ci-pins registry-clone --out bundle [--entity <registry-folder>]
+clear-signing export --contract <id> --strict-portability --registry-runners --registry registry-clone --out bundle [--entity <registry-folder>]
 ```
 
 Every function you kept needs at least one passing fixture. Fixture metadata (`tokens`, `addressNames`, `chain`) is local and never fetched; put the real symbol and decimals in. `export` writes `bundle/registry/<entity>/calldata-<Name>.json` and `testsv2/` exactly as the registry wants them, runs `erc7730 lint` and both registry test runners at the pins in the clone's CI files, and records everything under `bundle/review/`. Any failure produces no bundle. `--strict-portability` rejects ABI shapes with recorded wallet failures (signed ints, nested arrays, multi-field tuple arrays); if it fires, exclude that function or drop strict mode and say so in the PR.

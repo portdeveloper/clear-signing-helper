@@ -129,3 +129,15 @@ await test('init names the registry descriptor a Uniswap V2 router ABI already m
   const human=spawnSync(process.execPath,[cli,'--root',root,'init','--abi','router.abi.json','--name','Router2','--owner','Example'],{encoding:'utf8'});
   assert.match(human.stdout,/Already in the registry\?[\s\S]*registry\/quickswap\/calldata-QuickSwap\.json[\s\S]*registry add-deployment/);
 });
+
+await test('--registry names the registry clone on export as on the registry commands; the former --ci-pins still works',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  fs.writeFileSync(path.join(root,'token.abi.json'),JSON.stringify(tokenAbi));
+  run(root,['init','--abi','token.abi.json','--name','ClearToken','--owner','Example']);
+  const conflict=run(root,['export','--out','b','--registry','one','--ci-pins','two'],2);
+  assert.equal(conflict.diagnostics[0].code,'USAGE_ERROR');
+  // Either name reaches the same check: an unreviewed draft fails the same way, so the flag was accepted.
+  for(const flag of ['--registry','--ci-pins']) assert.equal(run(root,['export','--out','b',flag,root],1).diagnostics[0].code,'REVIEW_REQUIRED',flag);
+  const help=spawnSync(process.execPath,[cli,'export','--help'],{encoding:'utf8'}).stdout;
+  assert.match(help,/--registry <directory>/);assert.doesNotMatch(help,/--ci-pins/);
+});
