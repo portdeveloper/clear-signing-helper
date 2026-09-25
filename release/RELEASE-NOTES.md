@@ -1,3 +1,72 @@
+# Clear Signing Helper 0.5.0-preview.1 — developer preview
+
+Follows the registry CI's current linter, copies real transactions into test cases, names token constants from a verified address, tells you when the registry already describes your contract, and cuts the warnings a fresh draft shows to the ones that matter.
+
+## Upgrade from 0.4.0-preview.1
+
+No `upgrade` step: the engine fingerprint (renderer, schema, validator subset) is unchanged, so reviews and expectations stay valid. Install the new version and run `clear-signing check`. `export --ci-pins` is now `export --registry`, the same name the `registry` commands use; `--ci-pins` still works.
+
+## What changed
+
+**Lint matches registry CI again.** The built-in linter is the Sourcify fork of `erc7730` at `e823abc` with `--require-verified`, the pin registry master runs since #3038 (2026-09-24). With that pin, a reference ABI that cannot be fetched (rate limit, network error) is an error, not a warning. 0.4.0-preview.1 linted at `f2fafe1`, where the same failure was only a warning, so it could pass what registry CI fails. `--registry <clone>` reads the registry's pull-request workflow under its new name, `registry-checks.yml` (#3046), as well as the former `pull_request.yml`.
+
+**Real transactions as test cases.** `fixture --tx <hash> --rpc-url <url>` copies a mined transaction exactly as sent. It refuses one that is pending, reverted, a contract creation, signed for another chain, sent to an address that is not a bound deployment of the contract (a call through a router, multicall or smart account), calling a function the contract does not have, or carrying noncanonical calldata; nothing is written on refusal. The fixture keeps the hash, and export writes it as the registry test case's `txHash`, so a reviewer can look it up. `--broadcast-tx` fixtures keep their hash too.
+
+**Named constants from a verified address.** `init --address` turns address immutables with a public getter, such as a staking contract's `stakingToken`, into `metadata.constants`. The decisions file then offers `$.metadata.constants.stakingToken` as a denomination. Sourcify's record has each immutable's value but no names. The tool names them from the verified source map, and leaves out any it cannot name with certainty. No extra request is made. Provenance tags these `verified source`, and constants from source literals are now tagged `ast` rather than `broadcast`.
+
+**"Already in the registry?"** `init` compares the contract's functions with every registry calldata descriptor in the bundled snapshot. It lists a match when at least two functions are shared, and either every function the file describes exists in the contract (what `registry add-deployment` requires) or the file covers at least half of the contract's functions. Functions three or more registry projects describe (ERC-20, ERC-4626, ERC-721, Ownable, `multicall`) are left out of the comparison. A match is a suggestion: the same protocol on a new chain calls for `registry add-deployment`, while a fork's match belongs to another owner, so you author your own descriptor. Nothing is bound or skipped on it.
+
+**Fewer, clearer warnings.** On PuddleSwap, a fresh draft of seven contracts went from 9 warnings to 0.
+- An argument a displayed field reads through `tokenPath`, `token`, `collectionPath` or `chainIdPath` counts as displayed, as it does in the registry linter. This removed 212 of 496 undisplayed-argument warnings across the registry corpus.
+- A registry-prior disagreement needs agreement from at least two projects.
+- ERC-20 convention intents fit 30 characters.
+- Each warning code has its own remedy, in human output and `--json`.
+- `check` groups warnings by descriptor and code.
+
+**Registry snapshot** refreshed at registry `53d86dc` (285 descriptors, 1432 formats, 533 selectors). The validator accepts 263 of the 285 merged calldata descriptors; the rest use nested calldata or an encrypted field, as before.
+
+## Network access
+
+Only at explicit moments:
+- `init --address` (Sourcify, then Etherscan with a key);
+- `registry add-deployment` (the same, plus read-only `eth_chainId`, `eth_getCode` and `eth_call` for EIP-712);
+- new: `fixture --tx`, read-only `eth_chainId`, `eth_getTransactionByHash` and `eth_getTransactionReceipt`;
+- upstream `erc7730 lint` and `format` through `uvx`;
+- the one-time clone and build of the registry runners.
+
+Every RPC call goes to the `--rpc-url` you name. Everything else is offline.
+
+## Scope and limitations
+
+Unchanged from 0.4.0-preview.1:
+- Authoring new EIP-712 descriptors, the `calldata` format and encrypted fields are unsupported and fail explicitly.
+- `fixture --tx` does not discover transactions. You supply the hashes; an explorer lists them.
+- Named immutables need a Sourcify match. An Etherscan-only import has no constants.
+- A registry match cannot tell a fork from the original protocol.
+- Generated content requires developer review. The CLI never claims audit, attestation, wallet certification or registry acceptance, and it does not hold keys, send transactions or publish.
+
+## Install
+
+Requires Node.js 22+ and, for Foundry mode, Foundry. From the release assets:
+
+```sh
+sha256sum --check clear-signing-helper-0.5.0-preview.1.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.5.0-preview.1.tgz
+clear-signing --version
+```
+
+On macOS, use `shasum -a 256 --check`. Expected version: `0.5.0-preview.1`. Upstream lint and format need `uv` (`uvx`) on the PATH; the registry runners need `git`, `npm` and `cargo`.
+
+## Validation
+
+- **Automated:** 69 tests. New ones cover `fixture --tx` against a mocked JSON-RPC (every refusal, and `txHash` in the exported test), named immutables from a trimmed real Sourcify record, registry matching, grouped warnings, and the renamed registry workflow.
+- **Live `fixture --tx`:** the recorded `notifyRewardAmount` on Monad testnet (block 52286214) was copied byte for byte through `testnet-rpc.monad.xyz`, and a transfer to another contract was refused.
+- **Live `init --address`:** it named StakingRewards' `stakingToken` and `rewardsToken`, and SwapRouter02's `factory` and `WETH9`; it found `uniswap/calldata-UniswapV3Router02.json` for SwapRouter02.
+- **Lint pin:** `e823abc` and the old pin gave identical findings on registry PRs #3003 and #2611.
+- Physical-device and human review results from 0.2.0-preview.1 were not repeated for this version.
+
+---
+
 # Clear Signing Helper 0.4.0-preview.1 — developer preview
 
 Adds a chain to a protocol that is already in the ERC-7730 registry with one command, puts the judgment calls in a file a person or an agent fills, and checks exports with the registry CI's own linter and test runners. Works inside a Foundry project or from a verified contract address.

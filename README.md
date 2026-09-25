@@ -4,13 +4,13 @@ Create, preview, and regression-test ERC-7730 clear-signing descriptors alongsid
 
 Use it to turn compiled contract functions into editable ERC-7730 JSON drafts, inspect the fields a transaction would display, and catch changes to signing output in CI. Descriptors and fixtures stay in your contract repository.
 
-**Developer preview: `0.4.0-preview.1`.** Drafts are built from what the repository proves (ABI, NatSpec, compiler AST, broadcast records, verified source), accept every format the registry does, and export registry-shaped bundles checked by the registry's own linter. Works with Foundry projects or from a verified address. Generated labels, units and intent require developer review. Independent human review, protocol-maintainer assessment, physical-device testing and production wallet delivery remain pending. The CLI does not sign or send transactions.
+**Developer preview: `0.5.0-preview.1`.** Drafts are built from what the repository proves (ABI, NatSpec, compiler AST, broadcast records, verified source), accept every format the registry does, and export registry-shaped bundles checked by the registry's own linter. Works with Foundry projects or from a verified address. Generated labels, units and intent require developer review. Independent human review, protocol-maintainer assessment, physical-device testing and production wallet delivery remain pending. The CLI does not sign or send transactions.
 
 [Overview site](https://portdeveloper.github.io/clear-signing-helper/) · [Install](#install-the-developer-preview) · [Try an example](#try-the-included-example) · [Use your own project](#add-clear-signing-to-your-foundry-repository) · [Commands](#files-and-commands)
 
 ## Install the developer preview
 
-Requires Node.js 22+ and Foundry (or a verified contract address for [ABI mode](#use-without-foundry-abi-mode)). Install the [npm preview](https://www.npmjs.com/package/clear-signing-helper/v/0.4.0-preview.1):
+Requires Node.js 22+ and Foundry (or a verified contract address for [ABI mode](#use-without-foundry-abi-mode)). Install the [npm preview](https://www.npmjs.com/package/clear-signing-helper/v/0.5.0-preview.1):
 
 ```sh
 npm install --global --ignore-scripts clear-signing-helper@preview
@@ -23,9 +23,9 @@ Or try the CLI without a global installation:
 npx --yes --ignore-scripts --package=clear-signing-helper@preview clear-signing --help
 ```
 
-Pin `clear-signing-helper@0.4.0-preview.1` for reproducible installs. This is an experimental developer preview; specify the preview tag or exact version explicitly.
+Pin `clear-signing-helper@0.5.0-preview.1` for reproducible installs. This is an experimental developer preview; specify the preview tag or exact version explicitly.
 
-Expected version: `0.4.0-preview.1`. Installation is independent of your contract repository; it does not need a `package.json` or Node dependencies. Have `forge` available on your PATH.
+Expected version: `0.5.0-preview.1`. Installation is independent of your contract repository; it does not need a `package.json` or Node dependencies. Have `forge` available on your PATH.
 
 Continue with the example below or [your own Foundry project](#add-clear-signing-to-your-foundry-repository). Existing users should follow the [upgrade procedure](docs/DISTRIBUTION.md#upgrade-and-rollback). For other installation methods, see [building from source](#install-from-source) and [verified tarballs](docs/DISTRIBUTION.md#build-and-verify-a-release).
 
@@ -34,7 +34,7 @@ Continue with the example below or [your own Foundry project](#add-clear-signing
 After installing the CLI, clone the example from the matching release and build its contracts:
 
 ```sh
-git clone --depth 1 --branch v0.4.0-preview.1 \
+git clone --depth 1 --branch v0.5.0-preview.1 \
   https://github.com/portdeveloper/clear-signing-helper.git
 cd clear-signing-helper
 forge build --root examples/standard
