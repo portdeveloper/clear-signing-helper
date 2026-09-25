@@ -12,7 +12,7 @@ const flattenFields=(list:any[]):{label:string;value:string}[]=>list.flatMap(f=>
 // One registry v2 test case: the unsigned transaction plus the fields the renderer produced.
 export function testCase(description: string, f: Fixture, r: Rendering, owner: string) {
   const tx=Transaction.from({type:2,chainId:f.chainId,to:f.to,data:f.data,value:BigInt(f.value),nonce:0,gasLimit:1_000_000n,maxFeePerGas:0,maxPriorityFeePerGas:0});
-  return {description,rawTx:tx.unsignedSerialized,...(f.from?{from:f.from}:{}),expected:{intent:r.intent,...(r.interpolatedIntent!==undefined?{interpolatedIntent:r.interpolatedIntent}:{}),owner,fields:flattenFields(r.fields)}};
+  return {description,rawTx:tx.unsignedSerialized,...(f.from?{from:f.from}:{}),...(f.txHash?{txHash:f.txHash}:{}),expected:{intent:r.intent,...(r.interpolatedIntent!==undefined?{interpolatedIntent:r.interpolatedIntent}:{}),owner,fields:flattenFields(r.fields)}};
 }
 // One registry v2 EIP-712 test case: the typed data plus the fields the renderer produced.
 export function typedDataTestCase(description: string, data: unknown, model: {intent: string; interpolatedIntent?: string; fields?: any[]}, owner: string) {

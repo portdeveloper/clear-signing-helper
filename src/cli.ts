@@ -4,6 +4,7 @@ import { Failure } from './io.js';
 import { servePreview } from './preview.js';
 import { displayText, humanOutput } from './output.js';
 import { addDeployment } from './registry-edit.js';
+import { fetchTransaction } from './fetch.js';
 import { setupRunners, pinsFromRegistry, DEFAULT_PINS } from './runners.js';
 import packageJson from '../package.json' with {type: 'json'};
 
@@ -57,13 +58,21 @@ program.command('fixture').description('Encode an example transaction from the c
   .option('--args <json>','JSON array of arguments; use strings for large integers','[]')
   .option('--chain-id <number>','Chain ID')
   .option('--to <address>','Target address')
+  .option('--tx <hash>','Copy a mined transaction sent to this contract: chain, target, calldata, value and sender (with --rpc-url)')
+  .option('--rpc-url <url>','Read-only endpoint for --tx; the chain is taken from it')
   .option('--broadcast-tx <hash>','Take chain, target, calldata and value from a recorded broadcast transaction')
   .option('--value <wei>','Native transaction value in wei','0')
   .option('--from <address>','Sender for @.from fields')
   .option('--chain-name <name>','Chain display name for amount/chainId formats (with --native-currency)')
   .option('--native-currency <symbol:decimals>','Native currency for amount formats, e.g. MON:18')
   .option('--local','Use an explicit undeployed draft binding')
-  .action(options=>output(createFixture(state(),{...options,local:options.local===true})));
+  .action(async options=>{
+    if(options.tx&&options.broadcastTx) throw new Failure('USAGE_ERROR','--tx and --broadcast-tx both name the transaction; pass one.',2);
+    if(!!options.tx!==!!options.rpcUrl) throw new Failure('USAGE_ERROR','--tx and --rpc-url go together.',2);
+    // Load the project before the network call, so a wrong --root or contract fails without one.
+    const s=state(), transaction=options.tx?await fetchTransaction(options.rpcUrl,options.tx):undefined;
+    output(createFixture(s,{...options,local:options.local===true,transaction}));
+  });
 program.command('preview').description('Render one transaction fixture locally')
   .requiredOption('--fixture <path>','Fixture path relative to the project root')
   .option('--open','Serve on loopback and open a browser')

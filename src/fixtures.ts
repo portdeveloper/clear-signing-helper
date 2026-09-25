@@ -8,6 +8,8 @@ import { KNOWN_CHAINS } from './chains.js';
 
 export interface Fixture {
   contract: string; chainId: number; to: string; data: string; value: string; from?: string;
+  // The hash of the real transaction this fixture copies (a broadcast record or --tx); exported as txHash.
+  txHash?: string;
   localBinding?: boolean;
   // Local metadata only. Nothing is fetched. Keys are addresses; block heights are decimal strings.
   chain?: {name: string; nativeCurrency: {name: string; symbol: string; decimals: number}};
@@ -23,12 +25,13 @@ export interface Rendering {
 }
 export function validateFixture(f: Fixture) {
   assertTreeBudget(f);
-  assertKeys(f, ['contract', 'chainId', 'to', 'data', 'value', 'from', 'localBinding', 'chain', 'tokens', 'addressNames', 'ensNames', 'nftCollectionNames', 'blockTimestamps'], 'fixture');
+  assertKeys(f, ['contract', 'chainId', 'to', 'data', 'value', 'from', 'txHash', 'localBinding', 'chain', 'tokens', 'addressNames', 'ensNames', 'nftCollectionNames', 'blockTimestamps'], 'fixture');
   if (typeof f.contract !== 'string') fail('INVALID_FIXTURE', 'fixture.contract must be a source:contract identity.');
   if (!Number.isSafeInteger(f.chainId) || f.chainId <= 0) fail('INVALID_FIXTURE', 'chainId must be a positive safe integer.');
   if (typeof f.to !== 'string' || !isAddress(f.to) || (f.from !== undefined && !isAddress(f.from))) fail('INVALID_FIXTURE', 'to/from must be valid EVM addresses.');
   if (typeof f.data !== 'string' || !/^0x(?:[0-9a-fA-F]{2}){4,}$/.test(f.data) || f.data.length > 131074) fail('INVALID_CALLDATA', 'data must be even-length hex containing a selector, at most 64 KiB.');
   if (typeof f.value !== 'string' || !/^(0|[1-9][0-9]*)$/.test(f.value) || f.value.length > 78 || BigInt(f.value) >= 2n**256n) fail('INVALID_FIXTURE', 'value must be a decimal uint256 string in wei.');
+  if (f.txHash !== undefined && (typeof f.txHash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(f.txHash))) fail('INVALID_FIXTURE', 'txHash must be a 32-byte transaction hash.');
   if (f.localBinding !== undefined && typeof f.localBinding !== 'boolean') fail('INVALID_FIXTURE', 'localBinding must be a boolean.');
   if (f.tokens !== undefined) {
     assertKeys(f.tokens, Object.keys(f.tokens ?? {}), 'tokens');
@@ -61,20 +64,24 @@ export function validateFixture(f: Fixture) {
     if (typeof f.chain.name !== 'string' || !f.chain.name.trim() || typeof n?.name !== 'string' || !n.name.trim() || typeof n.symbol !== 'string' || !n.symbol.trim() || !Number.isInteger(n.decimals) || n.decimals < 0 || n.decimals > 255) fail('INVALID_METADATA', 'chain requires a name and nativeCurrency {name, symbol, decimals in [0,255]}.');
   }
 }
+// Calldata must name exactly one write function and re-encode byte for byte: appended bytes or a
+// noncanonical encoding would show the signer something other than what the contract reads.
+export function decodeCanonical(contract: Contract, data: string) {
+  const matching = contract.functions.filter(fn => fn.selector.toLowerCase() === data.slice(0,10).toLowerCase());
+  if (matching.length !== 1) fail('UNKNOWN_SELECTOR', 'Calldata must match exactly one selected contract write function.');
+  const fn = matching[0], iface = new Interface(contract.abi);
+  let decoded: readonly unknown[];
+  try {
+    decoded = iface.decodeFunctionData(fn, data);
+    if (iface.encodeFunctionData(fn, decoded).toLowerCase() !== data.toLowerCase()) fail('NONCANONICAL_CALLDATA', 'Calldata contains trailing bytes or noncanonical ABI encoding.');
+  } catch (e) { if ((e as any).code === 'NONCANONICAL_CALLDATA') throw e; fail('CALLDATA_DECODE', `Cannot decode calldata for ${fn.format()}: ${(e as Error).message}`); }
+  return {fn, decoded};
+}
 export async function renderFixture(f: Fixture, d: Descriptor, contract: Contract): Promise<Rendering> {
   validateFixture(f);
   if (f.contract !== contract.id) fail('FIXTURE_CONTRACT', `Fixture ${f.contract} does not match ${contract.id}.`);
-  const matching = contract.functions.filter(fn => fn.selector.toLowerCase() === f.data.slice(0,10).toLowerCase());
-  if (matching.length !== 1) fail('UNKNOWN_SELECTOR', 'Calldata must match exactly one selected contract write function.');
-  const fn = matching[0];
+  const {fn, decoded} = decodeCanonical(contract, f.data);
   if (fn.stateMutability !== 'payable' && BigInt(f.value) !== 0n) fail('NONPAYABLE_VALUE', `${fn.format()} cannot receive native value.`);
-  const iface = new Interface(contract.abi);
-  let decoded: readonly unknown[];
-  try {
-    decoded = iface.decodeFunctionData(fn, f.data);
-    const encoded = iface.encodeFunctionData(fn, decoded);
-    if (encoded.toLowerCase() !== f.data.toLowerCase()) fail('NONCANONICAL_CALLDATA', 'Calldata contains trailing bytes or noncanonical ABI encoding.');
-  } catch (e) { if ((e as any).code === 'NONCANONICAL_CALLDATA') throw e; fail('CALLDATA_DECODE', `Cannot decode calldata for ${fn.format()}: ${(e as Error).message}`); }
   // Apply limits to all ABI shapes, including flat arrays that need no lowering.
   assertTreeBudget(decoded!, 8192, 32);
   if (!Object.keys(d.display.formats).some(key => parseSignature(key).format('sighash') === fn.format('sighash'))) fail('MISSING_FORMAT', `${fn.format()} has no descriptor format.`);

@@ -298,7 +298,7 @@ await test('drafts use NatSpec, AST enums, broadcast constructor constants, ERC-
   write(path.join(root,created.contracts.find((c:any)=>c.id===vault).descriptor),vaultDesc);
   const fx=run(root,['fixture','--name','deposit','--contract',vault,'--broadcast-tx',txHash]).result;
   assert.equal(fx.source,'broadcast/Deploy.s.sol/31337/run-latest.json');
-  const f=read(path.join(root,'clear-signing/fixtures/deposit.json'));assert.equal(f.data,depositData);assert.equal(f.to,address);assert.equal(f.chainId,31337);assert.equal(f.from,receiver);
+  const f=read(path.join(root,'clear-signing/fixtures/deposit.json'));assert.equal(f.data,depositData);assert.equal(f.to,address);assert.equal(f.chainId,31337);assert.equal(f.from,receiver);assert.equal(f.txHash,txHash.toLowerCase(),'a broadcast CALL is a real transaction; its hash is kept');
   f.tokens={[asset]:{name:'USD Coin',symbol:'USDC',decimals:6}};write(path.join(root,'clear-signing/fixtures/deposit.json'),f);
   const r=run(root,['preview','--fixture','clear-signing/fixtures/deposit.json']).result;
   assert.equal(r.fields[0].value,'1 USDC');assert.deepEqual(r.warnings,[]);

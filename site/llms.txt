@@ -10,7 +10,7 @@ In short:
 2. Otherwise run `clear-signing init`, then `decisions`, fill the decisions file, and `apply`. Do not write descriptor JSON by hand.
 3. Ask the user for intent wording, which token an amount is in, and what to hide whenever the hints do not settle it. Do not guess.
 4. Set "author": "llm:<your model>". Put "author": "human" only on the values the user decided.
-5. Run `fixture`, `preview`, `check`, and `export --registry-runners` so the registry CI's test runners check the expected output. Let the user look at the preview before `review --accept`.
+5. Run `fixture` (prefer real transactions: `--tx <hash> --rpc-url <url>` for a few recent successful calls sent directly to the contract), `preview`, `check`, and `export --registry-runners` so the registry CI's test runners check the expected output. Let the user look at the preview before `review --accept`.
 6. Stop at the exported bundle and show the user the diff and the git commands. Open the PR only if the user explicitly asks, from an account tied to the contract owner; maintainers check ownership.
 
 - Repository and README: https://github.com/portdeveloper/clear-signing-helper

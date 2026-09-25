@@ -98,7 +98,7 @@ Drafts are built from what the repository itself states or proves, and `init` pr
 
 `init` reads the repository's `broadcast/` records. A contract created by `forge script --broadcast` gets its `deployments` binding filled from that record, and deployed contracts outside the default selection, such as a router under `lib/`, are listed as suggestions with their addresses. Dry runs are ignored, and a contract name shared by several compiled contracts is never bound automatically.
 
-`init` prints the generated descriptor path under `clear-signing/descriptors/`; `fixture` writes `clear-signing/fixtures/deposit.json`. If a `forge script --broadcast` run already sent the transaction you want to describe, `fixture --name <n> --contract <id> --broadcast-tx <hash>` copies its chain, target, calldata and value verbatim. `--local` marks an undeployed example binding, so you can preview before adding real deployment addresses.
+`init` prints the generated descriptor path under `clear-signing/descriptors/`; `fixture` writes `clear-signing/fixtures/deposit.json`. If a `forge script --broadcast` run already sent the transaction you want to describe, `fixture --name <n> --contract <id> --broadcast-tx <hash>` copies its chain, target, calldata and value verbatim. With only an address, `fixture --name <n> --contract <id> --tx <hash> --rpc-url <url>` copies a mined transaction from the chain the endpoint serves. Take the hash from an explorer, or send one yourself. The transaction must have succeeded, must have been sent to a bound deployment of the contract (a call through a router, multicall or smart account has the outer contract as its target), and must carry canonical calldata; anything else is refused and no fixture is written. It reads `eth_chainId`, `eth_getTransactionByHash` and `eth_getTransactionReceipt`, nothing else. Either way the fixture keeps the transaction's hash, and export writes it as the test case's `txHash`, so a reviewer can look the transaction up. `--local` marks an undeployed example binding, so you can preview before adding real deployment addresses.
 
 Drafts use raw values for every argument. The first preview shows an amount such as `1000000` until you add its token formatting and metadata. Inspect the generated JSON before choosing units or action descriptions. For a vault deposit, edit the generated `display.formats` entry like this:
 
@@ -165,7 +165,7 @@ clear-signing init --address 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 --chain-
 clear-signing init --abi ./artifacts/Vault.json --name Vault --owner "My Protocol"
 ```
 
-`--address` is the one network call the tool makes, and only when asked. It fetches the verified source match from [Sourcify](https://sourcify.dev), falling back to Etherscan V2 when `ETHERSCAN_API_KEY` is set. A verified proxy is resolved to its implementation: the descriptor describes the implementation's functions and binds the proxy address users actually call. NatSpec from the verified source feeds intents and labels the same way Foundry artifacts do. An unverified address is refused with the reason; verify it on Sourcify or pass the ABI you trust with `--abi`.
+`--address` is the one network call `init` makes, and only when asked. It fetches the verified source match from [Sourcify](https://sourcify.dev), falling back to Etherscan V2 when `ETHERSCAN_API_KEY` is set. A verified proxy is resolved to its implementation: the descriptor describes the implementation's functions and binds the proxy address users actually call. NatSpec from the verified source feeds intents and labels the same way Foundry artifacts do. An unverified address is refused with the reason; verify it on Sourcify or pass the ABI you trust with `--abi`.
 
 Imported ABIs are stored under `clear-signing/abi/<Name>.json` with a `<Name>.source.json` sidecar recording where they came from, when, the match status, and any proxy resolution. Commit both. The engine fingerprints those files instead of Solidity sources, so editing an ABI invalidates review exactly as a source change would. `clear-signing.toml` records `mode = "abi"`; a directory cannot mix modes.
 
@@ -235,7 +235,7 @@ Commit the TOML file and `clear-signing/`. Ignore `.clear-signing-cache/` and yo
 | `decisions --contract <id>` | Write the judgment slots (intent, formats, denominations, show/hide, exclude) as a file with hints |
 | `apply --decisions <file>` | Validate a filled decisions file, then write descriptor, exclusions, hidden reasons and provenance |
 | `sync` | Add missing function formats; report obsolete references without deleting them |
-| `fixture` | Encode a sample call using the compiled ABI, or copy a recorded broadcast transaction with `--broadcast-tx <hash>` |
+| `fixture` | Encode a sample call using the compiled ABI, or copy a real transaction: `--broadcast-tx <hash>` from a broadcast record, `--tx <hash> --rpc-url <url>` from the chain |
 | `preview --fixture <path>` | Render in the terminal; `--open` / `--serve` enables a browser preview |
 | `review --accept` | Record review for all selections; `--contract` narrows it |
 | `check` | Validate schema, supported features, ABI coverage, and review freshness; `--contract` narrows it |

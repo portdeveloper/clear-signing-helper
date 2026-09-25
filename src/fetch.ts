@@ -64,20 +64,44 @@ export async function fetchVerifiedContract(chainId: number, address: string): P
 }
 
 // A read-only JSON-RPC call against an endpoint the user named. Never signs or sends.
-export async function rpcCall(url: string, method: 'eth_chainId' | 'eth_getCode' | 'eth_call', params: unknown[], timeoutMs = 30_000): Promise<string> {
+type ReadMethod = 'eth_chainId' | 'eth_getCode' | 'eth_call' | 'eth_getTransactionByHash' | 'eth_getTransactionReceipt';
+const redact = (url: string) => url.replace(/\/\/[^/]*@/, '//***@').replace(/([?&][^=]*key[^=]*=)[^&]*/gi, '$1***');
+async function rpcRequest(url: string, method: ReadMethod, params: unknown[], timeoutMs = 30_000): Promise<unknown> {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs);
-  const shown = url.replace(/\/\/[^/]*@/, '//***@').replace(/([?&][^=]*key[^=]*=)[^&]*/gi, '$1***');
+  const shown = redact(url);
   try {
     const response = await fetch(url, {method: 'POST', signal: controller.signal, headers: {'content-type': 'application/json', accept: 'application/json'}, body: JSON.stringify({jsonrpc: '2.0', id: 1, method, params})});
     const text = await response.text();
     if (text.length > 1024 * 1024) fail('FETCH_TOO_LARGE', `${shown} returned more than 1 MiB for ${method}.`, 2);
     let body: any = null; try { body = JSON.parse(text); } catch { body = null; }
     if (body?.error) fail('RPC_ERROR', `${method} on ${shown}: ${String(body.error.message ?? JSON.stringify(body.error)).slice(0, 300)}`, 1);
-    if (response.status !== 200 || typeof body?.result !== 'string' || !/^0x[0-9a-fA-F]*$/.test(body.result)) fail('RPC_FAILED', `${method} on ${shown} returned HTTP ${response.status} without a hex result.`, 2);
+    if (response.status !== 200 || !body || !('result' in body)) fail('RPC_FAILED', `${method} on ${shown} returned HTTP ${response.status} without a result.`, 2);
     return body.result;
   } catch (e) {
     if ((e as Error).name === 'AbortError') fail('FETCH_TIMEOUT', `${shown} did not answer ${method} within ${timeoutMs / 1000}s.`, 2);
     if (e instanceof Failure) throw e;
     fail('FETCH_FAILED', `${shown}: ${(e as Error).message}`, 2);
   } finally { clearTimeout(timer); }
+}
+export async function rpcCall(url: string, method: 'eth_chainId' | 'eth_getCode' | 'eth_call', params: unknown[], timeoutMs = 30_000): Promise<string> {
+  const result = await rpcRequest(url, method, params, timeoutMs);
+  if (typeof result !== 'string' || !/^0x[0-9a-fA-F]*$/.test(result)) fail('RPC_FAILED', `${method} on ${redact(url)} returned no hex result.`, 2);
+  return result;
+}
+// A mined, successful transaction as sent: the calldata is copied, never re-encoded. Only the top-level
+// call is visible here, so a call that reached a contract through a router or multicall has another `to`.
+export interface ChainTransaction {hash: string; chainId: number; from: string; to: string; data: string; value: string; blockNumber: number; rpc: string}
+export async function fetchTransaction(url: string, hash: string): Promise<ChainTransaction> {
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) fail('FIXTURE_ARGUMENTS', '--tx must be a 32-byte transaction hash.', 2);
+  const chainId = Number(BigInt(await rpcCall(url, 'eth_chainId', [])));
+  const tx: any = await rpcRequest(url, 'eth_getTransactionByHash', [hash]);
+  if (!tx) fail('TX_NOT_FOUND', `${redact(url)} (chain ${chainId}) has no transaction ${hash}. Check the hash and that the endpoint serves the chain it was sent on.`, 2);
+  if (tx.blockNumber === null || tx.blockNumber === undefined) fail('TX_PENDING', `Transaction ${hash} is not mined yet.`, 2);
+  if (!tx.to) fail('TX_CONTRACT_CREATION', `Transaction ${hash} deploys a contract; it calls no function.`, 2);
+  if (tx.chainId !== undefined && tx.chainId !== null && Number(BigInt(tx.chainId)) !== chainId) fail('RPC_CHAIN_MISMATCH', `Transaction ${hash} is signed for chain ${Number(BigInt(tx.chainId))}, but ${redact(url)} serves chain ${chainId}.`, 2);
+  const receipt: any = await rpcRequest(url, 'eth_getTransactionReceipt', [hash]);
+  if (receipt?.status === '0x0') fail('TX_REVERTED', `Transaction ${hash} reverted; use a transaction that succeeded, so the test shows what the contract actually did.`, 2);
+  const data = typeof tx.input === 'string' ? tx.input : tx.data;
+  if (typeof data !== 'string' || !isAddress(tx.to) || !isAddress(tx.from ?? '')) fail('RPC_FAILED', `${redact(url)} returned an incomplete transaction for ${hash}.`, 2);
+  return {hash: hash.toLowerCase(), chainId, from: getAddress(tx.from), to: getAddress(tx.to), data, value: BigInt(tx.value ?? '0x0').toString(), blockNumber: Number(BigInt(tx.blockNumber)), rpc: redact(url)};
 }

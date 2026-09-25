@@ -8,12 +8,12 @@ import { priorsFor, summarizePrior, registryMatches } from './priors.js';
 import { gatherEvidence } from './evidence.js';
 import {portabilityFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
-import { renderFixture, validateFixture, blockingWarnings, type Fixture, type Rendering } from './fixtures.js';
+import { renderFixture, validateFixture, blockingWarnings, decodeCanonical, type Fixture, type Rendering } from './fixtures.js';
 import { registryTests } from './registry.js';
 import { runUpstreamLint, runUpstreamFormat, skippedLint, lintPinFromRegistry, DEFAULT_LINT_PIN, type LintResult } from './lint.js';
 import { setupRunners, runRegistryRunners, pinsFromRegistry, DEFAULT_PINS, type RunnerResult } from './runners.js';
 import { loadAbiProject, importAbiFile, importVerified, ABI_DIR } from './abi-project.js';
-import { fetchVerifiedContract } from './fetch.js';
+import { fetchVerifiedContract, type ChainTransaction } from './fetch.js';
 import packageJson from '../package.json' with {type: 'json'};
 
 export interface Config {version: number; profile: string; engine: string; mode?: 'foundry' | 'abi'; contracts: Selection[]}
@@ -217,21 +217,31 @@ export async function preview(state: State, fixturePath: string): Promise<Render
   throwDiagnostics(errorsOf(validateDescriptor(d,c,selection)));
   return renderFixture(f,d,c);
 }
-export function createFixture(state: State, options: {name:string; contract:string; function?:string; args:string; chainId?:string; to?:string; value:string; from?:string; local:boolean; chainName?:string; nativeCurrency?:string; broadcastTx?:string}) {
+export function createFixture(state: State, options: {name:string; contract:string; function?:string; args:string; chainId?:string; to?:string; value:string; from?:string; local:boolean; chainName?:string; nativeCurrency?:string; broadcastTx?:string; transaction?:ChainTransaction}) {
   if(!/^[a-zA-Z0-9_-]+$/.test(options.name)) fail('INVALID_NAME','Fixture names may contain letters, digits, hyphens and underscores.',2);
   const c=getContract(state.project,options.contract);
   if(!state.config.contracts.some(s=>s.id===c.id)) fail('CONTRACT_NOT_SELECTED', 'Run init --contract for this contract first.',2);
   const iface=new Interface(c.abi);
-  let data:string, source:string|undefined;
-  if(options.broadcastTx) {
+  let data:string, source:string|undefined, txHash:string|undefined;
+  // A real transaction, recorded by a broadcast or fetched with --tx, is copied as sent; nothing is re-encoded.
+  const copy=(t:{hash:string;chainId:number;to:string;data:string;value:string;from?:string}, origin:string)=>{
+    if(!c.functions.some(f=>f.selector.toLowerCase()===t.data.slice(0,10).toLowerCase())) fail(options.transaction?'TX_SELECTOR_MISMATCH':'BROADCAST_TX_MISMATCH',`Transaction ${t.hash} calls selector ${t.data.slice(0,10)}, which is not a write function of ${c.id}.`,2);
+    data=t.data; source=origin; txHash=t.hash;
+    options={...options, chainId:String(t.chainId), to:t.to, value:t.value, from:options.from??t.from};
+  };
+  if(options.transaction) {
+    const t=options.transaction, d=state.descriptors.get(c.id)!;
+    const bound=d.context.contract.deployments.filter(x=>x.chainId===t.chainId);
+    if(!bound.some(x=>x.address.toLowerCase()===t.to.toLowerCase())) fail('TX_TARGET_MISMATCH',`Transaction ${t.hash} was sent to ${t.chainId}:${t.to}, which is not a deployment of ${c.id}${bound.length?` (bound on chain ${t.chainId}: ${bound.map(x=>x.address).join(', ')})`:` (no deployment bound on chain ${t.chainId})`}. A call made through a router, a multicall or a smart account has the outer contract as its target; use a transaction sent to this contract directly.`,2);
+    copy(t,`${t.rpc} at block ${t.blockNumber}`);
+    try { decodeCanonical(c, data!); } catch(e) { if(e instanceof Failure) fail(e.code,`Transaction ${t.hash}: ${e.message}`,2); throw e; }
+  } else if(options.broadcastTx) {
     // A recorded broadcast transaction is real calldata against a real deployment; nothing is re-encoded.
     const call=state.project.calls.find(x=>x.hash===options.broadcastTx!.toLowerCase());
     if(!call) fail('BROADCAST_TX_NOT_FOUND',`No CALL with hash ${options.broadcastTx} in broadcast records. Available: ${state.project.calls.map(x=>`${x.hash} (${x.function??'?'} on ${x.chainId}:${x.to}, ${x.script})`).join('; ')||'none'}`,2);
-    if(!c.functions.some(f=>f.selector.toLowerCase()===call.data.slice(0,10).toLowerCase())) fail('BROADCAST_TX_MISMATCH',`Transaction ${call.hash} calls selector ${call.data.slice(0,10)}, which is not a write function of ${c.id}.`,2);
-    data=call.data; source=call.file;
-    options={...options, chainId:String(call.chainId), to:call.to, value:call.value, from:options.from??call.from};
+    copy(call,call.file);
   } else {
-    if(!options.function||!options.chainId||!options.to) fail('FIXTURE_ARGUMENTS','--function, --chain-id and --to are required unless --broadcast-tx is given.',2);
+    if(!options.function||!options.chainId||!options.to) fail('FIXTURE_ARGUMENTS','--function, --chain-id and --to are required unless --tx or --broadcast-tx is given.',2);
     try {const args=JSON.parse(options.args); if(!Array.isArray(args)) throw new Error('--args must be a JSON array'); data=iface.encodeFunctionData(options.function,args);} catch(e) {fail('FIXTURE_ARGUMENTS',`Could not encode arguments: ${(e as Error).message}`,2);}
   }
   let chain: Fixture['chain'];
@@ -240,7 +250,7 @@ export function createFixture(state: State, options: {name:string; contract:stri
     if(!options.chainName || !m) fail('FIXTURE_ARGUMENTS','--chain-name and --native-currency SYMBOL:DECIMALS must be given together.',2);
     chain={name:options.chainName, nativeCurrency:{name:m[1], symbol:m[1], decimals:Number(m[2])}};
   }
-  const fixture: Fixture={contract:c.id, chainId:Number(options.chainId), to:options.to!, data, value:options.value, ...(options.from?{from:options.from}:{}), ...(options.local?{localBinding:true}:{}), ...(chain?{chain}:{}), tokens:{}, addressNames:{}};
+  const fixture: Fixture={contract:c.id, chainId:Number(options.chainId), to:options.to!, data:data!, value:options.value, ...(options.from?{from:options.from}:{}), ...(txHash?{txHash}:{}), ...(options.local?{localBinding:true}:{}), ...(chain?{chain}:{}), tokens:{}, addressNames:{}};
   validateFixture(fixture);
   const file=`clear-signing/fixtures/${options.name}.json`;
   if(fs.existsSync(safePath(state.project.root,file))) fail('FILE_EXISTS',`Refusing to overwrite ${file}.`,2);

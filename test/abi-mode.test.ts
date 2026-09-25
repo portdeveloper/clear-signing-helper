@@ -141,3 +141,52 @@ await test('--registry names the registry clone on export as on the registry com
   const help=spawnSync(process.execPath,[cli,'export','--help'],{encoding:'utf8'}).stdout;
   assert.match(help,/--registry <directory>/);assert.doesNotMatch(help,/--ci-pins/);
 });
+
+await test('fixture --tx copies a mined transaction as sent, records its hash in the registry test, and refuses what it cannot vouch for',async t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  fs.writeFileSync(path.join(root,'token.abi.json'),JSON.stringify(tokenAbi));
+  const created=run(root,['init','--abi','token.abi.json','--name','ClearToken','--owner','Example']).result;
+  const id='clear-signing/abi/ClearToken.json:ClearToken', dfile=path.join(root,created.contracts[0].descriptor), d=read(dfile);
+  d.context.contract.deployments=[{chainId:10143,address:token}];
+  for(const key of Object.keys(d.display.formats)) if(!key.startsWith('transfer(')) delete d.display.formats[key];
+  write(dfile,d);
+  let toml=fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8');
+  toml=toml.replace('exclusions = { }','[contracts.exclusions]\n"approve(address,uint256)" = "demo"\n"burn(uint256)" = "demo"\n"mint(address,uint256)" = "demo"\n"transferAdmin(address)" = "demo"\n"transferFrom(address,address,uint256)" = "demo"\n');
+  fs.writeFileSync(path.join(root,'clear-signing.toml'),toml);
+  const {Interface}=await import('ethers');const iface=new Interface(tokenAbi);
+  const transfer=iface.encodeFunctionData('transfer',[proxy,2500000n]);
+  const h=(n:number)=>'0x'+n.toString(16).padStart(64,'0'), sender='0x5555555555555555555555555555555555555555';
+  const tx=(over:Record<string,unknown>)=>({hash:'',from:sender,to:token,input:transfer,value:'0x0',blockNumber:'0x10',chainId:'0x279f',...over});
+  const chain:Record<string,{tx:any;status?:string}>={
+    [h(1)]:{tx:tx({})}, [h(2)]:{tx:tx({}),status:'0x0'}, [h(3)]:{tx:tx({blockNumber:null})}, [h(4)]:{tx:tx({to:impl})},
+    [h(5)]:{tx:tx({input:transfer+'00'})}, [h(6)]:{tx:tx({input:iface.encodeFunctionData('approve',[proxy,1n]).replace(/^0x095ea7b3/,'0xdeadbeef')})}, [h(7)]:{tx:tx({to:null})}};
+  const methods:string[]=[];
+  const server=createServer((req,res)=>{let body='';req.on('data',c=>body+=c).on('end',()=>{
+    const {method,params,id:rid}=JSON.parse(body);methods.push(method);
+    const reply=(result:unknown)=>{res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({jsonrpc:'2.0',id:rid,result}));};
+    if(method==='eth_chainId') return reply('0x279f');
+    const e=chain[params[0]];
+    if(method==='eth_getTransactionByHash') return reply(e?{...e.tx,hash:params[0]}:null);
+    if(method==='eth_getTransactionReceipt') return reply(e?{status:e.status??'0x1'}:null);
+    res.writeHead(200);res.end(JSON.stringify({jsonrpc:'2.0',id:rid,error:{message:`${method} not allowed`}}));
+  });});
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>server.close());
+  const rpc=`http://127.0.0.1:${(server.address() as any).port}`;
+  const fixture=(name:string,hash:string,expected=0)=>runAsync(root,['fixture','--name',name,'--contract',id,'--tx',hash,'--rpc-url',rpc],expected);
+  const made=(await fixture('sent',h(1))).result;
+  const f=read(path.join(root,made.created));
+  assert.deepEqual({chainId:f.chainId,to:f.to,data:f.data,value:f.value,from:f.from,txHash:f.txHash},{chainId:10143,to:token,data:transfer,value:'0',from:sender,txHash:h(1)});
+  assert.match(made.source,/at block 16$/);
+  // Only reads: nothing that could sign or send.
+  assert.deepEqual([...new Set(methods)].sort(),['eth_chainId','eth_getTransactionByHash','eth_getTransactionReceipt']);
+  for(const [hash,code] of [[h(2),'TX_REVERTED'],[h(3),'TX_PENDING'],[h(4),'TX_TARGET_MISMATCH'],[h(5),'NONCANONICAL_CALLDATA'],[h(6),'TX_SELECTOR_MISMATCH'],[h(7),'TX_CONTRACT_CREATION'],[h(9),'TX_NOT_FOUND']] as const)
+    assert.equal((await fixture(`bad-${code}`,hash,2)).diagnostics[0].code,code,code);
+  assert.ok(!fs.existsSync(path.join(root,'clear-signing/fixtures/bad-TX_REVERTED.json')),'a refusal writes no fixture');
+  assert.equal(run(root,['fixture','--name','x','--contract',id,'--tx',h(1)],2).diagnostics[0].code,'USAGE_ERROR');
+  // The hash travels into the exported registry test case.
+  const ff=path.join(root,made.created),fx=read(ff);fx.tokens={[token]:{name:'Clear Token',symbol:'CLR',decimals:6}};write(ff,fx);
+  run(root,['review','--accept']);run(root,['test','--update']);
+  const exported=run(root,['export','--out','bundle','--no-lint']).result;
+  const tests=read(path.join(root,exported.registryPath,'testsv2/calldata-ClearToken.tests.json'));
+  assert.equal(tests.tests[0].txHash,h(1));
+});
