@@ -7,16 +7,19 @@ import { spawnSync } from 'node:child_process';
 // the flags in .github/workflows/pull_request.yml. Run through uvx so nothing is installed into the
 // project. Absent uvx, the exact command is reported for the user to run.
 export interface LintPin {requirement: string; flags: string[]; source: string}
-// Registry CI as of ethereum/clear-signing-erc7730-registry#3038: Sourcify verification required.
+// Registry CI since ethereum/clear-signing-erc7730-registry#3038 (merged 2026-09-24): Sourcify verification required.
 export const DEFAULT_LINT_PIN: LintPin = {
   requirement: 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e823abc2f69b87db902464b8d204912831e8969e',
   flags: ['--require-verified'],
-  source: 'built-in (registry CI after ethereum/clear-signing-erc7730-registry#3038, 2026-09-23)'
+  source: 'built-in (registry master since ethereum/clear-signing-erc7730-registry#3038, merged 2026-09-24)'
 };
+const PR_WORKFLOWS = ['registry-checks.yml', 'pull_request.yml'];
 // A registry clone's own CI definition; a clone without it falls back to the built-in pin, and says so.
 export function lintPinFromRegistry(clone: string): LintPin {
-  const requirements = path.join(clone, '.github', 'requirements.txt'), workflow = path.join(clone, '.github', 'workflows', 'pull_request.yml');
-  if (!fs.existsSync(requirements) || !fs.existsSync(workflow)) return {...DEFAULT_LINT_PIN, source: `${DEFAULT_LINT_PIN.source}; ${clone} has no .github/requirements.txt or pull_request.yml`};
+  // The pull-request workflow was pull_request.yml until registry #3046 (2026-09-24) renamed it registry-checks.yml.
+  const requirements = path.join(clone, '.github', 'requirements.txt');
+  const workflow = PR_WORKFLOWS.map(name => path.join(clone, '.github', 'workflows', name)).find(f => fs.existsSync(f));
+  if (!fs.existsSync(requirements) || !workflow) return {...DEFAULT_LINT_PIN, source: `${DEFAULT_LINT_PIN.source}; ${clone} has no .github/requirements.txt or ${PR_WORKFLOWS.join(' / ')}`};
   const requirement = /^\s*(erc7730\b[^#\r\n]*)/m.exec(fs.readFileSync(requirements, 'utf8'))?.[1].trim();
   const lintLine = /\berc7730 lint\b([^\r\n]*)/.exec(fs.readFileSync(workflow, 'utf8'))?.[1] ?? '';
   if (!requirement) return {...DEFAULT_LINT_PIN, source: `${DEFAULT_LINT_PIN.source}; no erc7730 requirement in ${requirements}`};
