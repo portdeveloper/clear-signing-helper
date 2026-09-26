@@ -1,4 +1,4 @@
-import { getAddress, isAddress } from 'ethers';
+import { AbiCoder, getAddress, isAddress } from 'ethers';
 import { fail, Failure } from './io.js';
 import { namedImmutables, type NamedImmutable } from './immutables.js';
 
@@ -11,6 +11,8 @@ export interface VerifiedContract {
   chainId: number; address: string;
   proxy?: {type: string | null; implementation: {address: string; name?: string}};
   immutables?: NamedImmutable[];
+  // Verified source files by path, when the record was small enough to fetch with them.
+  sources?: Record<string, string>;
 }
 const SOURCIFY = process.env.CLEAR_SIGNING_SOURCIFY_URL ?? 'https://sourcify.dev/server';
 const ETHERSCAN = process.env.CLEAR_SIGNING_ETHERSCAN_URL ?? 'https://api.etherscan.io/v2/api';
@@ -44,7 +46,8 @@ async function fromSourcify(chainId: number, address: string, depth = 0): Promis
   }
   if (!Array.isArray(body.abi)) fail('FETCH_FAILED', `Sourcify match for ${address} has no ABI.`, 2);
   const immutables = namedImmutables(body, body.abi);
-  return {name: body.compilation?.name ?? 'Contract', abi: body.abi, userdoc: body.userdoc, devdoc: body.devdoc, source: 'sourcify', url, match: body.match, fetchedAt: new Date().toISOString(), chainId, address, ...(immutables.length ? {immutables} : {})};
+  const sources = Object.fromEntries(Object.entries<any>(body.sources ?? {}).filter(([, v]) => typeof v?.content === 'string').map(([k, v]) => [k, v.content as string]));
+  return {name: body.compilation?.name ?? 'Contract', abi: body.abi, userdoc: body.userdoc, devdoc: body.devdoc, source: 'sourcify', url, match: body.match, fetchedAt: new Date().toISOString(), chainId, address, ...(immutables.length ? {immutables} : {}), ...(Object.keys(sources).length ? {sources} : {})};
 }
 async function fromEtherscan(chainId: number, address: string, depth = 0): Promise<VerifiedContract | undefined> {
   const key = process.env.ETHERSCAN_API_KEY;
@@ -89,6 +92,22 @@ async function rpcRequest(url: string, method: ReadMethod, params: unknown[], ti
     if (e instanceof Failure) throw e;
     fail('FETCH_FAILED', `${shown}: ${(e as Error).message}`, 2);
   } finally { clearTimeout(timer); }
+}
+// ERC-20 metadata read with eth_call: symbol(), decimals(), name(). Old tokens (MKR, SAI) return bytes32
+// strings; both encodings are read. A token that answers none of them is reported, not guessed.
+export async function fetchTokenMetadata(url: string, chainId: number, address: string): Promise<{name: string; symbol: string; decimals: number} | {error: string}> {
+  const served = Number(BigInt(await rpcCall(url, 'eth_chainId', [])));
+  if (served !== chainId) fail('RPC_CHAIN_MISMATCH', `${redact(url)} serves chain ${served}, but the fixture is on chain ${chainId}.`, 2);
+  const call = async (data: string) => { try { return await rpcCall(url, 'eth_call', [{to: address, data}, 'latest']); } catch (e) { if (e instanceof Failure && e.code === 'RPC_ERROR') return '0x'; throw e; } };
+  const text = (hex: string) => {
+    if (hex.length === 66) return Buffer.from(hex.slice(2), 'hex').toString('utf8').replace(/\0+$/, '');
+    try { return AbiCoder.defaultAbiCoder().decode(['string'], hex)[0] as string; } catch { return ''; }
+  };
+  const [symbolHex, decimalsHex, nameHex] = [await call('0x95d89b41'), await call('0x313ce567'), await call('0x06fdde03')];
+  const symbol = text(symbolHex).trim(), name = text(nameHex).trim() || symbol;
+  const decimals = decimalsHex.length >= 66 ? Number(BigInt(decimalsHex.slice(0, 66))) : NaN;
+  if (!symbol || !Number.isInteger(decimals) || decimals < 0 || decimals > 255) return {error: `${address} did not answer symbol() and decimals() as an ERC-20 on chain ${chainId}`};
+  return {name, symbol, decimals};
 }
 export async function rpcCall(url: string, method: 'eth_chainId' | 'eth_getCode' | 'eth_call', params: unknown[], timeoutMs = 30_000): Promise<string> {
   const result = await rpcRequest(url, method, params, timeoutMs);

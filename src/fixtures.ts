@@ -77,7 +77,8 @@ export function decodeCanonical(contract: Contract, data: string) {
   } catch (e) { if ((e as any).code === 'NONCANONICAL_CALLDATA') throw e; fail('CALLDATA_DECODE', `Cannot decode calldata for ${fn.format()}: ${(e as Error).message}`); }
   return {fn, decoded};
 }
-export async function renderFixture(f: Fixture, d: Descriptor, contract: Contract): Promise<Rendering> {
+// missingTokens, when given, collects the token addresses the rendering asked for and the fixture lacks.
+export async function renderFixture(f: Fixture, d: Descriptor, contract: Contract, missingTokens?: Set<string>): Promise<Rendering> {
   validateFixture(f);
   if (f.contract !== contract.id) fail('FIXTURE_CONTRACT', `Fixture ${f.contract} does not match ${contract.id}.`);
   const {fn, decoded} = decodeCanonical(contract, f.data);
@@ -102,7 +103,7 @@ export async function renderFixture(f: Fixture, d: Descriptor, contract: Contrac
       fetchDescriptor: async p => { if (p !== 'local.json') fail('UNSAFE_REFERENCE', `Unexpected descriptor reference ${p}`); return descriptor as RendererDescriptor; }
     }},
     externalDataProvider: {
-      resolveToken: async (chainId, address) => chainId === f.chainId ? tokens[address.toLowerCase()] ?? null : null,
+      resolveToken: async (chainId, address) => { const t = chainId === f.chainId ? tokens[address.toLowerCase()] ?? null : null; if (!t && chainId === f.chainId) missingTokens?.add(address.toLowerCase()); return t; },
       // Local fixtures cannot verify address types; a supplied name is trusted for the declared types.
       resolveLocalName: async address => names[address.toLowerCase()] ? {name: names[address.toLowerCase()], typeMatch: true} : null,
       resolveEnsName: async address => ens[address.toLowerCase()] ? {name: ens[address.toLowerCase()], typeMatch: true} : null,

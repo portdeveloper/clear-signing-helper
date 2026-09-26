@@ -58,6 +58,14 @@ await test('export --registry-runners runs both implementations on the bundle an
   const bad=run(root,['export','--out','bad','--no-lint','--registry-runners'],1,{CLEAR_SIGNING_RUNNERS_DIR:failing});
   assert.equal(bad.diagnostics[0].code,'REGISTRY_RUNNER_FAILED');assert.match(bad.diagnostics[0].message,/sourcify runner .*stubbed mismatch/);
   assert.equal(fs.existsSync(path.join(root,'bad')),false,'a failed runner leaves no bundle behind');
+  // A failure accepted for one runner, with a reason, exports when the other passes; accepting the passing one changes nothing.
+  assert.equal(run(root,['export','--out','bad','--no-lint','--registry-runners','--accept-runner-failure','rust=not this one'],1,{CLEAR_SIGNING_RUNNERS_DIR:failing}).diagnostics[0].code,'REGISTRY_RUNNER_FAILED');
+  const accepted=run(root,['export','--out','accepted','--no-lint','--registry-runners','--accept-runner-failure','sourcify=runners disagree on the native symbol (registry #3027)'],0,{CLEAR_SIGNING_RUNNERS_DIR:failing}).result;
+  assert.deepEqual(accepted.registryRunners.map((r:any)=>[r.name,r.passed,r.acceptedFailure]),[['sourcify',false,'runners disagree on the native symbol (registry #3027)'],['rust',true,undefined]]);
+  assert.equal(read(path.join(root,'accepted/review/validation.json')).registryRunners[0].acceptedFailure,'runners disagree on the native symbol (registry #3027)');
+  assert.match(fs.readFileSync(path.join(root,'accepted/README.md'),'utf8'),/sourcify runner failed .* accepted/);
+  assert.equal(run(root,['export','--out','both','--no-lint','--registry-runners','--accept-runner-failure','sourcify=a','--accept-runner-failure','rust=b'],2,{CLEAR_SIGNING_RUNNERS_DIR:failing}).diagnostics[0].code,'USAGE_ERROR');
+  assert.equal(run(root,['export','--out','norun','--no-lint','--accept-runner-failure','rust=x'],2).diagnostics[0].code,'USAGE_ERROR');
   // Without the flag nothing runs and the record says so.
   const plain=run(root,['export','--out','plain','--no-lint']).result;assert.equal(plain.registryRunners,null);assert.equal(read(path.join(root,'plain/review/validation.json')).registryRunners,'not run');
 });

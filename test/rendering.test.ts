@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {FunctionFragment, Interface} from 'ethers';
-import {ENGINE,scaffold,validateDescriptor,WARNING_REMEDY, type Descriptor} from '../src/descriptors.js';
+import {ENGINE,scaffold,scaffoldFormatWithProvenance,validateDescriptor,WARNING_REMEDY, type Descriptor} from '../src/descriptors.js';
 import {humanOutput} from '../src/output.js';
 import {renderFixture} from '../src/fixtures.js';
 import {previewHtml,servePreview} from '../src/preview.js';
@@ -172,4 +172,23 @@ await test('check output groups warnings by descriptor and code, most signer-rel
   assert.equal(out,['Local checks passed. Review is current.','','5 warning(s), none blocking: 1 UNDISPLAYED_ARGUMENT, 3 INTENT_LENGTH, 1 CORPUS_DISAGREEMENT.',
     '  a.json',`    UNDISPLAYED_ARGUMENT (1): ${WARNING_REMEDY.UNDISPLAYED_ARGUMENT}`,'      u1',`    INTENT_LENGTH (2): ${WARNING_REMEDY.INTENT_LENGTH}`,'      i1','      i2',
     '  b.json',`    INTENT_LENGTH (1): ${WARNING_REMEDY.INTENT_LENGTH}`,'      i3',`    CORPUS_DISAGREEMENT (1): ${WARNING_REMEDY.CORPUS_DISAGREEMENT}`,'      m1'].join('\n'));
+});
+// Audit replay findings (docs/AUDIT-REPLAY.md): a checksum typo was reported as a generic mapping error,
+// an access-control @notice became an intent, and the linter's length limits surfaced only at export.
+await test('checksum typos, access-control notices and Ledger length limits are reported for what they are',()=>{
+  const c=contract('stake(uint256 amount)');
+  const d=scaffold(c,'Example');
+  const selection={id:c.id,descriptor:'test.json',exclusions:{}};
+  const bad='0x1FBC7b6B54726D735fF1B47Df75535B4B9021902'.replace('FBC','fbc');
+  d.display.formats['stake(uint256 amount)'].fields=[{path:'amount',label:'Amount',format:'tokenAmount',params:{token:bad}}];
+  assert.match(validateDescriptor(d,c,selection).find(e=>e.code==='TOKEN_MAPPING')!.message,/wrong EIP-55 checksum/);
+  d.display.formats['stake(uint256 amount)'].fields=[{path:'amount',label:'Amount of LP tokens to stake',format:'raw'}];
+  d.metadata.owner='Circle Internet Financial';
+  const codes=validateDescriptor(d,c,selection).filter(e=>e.severity==='warning').map(e=>e.code);
+  assert.ok(codes.includes('LABEL_LENGTH'));assert.ok(codes.includes('METADATA_LENGTH'));
+  const evidence={notices:{'stake(uint256)':'Only callable by msig'},paramDocs:{},enums:{},constants:{},conventions:{erc20:false,weth:false}} as any;
+  const {format,provenance}=scaffoldFormatWithProvenance(c.functions[0],evidence);
+  assert.equal(format.intent,'Stake');assert.ok(provenance.some(p=>p.detail.includes('access control')));
+  evidence.notices['stake(uint256)']='Stake LP tokens';
+  assert.equal(scaffoldFormatWithProvenance(c.functions[0],evidence).format.intent,'Stake LP tokens');
 });

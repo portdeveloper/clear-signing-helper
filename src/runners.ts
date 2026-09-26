@@ -13,8 +13,29 @@ export const DEFAULT_PINS: RunnerPins = {
   rust: {repo: 'https://github.com/llbartekll/clear-signing.git', ref: '10605ba78f3d6f3f13102e0f3a3ecbc44ac500dc'}               // registry CI @ 2026-08-13
 };
 export interface CaseResult {description: string; status: 'pass' | 'fail' | 'error' | 'skipped'; message?: string; rendered?: unknown}
-export interface RunnerResult {name: 'sourcify' | 'rust'; ran: boolean; passed: boolean; implementation?: string; ref: string; cases: Record<string, number>; failures: CaseResult[]; resultsFile?: string; reason?: string; command?: string}
+export interface RunnerResult {name: 'sourcify' | 'rust'; ran: boolean; passed: boolean; acceptedFailure?: string; implementation?: string; ref: string; cases: Record<string, number>; failures: CaseResult[]; resultsFile?: string; reason?: string; command?: string}
 
+// A failure the user accepts for one runner, with the reason recorded: the registry's two implementations
+// sometimes disagree with each other (registry #3027: the Rust runner names chain 137's currency MATIC,
+// the Sourcify runner POL), and no expectation can satisfy both. The runner still runs and its output is
+// kept; the other runner must pass, so one implementation always checks the expected values.
+export type AcceptedFailures = Partial<Record<RunnerResult['name'], string>>;
+export function parseAcceptedFailures(values: string[] = [], runnersEnabled: boolean, flag: string): AcceptedFailures {
+  const accepted: AcceptedFailures = {};
+  for (const v of values) {
+    const m = /^(sourcify|rust)=(.+)$/s.exec(v);
+    if (!m || !m[2].trim()) fail('USAGE_ERROR', `--accept-runner-failure takes <sourcify|rust>=<reason>; got "${v}".`, 2);
+    accepted[m[1] as RunnerResult['name']] = m[2].trim();
+  }
+  if (Object.keys(accepted).length && !runnersEnabled) fail('USAGE_ERROR', `--accept-runner-failure needs ${flag}: the runner still runs and its output is recorded.`, 2);
+  if (accepted.sourcify && accepted.rust) fail('USAGE_ERROR', '--accept-runner-failure may name one runner only; the other must pass so the expected values are checked.', 2);
+  return accepted;
+}
+// Marks accepted failures on the results and returns the failures that still count.
+export function unacceptedFailures(results: RunnerResult[], accepted: AcceptedFailures): RunnerResult[] {
+  for (const r of results) if (!r.passed && accepted[r.name]) r.acceptedFailure = accepted[r.name];
+  return results.filter(r => !r.passed && !r.acceptedFailure);
+}
 export function runnersDir() { return process.env.CLEAR_SIGNING_RUNNERS_DIR ?? path.join(os.homedir(), '.cache', 'clear-signing-helper', 'runners'); }
 export function pinsFromRegistry(clone: string): RunnerPins {
   const read = (name: string, repo: string) => {

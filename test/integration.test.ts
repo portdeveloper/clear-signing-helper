@@ -171,7 +171,7 @@ await test('production export is gated and produces valid registry test input',t
   run(root,['export','--out','bundle-formatted'],0,{...process.env,PATH:`${bin}:${process.env.PATH}`});
   const format=fs.readFileSync(calls,'utf8').split('\n').find(l=>/ erc7730 format /.test(l));
   assert.ok(format?.includes('registry/example/calldata-ClearToken.json')&&format.includes('registry/example/testsv2/calldata-ClearToken.tests.json'),`format call: ${format}`);
-  assert.ok(codes(run(root,['export','--out','../outside'],1)).includes('UNSAFE_PATH'));
+  assert.ok(codes(run(root,['export','--out','../outside'],2)).includes('USAGE_ERROR'),'a bundle outside the project is refused, with the reason');
   assert.ok(codes(run(root,['export','--out','bad','--no-lint','--entity','Not A Slug'],1)).includes('ENTITY_INVALID'));
   const withAbi=run(root,['export','--out','with-abi','--no-lint','--inline-abi','--entity','clear']).result;assert.equal(withAbi.entity,'clear');
   assert.ok(Array.isArray(read(path.join(root,'with-abi/registry/clear/calldata-ClearToken.json')).context.contract.abi));

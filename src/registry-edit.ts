@@ -8,7 +8,7 @@ import { renderFixture, blockingWarnings, INFORMATIONAL_WARNINGS, type Fixture }
 import { fetchVerifiedContract, rpcCall, type VerifiedContract } from './fetch.js';
 import { testCase, typedDataTestCase, validateRegistryTests } from './registry.js';
 import { runUpstreamLint, skippedLint, lintPinFromRegistry, type LintResult } from './lint.js';
-import { setupRunners, runRegistryRunners, pinsFromRegistry, type RunnerResult } from './runners.js';
+import { setupRunners, runRegistryRunners, pinsFromRegistry, parseAcceptedFailures, unacceptedFailures, type RunnerResult } from './runners.js';
 import { KNOWN_CHAINS } from './chains.js';
 import { runnerDivergence, type PortabilityFinding } from './portability.js';
 import { fail, readJson, readText, safePath, walk, writeText, Failure } from './io.js';
@@ -22,7 +22,7 @@ import { appendToContainer, detectStep, insertIntoArray, scanJson, spanAt } from
 export interface AddDeploymentOptions {
   registry: string; descriptor: string; chainId: number; address: string;
   abiFile?: string; rpcUrl?: string; template?: string; set?: string[];
-  tokens?: string[]; addressNames?: string[]; description?: string; test?: boolean; lint?: boolean; runners?: boolean; skipRegistryRunners?: string; log?: (line: string) => void;
+  tokens?: string[]; addressNames?: string[]; description?: string; test?: boolean; lint?: boolean; runners?: boolean; skipRegistryRunners?: string; acceptRunnerFailure?: string[]; log?: (line: string) => void;
 }
 export async function addDeployment(o: AddDeploymentOptions) {
   const registry = fs.realpathSync(path.resolve(o.registry));
@@ -32,6 +32,7 @@ export async function addDeployment(o: AddDeploymentOptions) {
   if (!isAddress(o.address)) fail('INVALID_ADDRESS', `${o.address} is not a valid address.`, 2);
   const address = getAddress(o.address);
   if (o.skipRegistryRunners !== undefined && !o.skipRegistryRunners.trim()) fail('USAGE_ERROR', '--skip-registry-runners needs a reason, which is recorded in the result.', 2);
+  parseAcceptedFailures(o.acceptRunnerFailure, o.runners === true, '--runners');
   if (o.skipRegistryRunners !== undefined && o.runners) fail('USAGE_ERROR', '--runners and --skip-registry-runners exclude each other.', 2);
   if (/^eip712-.*\.json$/.test(path.basename(descriptorFile))) return addTypedDataDeployment(o, registry, descriptorFile, address);
   if (!/^calldata-.*\.json$/.test(path.basename(descriptorFile))) fail('UNSUPPORTED_DESCRIPTOR', 'Only calldata-*.json and eip712-*.json descriptors are supported.', 2);
@@ -338,7 +339,7 @@ function runRunners(o: AddDeploymentOptions, registry: string, testsFile: string
   const tc = setupRunners(pinsFromRegistry(registry), o.log);
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'csh-runners-'));
   const runners = runRegistryRunners(tc, testsFile, registry, outDir);
-  const failed = runners.filter(r => !r.passed);
+  const failed = unacceptedFailures(runners, parseAcceptedFailures(o.acceptRunnerFailure, true, '--runners'));
   if (failed.length) fail('REGISTRY_RUNNER_FAILED', `${failed.map(r => `${r.name} (${r.implementation ?? r.ref.slice(0, 8)}): ${r.reason ?? JSON.stringify(r.cases)}${r.failures.length ? `; ${r.failures.map(f => `"${f.description}" ${f.status}${f.message ? ` (${f.message})` : ''}`).join('; ')}` : ''}`).join('\n')}\nRendered output is under ${outDir}. Nothing was changed.`, 1);
   return runners;
 }

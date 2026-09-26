@@ -1,5 +1,5 @@
 import { Command, CommanderError, Option } from 'commander';
-import { init, loadState, check, review, sync, preview, createFixture, runTests, exportBundle, upgrade, writeDecisions, applyDecisions } from './app.js';
+import { init, loadState, check, review, sync, preview, createFixture, fillTokenMetadata, runTests, exportBundle, upgrade, writeDecisions, applyDecisions } from './app.js';
 import { Failure } from './io.js';
 import { servePreview } from './preview.js';
 import { displayText, humanOutput } from './output.js';
@@ -33,6 +33,7 @@ program.command('init').description('Discover contracts and create drafts withou
   .option('--address <address>','ABI mode: fetch the verified ABI for this deployment (Sourcify, then Etherscan with ETHERSCAN_API_KEY)')
   .option('--chain-id <number>','Chain ID for --address')
   .option('--name <ContractName>','Contract name for an imported ABI')
+  .option('--registry <directory>','Read registry matches and priors from this registry clone instead of the bundled snapshot')
   .action(async options=>output(await init({...program.opts(),...options})));
 program.command('upgrade').description('Adopt this engine version and invalidate prior review; descriptors are preserved').action(()=>output(upgrade(program.opts())));
 program.command('sync').description('Add newly introduced functions while preserving existing formatting').action(()=>output(sync(state())));
@@ -59,7 +60,7 @@ program.command('fixture').description('Encode an example transaction from the c
   .option('--chain-id <number>','Chain ID')
   .option('--to <address>','Target address')
   .option('--tx <hash>','Copy a mined transaction sent to this contract: chain, target, calldata, value and sender (with --rpc-url)')
-  .option('--rpc-url <url>','Read-only endpoint for --tx; the chain is taken from it')
+  .option('--rpc-url <url>','Read-only endpoint: with --tx the transaction is read from it; the fixture\'s missing token metadata (symbol, decimals, name) is read from it too')
   .option('--broadcast-tx <hash>','Take chain, target, calldata and value from a recorded broadcast transaction')
   .option('--value <wei>','Native transaction value in wei','0')
   .option('--from <address>','Sender for @.from fields')
@@ -68,10 +69,11 @@ program.command('fixture').description('Encode an example transaction from the c
   .option('--local','Use an explicit undeployed draft binding')
   .action(async options=>{
     if(options.tx&&options.broadcastTx) throw new Failure('USAGE_ERROR','--tx and --broadcast-tx both name the transaction; pass one.',2);
-    if(!!options.tx!==!!options.rpcUrl) throw new Failure('USAGE_ERROR','--tx and --rpc-url go together.',2);
+    if(options.tx&&!options.rpcUrl) throw new Failure('USAGE_ERROR','--tx needs --rpc-url to read the transaction from.',2);
     // Load the project before the network call, so a wrong --root or contract fails without one.
     const s=state(), transaction=options.tx?await fetchTransaction(options.rpcUrl,options.tx):undefined;
-    output(createFixture(s,{...options,local:options.local===true,transaction}));
+    const created=createFixture(s,{...options,local:options.local===true,transaction});
+    output(options.rpcUrl?{...created,...await fillTokenMetadata(s,created.created,options.rpcUrl)}:created);
   });
 program.command('preview').description('Render one transaction fixture locally')
   .requiredOption('--fixture <path>','Fixture path relative to the project root')
@@ -95,9 +97,10 @@ program.command('export').description('Validate and write a submission bundle; d
   .option('--no-lint','Skip running the pinned upstream erc7730 lint')
   .option('--registry-runners','Also run the registry CI\'s Sourcify and Rust implementations on the exported tests (builds them once; needs git, npm, cargo)')
   .option('--skip-registry-runners <reason>','Export without the registry runners although a displayed field uses a shape where this tool and the registry CI render differently; the reason is recorded')
+  .option('--accept-runner-failure <runner=reason>','With --registry-runners: export although this runner (sourcify or rust) fails, e.g. when the two disagree with each other; the other must pass and the reason is recorded',select,[])
   .option('--registry <directory>','Read the erc7730 package, lint flags and runner revisions from this registry clone\'s CI definition instead of the built-in pins (nothing is written to the clone)')
   .addOption(new Option('--ci-pins <directory>','Former name of --registry').hideHelp())
-  .action(async options=>output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,inlineAbi:options.inlineAbi===true,lint:options.lint!==false,registryRunners:options.registryRunners===true,skipRegistryRunners:options.skipRegistryRunners,ciPins:registryClone(options),log:progress})));
+  .action(async options=>output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,inlineAbi:options.inlineAbi===true,lint:options.lint!==false,registryRunners:options.registryRunners===true,skipRegistryRunners:options.skipRegistryRunners,acceptRunnerFailure:options.acceptRunnerFailure,ciPins:registryClone(options),log:progress})));
 const registry=program.command('registry').description('Edit an existing registry clone; never commits or opens pull requests');
 registry.command('add-deployment').description('Add a verified deployment (and a rendered test case) to a descriptor already in the registry')
   .requiredOption('--registry <directory>','Path to a clone of ethereum/clear-signing-erc7730-registry')
@@ -115,7 +118,8 @@ registry.command('add-deployment').description('Add a verified deployment (and a
   .option('--no-lint','Skip running the pinned upstream erc7730 lint')
   .option('--runners','Also run the registry CI\'s Sourcify and Rust implementations on the updated test file (pins read from the clone)')
   .option('--skip-registry-runners <reason>','Calldata: add the test without the runners although it displays a shape where this tool and the registry CI render differently; the reason is recorded')
-  .action(async options=>output(await addDeployment({registry:options.registry,descriptor:options.descriptor,chainId:Number(options.chainId),address:options.address,abiFile:options.abi,rpcUrl:options.rpcUrl,template:options.template,set:options.set,tokens:options.token,addressNames:options.addressName,description:options.description,test:options.test!==false,lint:options.lint!==false,runners:options.runners===true,skipRegistryRunners:options.skipRegistryRunners,log:progress})));
+  .option('--accept-runner-failure <runner=reason>','With --runners: keep the edit although this runner (sourcify or rust) fails; the other must pass and the reason is recorded',select,[])
+  .action(async options=>output(await addDeployment({registry:options.registry,descriptor:options.descriptor,chainId:Number(options.chainId),address:options.address,abiFile:options.abi,rpcUrl:options.rpcUrl,template:options.template,set:options.set,tokens:options.token,addressNames:options.addressName,description:options.description,test:options.test!==false,lint:options.lint!==false,runners:options.runners===true,skipRegistryRunners:options.skipRegistryRunners,acceptRunnerFailure:options.acceptRunnerFailure,log:progress})));
 registry.command('setup-runners').description('Clone and build the registry CI\'s Sourcify and Rust implementations once, for later --registry-runners / --runners use')
   .option('--registry <directory>','Read runner revisions from this registry clone\'s CI definition')
   .addOption(new Option('--ci-pins <directory>','Former name of --registry on export').hideHelp())

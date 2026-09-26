@@ -9,7 +9,7 @@ import type { VerifiedContract } from './fetch.js';
 // ABI mode: no Foundry build. Contracts are ABI files under clear-signing/abi/, each with a
 // .source.json sidecar recording where the ABI came from. The fingerprint covers those files only.
 export const ABI_DIR = 'clear-signing/abi';
-export interface AbiSource {source: 'file' | 'sourcify' | 'etherscan'; importedAt: string; origin: string; chainId?: number; address?: string; match?: string; url?: string; proxy?: VerifiedContract['proxy']; userdoc?: any; devdoc?: any; immutables?: VerifiedContract['immutables']}
+export interface AbiSource {source: 'file' | 'sourcify' | 'etherscan'; importedAt: string; origin: string; chainId?: number; address?: string; match?: string; url?: string; proxy?: VerifiedContract['proxy']; userdoc?: any; devdoc?: any; immutables?: VerifiedContract['immutables']; sourceDir?: string}
 const nameOk = (name: string) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name);
 export function abiContractId(name: string) { return `${ABI_DIR}/${name}.json:${name}`; }
 // Relative paths resolve from the project root, like every other path the CLI accepts.
@@ -23,7 +23,24 @@ export function importAbiFile(root: string, file: string, name?: string) {
 export function importVerified(root: string, v: VerifiedContract, name?: string) {
   const contractName = name ?? v.name;
   if (!nameOk(contractName)) fail('INVALID_NAME', `Contract name "${contractName}" must be a Solidity identifier. Pass --name.`, 2);
-  return storeAbi(root, contractName, v.abi, {source: v.source, importedAt: v.fetchedAt, origin: v.url, chainId: v.chainId, address: v.address, match: v.match, url: v.url, ...(v.proxy ? {proxy: v.proxy} : {}), ...(v.userdoc ? {userdoc: v.userdoc} : {}), ...(v.devdoc ? {devdoc: v.devdoc} : {}), ...(v.immutables ? {immutables: v.immutables} : {})});
+  if (fs.existsSync(safePath(root, `${ABI_DIR}/${contractName}.json`))) fail('FILE_EXISTS', `Refusing to overwrite ${ABI_DIR}/${contractName}.json. Remove it to re-import, or pass --name.`, 2);
+  const sourceDir = v.sources ? storeSources(root, contractName, v.sources) : undefined;
+  return storeAbi(root, contractName, v.abi, {source: v.source, importedAt: v.fetchedAt, origin: v.url, chainId: v.chainId, address: v.address, match: v.match, url: v.url, ...(v.proxy ? {proxy: v.proxy} : {}), ...(v.userdoc ? {userdoc: v.userdoc} : {}), ...(v.devdoc ? {devdoc: v.devdoc} : {}), ...(v.immutables ? {immutables: v.immutables} : {}), ...(sourceDir ? {sourceDir} : {})});
+}
+// The verified source, for reading what the contract does while deciding intents and denominations. It is
+// reference material: not fingerprinted, not read by any command. Paths come from the verified record, so
+// each is kept inside the directory (safePath) and anything that would leave it is skipped.
+export const SOURCE_DIR = 'clear-signing/source';
+function storeSources(root: string, name: string, sources: Record<string, string>) {
+  const dir = `${SOURCE_DIR}/${name}`;
+  if (fs.existsSync(safePath(root, dir))) return dir;
+  let written = 0;
+  for (const [file, content] of Object.entries(sources)) {
+    const rel = file.replace(/\\/g, '/').replace(/^\/+/, '');
+    if (!rel || rel.split('/').some(part => part === '..' || part === '')) continue;
+    try { const target = safePath(root, `${dir}/${rel}`); fs.mkdirSync(path.dirname(target), {recursive: true}); fs.writeFileSync(target, content); written++; } catch (e) { if (!(e instanceof Error)) throw e; }
+  }
+  return written ? dir : undefined;
 }
 function storeAbi(root: string, name: string, abi: unknown, source: AbiSource) {
   if (!Array.isArray(abi) || !abi.length) fail('INVALID_ABI', `ABI for ${name} must be a nonempty JSON array (or an object with an "abi" array).`, 2);
@@ -46,7 +63,7 @@ export function loadAbiProject(root: string): Project {
     if (!Array.isArray(abi)) fail('INVALID_ABI', `${rel} must contain a JSON ABI array.`, 2);
     const sidecarFile = file.replace(/\.json$/, '.source.json');
     const source: AbiSource | undefined = fs.existsSync(sidecarFile) ? readJson(sidecarFile) : undefined;
-    if (source) assertKeys(source, ['source', 'importedAt', 'origin', 'chainId', 'address', 'match', 'url', 'proxy', 'userdoc', 'devdoc', 'immutables'], `${path.relative(root, sidecarFile)}`);
+    if (source) assertKeys(source, ['source', 'importedAt', 'origin', 'chainId', 'address', 'match', 'url', 'proxy', 'userdoc', 'devdoc', 'immutables', 'sourceDir'], `${path.relative(root, sidecarFile)}`);
     const iface = new Interface(abi);
     const functions = iface.fragments.filter((f): f is FunctionFragment => f.type === 'function' && !['view', 'pure'].includes((f as FunctionFragment).stateMutability));
     contracts.push({id: abiContractId(name), name, source: `${ABI_DIR}/${name}.json`, artifact: file, abi, functions: functions.sort((a, b) => a.format().localeCompare(b.format())), special: abi.filter((x: any) => ['fallback', 'receive'].includes(x.type)).map((x: any) => `${x.type}()`), metadata: {}, immutables: source?.immutables, userdoc: source?.userdoc, devdoc: source?.devdoc});

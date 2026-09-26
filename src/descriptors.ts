@@ -131,6 +131,7 @@ export interface Provenance {signature: string; path?: string; source: 'natspec'
 const firstSentence = (text: string) => text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, '').trim();
 // The registry linter warns above 30 characters because Ledger devices truncate longer intents.
 export const MAX_INTENT = 30;
+const ACCESS_NOTICE = /^(only|restricted|callable only|can only be called|must be called)\b|\bonly (callable|by|the owner|owner|admin|governance)\b|\bonly(Owner|Admin|Role|Governance)\b/i;
 // The registry linter's other Ledger display limits (erc7730 common/ledger.py): it warns above each.
 export const MAX_LABEL = 20, MAX_ENUM_ENTRY = 20, MAX_OWNER = 22, MAX_CONTRACT_NAME = 30, MAX_URL = 26, MAX_LEGAL_NAME = 30;
 // interpolatedIntent lists phrasings in order of preference, the registry's own first; the scaffold takes the
@@ -190,7 +191,9 @@ export function scaffoldFormatWithProvenance(f: FunctionFragment, evidence?: Evi
   }
   let intent = humanize(f.name);
   const notice = evidence?.notices[sig] ? firstSentence(evidence.notices[sig]) : '';
-  if (notice && notice.length <= MAX_INTENT) { intent = notice; provenance.push({signature: sig, source: 'natspec', detail: `intent from @notice: ${notice}`}); }
+  // A notice about who may call the function ("Only callable by msig") says nothing about what it does.
+  if (notice && ACCESS_NOTICE.test(notice)) provenance.push({signature: sig, source: 'natspec', detail: `@notice not used as intent (it describes access control, not the action): ${notice}`});
+  else if (notice && notice.length <= MAX_INTENT) { intent = notice; provenance.push({signature: sig, source: 'natspec', detail: `intent from @notice: ${notice}`}); }
   else if (notice) provenance.push({signature: sig, source: 'natspec', detail: `@notice not used as intent (longer than ${MAX_INTENT} characters): ${notice}`});
   const built = [...fields(parsed.inputs), ...(f.stateMutability === 'payable' ? [{path:'@.value',label:'Native amount',format:'amount'}] : [])];
   // Enum-typed leaves become enum formats referencing metadata.enums; the key is chosen by the caller.
@@ -369,10 +372,11 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           const addressReference = (value: unknown, what: string) => {
             if (typeof value !== 'string') fail('TOKEN_MAPPING', `${what} for ${field.path} must be a string.`);
             if (isAddress(value)) return;
+            if (/^0x[0-9a-fA-F]{40}$/.test(value)) fail('TOKEN_MAPPING', `${what} ${value} for ${field.path} has a wrong EIP-55 checksum (mixed case that does not match the address); write it in lower case or copy the checksummed form.`);
             if (value === '@.to' || value === '@.from') return;
             if (value === '$.metadata.token') { if (!d.metadata.token) fail('TOKEN_MAPPING', `${field.path} references $.metadata.token but metadata.token is absent.`); return; }
             const constant = /^\$\.metadata\.constants\.([A-Za-z0-9_]+)$/.exec(value);
-            if (constant) { const v = d.metadata.constants?.[constant[1]]; if (typeof v !== 'string' || !isAddress(v)) fail('TOKEN_MAPPING', `${field.path} references ${value}, which is not an address in metadata.constants.`); return; }
+            if (constant) { const v = d.metadata.constants?.[constant[1]]; if (typeof v !== 'string' || !isAddress(v)) fail('TOKEN_MAPPING', `${field.path} references ${value}, which is not an address in metadata.constants${typeof v === 'string' && /^0x[0-9a-fA-F]{40}$/.test(v) ? ` (${v} has a wrong EIP-55 checksum)` : ''}.`); return; }
             // Any argument leaf may serve: the renderer reads an address out of address, bytes and integer values, and out of byte slices.
             if (!typeOf(value)) fail('TOKEN_MAPPING', `Invalid ${what} ${value} for ${field.path}: it must be a literal address, @.to, a metadata reference, or a path to an argument such as path.[0].`);
           };

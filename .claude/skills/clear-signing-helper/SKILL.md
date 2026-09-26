@@ -37,6 +37,8 @@ git clone --depth 1 https://github.com/ethereum/clear-signing-erc7730-registry.g
 scripts/find-in-registry.sh <address-or-protocol-name> registry-clone
 ```
 
+The script reads deployments out of the descriptors. An address listed under "Descriptors that deploy" is already in that file; one listed only under "Other mentions" (a recipient in a test, an attestation) is not a deployment and is no reason to add one. A name matches entity folders, file names, owners and contract names.
+
 If a `calldata-*.json` matched and only the chain is missing:
 
 ```sh
@@ -59,7 +61,7 @@ clear-signing registry add-deployment --registry registry-clone \
 
 It follows `includes` to the file that holds the deployments (often a shared `common-*.json`), checks the endpoint serves that chain and there is code at the address, and requires the live `DOMAIN_SEPARATOR()` to equal a domain the descriptor or its existing tests record. Then it inserts the deployment in chain-id order, retargets an existing test case at the new chain and address, renders it the way the registry's runner does, and lints every descriptor that includes the edited file. Read `templateAddresses` in the result: those are message addresses (tokens, spenders) still copied from the template's chain. Point them at this chain's contracts with `--set details.token=0x… --set spender=0x…` and give the token with `--token`. Otherwise the test shows a mainnet address on the new chain. The proof shows the contract signs under this domain; it does not compare bytecode, so say in the PR how you know the address is the canonical deployment.
 
-Only author a new descriptor if nothing matched. The grep misses a protocol at a new address or under a differently named entity folder, so step 2 checks again by function selectors.
+Only author a new descriptor if nothing matched. The search misses a protocol at a new address or under a differently named entity folder, so step 2 checks again by function selectors; pass `--registry registry-clone` to `init` so it checks the clone rather than the snapshot bundled with the CLI.
 
 ## 2. Generate the draft
 
@@ -111,15 +113,16 @@ The file lists every function and argument with hints you must read before decid
 - **Hide noise deliberately**: opaque `bytes` payloads, redundant routes, callback data. Set `show: false` with a `hideReason`; `apply` writes the field as `visible: "never"` (so the registry linter does not warn), keeps the reason under `hidden` in `clear-signing.toml`, and `check` stops warning. Never hide a recipient, spender, amount or limit.
 - **Functions you will not cover** (multicall, `execute(bytes)`, admin flows): set `decision: "exclude"` with an `excludeReason`. `fallback()` appears in the file as exclude-only and needs a reason; `receive()` needs nothing. Say plainly in the PR what is excluded. Never ship a descriptor that renders a half-empty screen.
 - **Nested calldata** cannot be decoded statically; exclude those functions.
+- **Enums, names and order**: an integer that stands for a named value (a bridge's chain id in its own numbering, a mode, a tier) gets `format: "enum"` with `"params": {"$ref": "$.metadata.enums.<name>"}`; define the entries in the file's top-level `enums`, e.g. `{"wormholeChain": {"1": "Solana", "2": "Ethereum"}}`. Set `contractName` at the top to the name the owner uses. Fields appear in the order of their keys under `fields`; put what the signer checks first (amounts, recipient) first.
 
-Keep labels to 20 characters and intents to 30; `apply` and `check` warn above that, as the registry linter does. Base every label on the contract's semantics: parameter names, NatSpec, source. If a parameter's meaning is unclear, look at the source or ask.
+Keep labels to 20 characters and intents to 30; `apply` and `check` warn above that, as the registry linter does. Base every label on the contract's semantics: parameter names, NatSpec, source (`init --address` saves the verified source under `clear-signing/source/<Name>/`). If a parameter's meaning is unclear, look at the source or ask.
 
 ## 4. Fixtures, preview, review, test, export
 
 ```sh
 clear-signing fixture --name <n> --contract <id> --function '<sig>' --args '[...]' --chain-id <id> --to <deployed>
 clear-signing fixture --name <n> --contract <id> --broadcast-tx <hash>     # Foundry: a real recorded transaction
-clear-signing fixture --name <n> --contract <id> --tx <hash> --rpc-url <url>   # any project: a mined transaction sent to the contract
+clear-signing fixture --name <n> --contract <id> --tx <hash> --rpc-url <url>   # any project: a mined transaction sent to the contract; also fills token metadata
 clear-signing preview --fixture clear-signing/fixtures/<n>.json           # add tokens/addressNames to the fixture until it renders cleanly
 clear-signing check --contract <id>
 clear-signing review --accept --contract <id>
@@ -129,7 +132,7 @@ clear-signing export --contract <id> --strict-portability --registry-runners --r
 
 Prefer real transactions: a reviewer trusts what users signed over an encoded example. For a deployed contract, find a few recent successful transactions sent directly to it (an explorer lists them; ask the user if none is at hand) and pass their hashes with `--tx`. Encode with `--function` only for functions nobody has called yet.
 
-Every function you kept needs at least one passing fixture. Fixture metadata (`tokens`, `addressNames`, `chain`) is local and never fetched; put the real symbol and decimals in. `export` writes `bundle/registry/<entity>/calldata-<Name>.json` and `testsv2/` exactly as the registry wants them, runs `erc7730 lint` and both registry test runners at the pins in the clone's CI files, and records everything under `bundle/review/`. Any failure produces no bundle. `--strict-portability` rejects ABI shapes with recorded wallet failures (signed ints, nested arrays, multi-field tuple arrays); if it fires, exclude that function or drop strict mode and say so in the PR.
+Every function you kept needs at least one passing fixture. With `--rpc-url` (also on an encoded `--function` fixture), `fixture` reads each token the rendering needs from the chain (`symbol`, `decimals`, `name`) into the fixture's `tokens`; check `unresolvedTokens` in the result. `addressNames` and `chain` you add yourself; rendering never fetches. `export` writes `bundle/registry/<entity>/calldata-<Name>.json` and `testsv2/` exactly as the registry wants them, runs `erc7730 lint` and both registry test runners at the pins in the clone's CI files, and records everything under `bundle/review/`. Any failure produces no bundle. `--strict-portability` rejects ABI shapes with recorded wallet failures (signed ints, nested arrays, multi-field tuple arrays); if it fires, exclude that function or drop strict mode and say so in the PR. If one registry runner fails where the other passes because the two disagree (registry #3027: the Rust runner hard-codes native tickers, MATIC on Polygon, ETH on Celo and Sonic), do not drop `--registry-runners`; add `--accept-runner-failure rust="<why>"` so the other runner still checks the expected values, and say it in the PR.
 
 `review --accept` and `test --update` are the human's acknowledgement; run them only after you have looked at the preview.
 

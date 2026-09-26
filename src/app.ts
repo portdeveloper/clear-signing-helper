@@ -1,19 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import TOML from '@iarna/toml';
-import { Interface } from 'ethers';
+import { Interface, getAddress } from 'ethers';
 import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
 import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
-import { priorsFor, summarizePrior, registryMatches } from './priors.js';
+import { priorsFor, summarizePrior, registryMatches, buildPriorsIndex, usePriorsIndex, PRIORS_META } from './priors.js';
 import { gatherEvidence } from './evidence.js';
 import {portabilityFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
 import { renderFixture, validateFixture, blockingWarnings, decodeCanonical, type Fixture, type Rendering } from './fixtures.js';
 import { registryTests } from './registry.js';
 import { runUpstreamLint, runUpstreamFormat, skippedLint, lintPinFromRegistry, DEFAULT_LINT_PIN, type LintResult } from './lint.js';
-import { setupRunners, runRegistryRunners, pinsFromRegistry, DEFAULT_PINS, type RunnerResult } from './runners.js';
+import { setupRunners, runRegistryRunners, pinsFromRegistry, DEFAULT_PINS, parseAcceptedFailures, unacceptedFailures, type RunnerResult } from './runners.js';
 import { loadAbiProject, importAbiFile, importVerified, ABI_DIR } from './abi-project.js';
-import { fetchVerifiedContract, type ChainTransaction } from './fetch.js';
+import { fetchVerifiedContract, fetchTokenMetadata, type ChainTransaction } from './fetch.js';
 import packageJson from '../package.json' with {type: 'json'};
 
 export interface Config {version: number; profile: string; engine: string; mode?: 'foundry' | 'abi'; contracts: Selection[]}
@@ -27,7 +27,14 @@ function recordProvenance(root: string, entries: (Provenance & {contract: string
   const file = safePath(root, provenanceName);
   const current: Record<string, Provenance[]> = fs.existsSync(file) ? readJson(file) : {};
   assertKeys(current, Object.keys(current ?? {}), 'provenance');
-  for (const {contract, ...p} of entries) { if (replace && !(contract in current)) current[contract] = []; (current[contract] ??= []).push(p); }
+  // A decision replaces the earlier decision for the same slot, so provenance describes the current descriptor.
+  const slot = (p: Provenance) => `${p.signature}|${p.path ?? ''}|${p.path ? 'field' : p.detail.split(':')[0]}`;
+  const decided = (p: Provenance) => p.source === 'human' || p.source === 'llm';
+  for (const {contract, ...p} of entries) {
+    if (replace && !(contract in current)) current[contract] = [];
+    if (!replace && decided(p)) current[contract] = (current[contract] ?? []).filter(q => !(decided(q) && slot(q) === slot(p)));
+    (current[contract] ??= []).push(p);
+  }
   if (replace) for (const id of new Set(entries.map(e => e.contract))) current[id] = entries.filter(e => e.contract === id).map(({contract, ...p}) => p);
   writeJson(file, current);
 }
@@ -83,8 +90,10 @@ export function loadState(options: Options): State {
   assertKeys(review, Object.keys(review ?? {}), 'review');
   return {project, config, descriptors, review};
 }
-export interface InitOptions extends Options {contract?: string[]; owner?: string; abi?: string[]; name?: string; address?: string; chainId?: string}
+export interface InitOptions extends Options {contract?: string[]; owner?: string; abi?: string[]; name?: string; address?: string; chainId?: string; registry?: string}
 export async function init(options: InitOptions) {
+  // Registry matches and priors come from the user's clone when one is named, else the bundled snapshot.
+  const priorsSource = options.registry ? (() => { const index = buildPriorsIndex(options.registry!); usePriorsIndex(index.bySelector); return {registry: path.resolve(options.registry!), descriptors: index.descriptors, skippedFiles: index.skippedFiles}; })() : {snapshot: PRIORS_META.commit, generatedAt: PRIORS_META.generatedAt};
   const abiMode = !!(options.abi?.length || options.address);
   // Mode is decided once, at the first init, and recorded in the config.
   let root: string, existingConfig: Config | undefined;
@@ -142,7 +151,7 @@ export async function init(options: InitOptions) {
     const names = new Map(c.functions.map(f => [f.selector.toLowerCase(), f.format('sighash')]));
     return registryMatches([...names.keys()]).map(m => ({contract: c.id, file: m.file, entity: m.entity, shared: m.shared.map(s => names.get(s)!), distinctive: m.distinctive, described: m.described, contained: m.contained}));
   }) : [];
-  return {created: writes.map(w => w.file), mode, imports: imports.map(i => ({contract: i.id, file: i.file, sidecar: i.sidecar, source: i.source.source, origin: i.source.origin, match: i.source.match, proxy: i.source.proxy})), contracts: config.contracts, bindings, suggestions, registryMatches: registryMatchList, provenance, broadcastCalls: project.calls.length, next: 'Inspect action labels and field formats, create transaction fixtures with fixture, then run review --accept after inspecting them.', questions: selected.map(c => ({contract:c.id, functions:reviewQuestions(c)}))};
+  return {created: writes.map(w => w.file), mode, imports: imports.map(i => ({contract: i.id, file: i.file, sidecar: i.sidecar, source: i.source.source, origin: i.source.origin, match: i.source.match, proxy: i.source.proxy, ...(i.source.sourceDir ? {verifiedSource: i.source.sourceDir} : {})})), contracts: config.contracts, bindings, suggestions, registryMatches: registryMatchList, registryPriors: priorsSource, provenance, broadcastCalls: project.calls.length, next: 'Inspect action labels and field formats, create transaction fixtures with fixture, then run review --accept after inspecting them.', questions: selected.map(c => ({contract:c.id, functions:reviewQuestions(c)}))};
 }
 // Broadcast creations that map to exactly this compiled contract. A name shared by several compiled
 // contracts is ambiguous and yields nothing; the user binds it explicitly.
@@ -257,6 +266,20 @@ export function createFixture(state: State, options: {name:string; contract:stri
   writeJson(safePath(state.project.root,file),fixture);
   return {created:file, ...(source?{source}:{}), next:`Run preview --fixture ${file}. Add local token metadata and address names to the fixture as needed.`};
 }
+// Fills a fixture's token metadata from the chain for the tokens its rendering needs and lacks: read-only
+// eth_call against the endpoint the user named. Written values are what the contracts return today.
+export async function fillTokenMetadata(state: State, file: string, rpcUrl: string) {
+  const target = safePath(state.project.root, file), f = readJson<Fixture>(target);
+  const c = getContract(state.project, f.contract), d = state.descriptors.get(f.contract)!, missing = new Set<string>();
+  await renderFixture(f, d, c, missing).catch(e => { if (!(e instanceof Failure)) throw e; });
+  const added: Record<string, {name: string; symbol: string; decimals: number}> = {}, unresolved: string[] = [];
+  for (const address of missing) {
+    const t = await fetchTokenMetadata(rpcUrl, f.chainId, getAddress(address));
+    if ('error' in t) unresolved.push(t.error); else added[getAddress(address)] = t;
+  }
+  if (Object.keys(added).length) { f.tokens = {...(f.tokens ?? {}), ...added}; validateFixture(f); writeJson(target, f); }
+  return {tokens: added, ...(unresolved.length ? {unresolvedTokens: unresolved} : {})};
+}
 export function fixtureFiles(state: State, ids?: string[]) {
   const files = walk(safePath(state.project.root,'clear-signing/fixtures'),'.json').map(file=>path.relative(state.project.root,file));
   if (!ids?.length) return files;
@@ -292,11 +315,16 @@ export async function runTests(state: State, update=false, ids?: string[]) {
   for(const u of updates) writeJson(u.file,u.rendering);
   return {passed:renders.length, updated:updates.length, renders};
 }
-export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; inlineAbi?: boolean; lint?: boolean; registryRunners?: boolean; skipRegistryRunners?: string; ciPins?: string; log?: (line: string) => void}
+export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; inlineAbi?: boolean; lint?: boolean; registryRunners?: boolean; skipRegistryRunners?: string; acceptRunnerFailure?: string[]; ciPins?: string; log?: (line: string) => void}
 // Registry entity folders are kebab-case slugs of the owner name, e.g. "Morpho DAO" -> "morpho-dao".
 export const entitySlug = (owner: string) => owner.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const REGISTRY_SCHEMA = '../../specs/erc7730-v2.schema.json';
 export async function exportBundle(state: State, out: string, strictPortability=false, ids?: string[], options: ExportOptions = {}) {
+  // The bundle is written inside the project (safePath); say so plainly, and take an absolute path that points inside it.
+  const rootReal = fs.realpathSync(state.project.root), rel = path.relative(rootReal, path.resolve(rootReal, out));
+  if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) fail('USAGE_ERROR', `--out must name a new directory inside the project (for example --out bundle); ${out} is not inside ${rootReal}. Copy the bundle elsewhere after export.`, 2);
+  out = rel;
+  const accepted = parseAcceptedFailures(options.acceptRunnerFailure, options.registryRunners === true, '--registry-runners');
   const selections = selectContracts(state, ids);
   const skipReason = options.skipRegistryRunners?.trim();
   if (options.skipRegistryRunners !== undefined && !skipReason) fail('USAGE_ERROR', '--skip-registry-runners needs a reason, which is recorded in the bundle.', 2);
@@ -364,8 +392,9 @@ export async function exportBundle(state: State, out: string, strictPortability=
       const failures:Diagnostic[]=[];
       for(const file of fs.existsSync(path.join(registryDir,'testsv2'))?fs.readdirSync(path.join(registryDir,'testsv2')).filter(f=>f.endsWith('.tests.json')):[]) {
         const results=runRegistryRunners(tc,path.join(registryDir,'testsv2',file),stage,path.join(stage,'review','runners',file.replace(/\.tests\.json$/,'')));
+        const counted=unacceptedFailures(results,accepted);
         runnerResults.push(...results.map(r=>({testsFile:`registry/${entity}/testsv2/${file}`,...r,resultsFile:r.resultsFile?path.relative(stage,r.resultsFile):undefined})));
-        for(const r of results) if(!r.passed) failures.push({code:'REGISTRY_RUNNER_FAILED',message:`${r.name} runner (${r.implementation??r.ref.slice(0,8)}) on ${file}: ${r.reason??JSON.stringify(r.cases)}${r.failures.length?`; ${r.failures.map(f=>`"${f.description}" ${f.status}${f.message?` (${f.message})`:''}`).join('; ')}`:''}`,file:`registry/${entity}/testsv2/${file}`,remedy:'The registry CI runs these same implementations. Inspect review/runners/*/ for rendered output, then fix the descriptor or expectations.'});
+        for(const r of counted) failures.push({code:'REGISTRY_RUNNER_FAILED',message:`${r.name} runner (${r.implementation??r.ref.slice(0,8)}) on ${file}: ${r.reason??JSON.stringify(r.cases)}${r.failures.length?`; ${r.failures.map(f=>`"${f.description}" ${f.status}${f.message?` (${f.message})`:''}`).join('; ')}`:''}`,file:`registry/${entity}/testsv2/${file}`,remedy:'The registry CI runs these same implementations. Inspect review/runners/*/ for rendered output, then fix the descriptor or expectations. If the two runners disagree with each other and the other one passes, --accept-runner-failure <runner>=<reason> records it and exports.'});
       }
       if(failures.length) throw new Failure('REGISTRY_RUNNER_FAILED',`${failures.length} registry runner check(s) failed.`,1,failures);
     }
@@ -378,6 +407,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
       '```sh',`cp -r registry/${entity}/. <registry-clone>/registry/${entity}/`,'```','',
       `Upstream lint: ${lint.ran ? `ran (exit ${lint.exitCode}, ${lint.warnings} warning(s)). Output is recorded in review/validation.json.` : `not run (${lint.reason}). Run it yourself before opening a pull request:`}`,'',
       ...(lint.ran ? [] : ['```sh',lint.command,'```','']),
+      ...runnerResults.filter(r=>r.acceptedFailure).map(r=>`Registry runners: the ${r.name} runner failed on ${r.testsFile} and the failure was accepted (${r.acceptedFailure}); registry CI is expected to report it too. Details in review/validation.json.\n`),
       ...(skipReason ? [`Registry runners: skipped (${skipReason}). ${divergence.length} displayed field(s) use a shape where this tool's renderer and the registry CI's can differ, so the testsv2 expected values may fail registry CI. Details in review/validation.json.`,''] : []),
       'The `review/` directory holds the original fixtures, normalized renderings, the validation record and the portability report. Read `review/portability.json` for known consumer limitations; a passing local test is not wallet certification.','',
       'Verify deployed code and proxy mappings independently. Open the pull request from an account tied to the contract owner; registry review, attestations and wallet availability are separate steps: https://clearsigning.org/build/',''].join('\n'));
@@ -392,7 +422,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
 // `apply` writes the descriptor, exclusions, hidden reasons and provenance from a filled file.
 export interface DecisionField {type: string; show: boolean; hideReason?: string | null; label: string; format: string; params?: Record<string, unknown> | null; author?: string | null; hints?: Record<string, unknown>}
 export interface DecisionFunction {signature: string; decision: 'describe' | 'exclude'; excludeReason?: string | null; intent: string; interpolatedIntent?: string | null; author?: string | null; fields: Record<string, DecisionField>; hints?: Record<string, unknown>}
-export interface Decisions {version: 1; contract: string; descriptor: string; author: string | null; generatedAt: string; owner: string; url: string | null; functions: Record<string, DecisionFunction>; guidance: string[]}
+export interface Decisions {version: 1; contract: string; descriptor: string; author: string | null; generatedAt: string; owner: string; contractName?: string | null; url: string | null; enums?: Record<string, Record<string, string>>; functions: Record<string, DecisionFunction>; guidance: string[]}
 const decisionsDir = 'clear-signing/decisions';
 // A leaf the descriptor itself hides with visible "never" is reported as hidden with this reason, and apply
 // leaves such fields as written instead of moving the decision into clear-signing.toml.
@@ -417,18 +447,28 @@ function buildDecisions(state: State, id: string): Decisions {
     const never = neverHidden(resolved, leafList.map(l => l.path));
     const addressLeaves = leafList.filter(l => l.type === 'address').map(l => l.path);
     const fields: Record<string, DecisionField> = {};
-    for (const leaf of leafList) {
+    const addValue = () => { const cur = flat.get('@.value'); fields['@.value'] = {type: 'uint256', show: true, label: cur?.label ?? 'Native amount', format: cur?.format ?? 'amount', params: cur?.params ?? null, hints: {note: 'Payable: must stay shown.'}}; };
+    // Keys follow the descriptor's field order, then the leaves it does not show in ABI order; apply
+    // orders a flat field list by these keys, so moving a key moves the field.
+    const order = [...new Set(resolved.map(r => r.key).filter((k): k is string => !!k && (k === '@.value' || leafList.some(l => l.path === k))))];
+    const byOrder = [...leafList].sort((a, b) => { const i = order.indexOf(a.path), j = order.indexOf(b.path); return (i < 0 ? order.length : i) - (j < 0 ? order.length : j); });
+    const valueAt = order.indexOf('@.value');
+    for (const leaf of byOrder) {
+      if (f.stateMutability === 'payable' && valueAt >= 0 && Object.keys(fields).length === valueAt) addValue();
       const cur = flat.get(leaf.path);
       const hidden = selection.hidden?.[sig]?.[leaf.path] ?? (!cur && never.has(leaf.path) ? DESCRIPTOR_NEVER : undefined);
       const humanized = (leaf.path.split('.').pop() ?? leaf.path).replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' ').trim().replace(/^./, x => x.toUpperCase());
       const hints: Record<string, unknown> = {};
       if (/^u?int\d*$/.test(leaf.type)) hints.denominations = ['@.to (the contract itself is the token)', ...constants.map(k => `$.metadata.constants.${k}`), ...addressLeaves.map(a => `tokenPath ${a}`), 'token <literal address>'];
-      if (evidence.paramDocs[sig]?.[leaf.path.split('.')[0]]) hints.natspec = evidence.paramDocs[sig][leaf.path.split('.')[0]];
-      const formatsForType = leaf.type === 'address' ? ['addressName', 'tokenTicker', 'raw'] : /^u?int\d*$/.test(leaf.type) ? ['tokenAmount', 'amount', 'date', 'duration', 'unit', 'enum', 'chainId', 'raw'] : leaf.type === 'bool' ? ['enum', 'raw'] : ['raw'];
+      // A struct member has no @param of its own; the parent's text is labelled as such.
+      const top = leaf.path.split('.')[0], doc = evidence.paramDocs[sig]?.[top];
+      if (doc) { if (top === leaf.path) hints.natspec = doc; else hints.natspecOfParent = `@param ${top}: ${doc}`; }
+      const formatsForType = leaf.type === 'address' ? ['addressName', 'tokenTicker', 'raw'] : /^u?int\d*$/.test(leaf.type) ? ['tokenAmount', 'amount', 'date', 'duration', 'unit', 'enum', 'chainId', 'nftName', 'raw'] : leaf.type === 'bool' ? ['enum', 'raw'] : ['raw'];
       hints.formatsForType = formatsForType;
+      if (formatsForType.includes('enum')) hints.enum = `params {"$ref": "$.metadata.enums.<name>"} naming an entry of the file's top-level enums (add one there)`;
       fields[leaf.path] = {type: leaf.type, show: !!cur || !hidden, ...(hidden && !cur ? {hideReason: hidden} : {}), label: cur?.label ?? humanized, format: cur?.format ?? 'raw', params: cur?.params ?? null, hints};
     }
-    if (f.stateMutability === 'payable') { const cur = flat.get('@.value'); fields['@.value'] = {type: 'uint256', show: true, label: cur?.label ?? 'Native amount', format: cur?.format ?? 'amount', params: cur?.params ?? null, hints: {note: 'Payable: must stay shown.'}}; }
+    if (f.stateMutability === 'payable' && !fields['@.value']) addValue();
     const priors = priorsFor(f.selector);
     const priorInterpolations = priors.map(p => p.interpolatedIntent).filter((x): x is string => typeof x === 'string').slice(0, 5);
     functions[sig] = {signature: key, decision: existing ? 'describe' : selection.exclusions[sig] ? 'exclude' : 'describe', excludeReason: selection.exclusions[sig] ?? null,
@@ -439,18 +479,20 @@ function buildDecisions(state: State, id: string): Decisions {
   // receive() needs none (it runs only on empty calldata), so it gets no slot.
   if (c.special.includes('fallback()')) functions['fallback()'] = {signature: 'fallback()', decision: 'exclude', excludeReason: selection.exclusions['fallback()'] ?? null, intent: '', fields: {},
     hints: {note: 'fallback() cannot be described by a calldata descriptor. Keep decision "exclude" and write why signers will not reach it, or what it forwards.'}};
-  return {version: 1, contract: id, descriptor: selection.descriptor, author: null, generatedAt: new Date().toISOString().slice(0, 10), owner: d.metadata.owner, url: d.metadata.info?.url ?? null, functions,
-    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance for every value you change. Unchanged values keep their existing provenance.', 'A function or field may carry its own "author" that overrides the file author for that function (decision, intent, interpolatedIntent) or that field. Tag each value with whoever decided it.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml. fallback() can only be excluded; receive() needs no entry.', 'Per field: show true/false (hideReason required when false; a hidden field is written as visible "never" and its reason kept in clear-signing.toml), label (the registry linter warns above 20 characters), format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'interpolatedIntent is optional but recommended by the registry: a sentence embedding shown field values with {path}; set null to omit.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.']};
+  return {version: 1, contract: id, descriptor: selection.descriptor, author: null, generatedAt: new Date().toISOString().slice(0, 10), owner: d.metadata.owner, contractName: d.metadata.contractName ?? null, url: d.metadata.info?.url ?? null, enums: d.metadata.enums ?? {}, functions,
+    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance for every value you change. Unchanged values keep their existing provenance.', 'A function or field may carry its own "author" that overrides the file author for that function (decision, intent, interpolatedIntent) or that field. Tag each value with whoever decided it.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml. fallback() can only be excluded; receive() needs no entry.', 'Per field: show true/false (hideReason required when false; a hidden field is written as visible "never" and its reason kept in clear-signing.toml), label (the registry linter warns above 20 characters), format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'interpolatedIntent is optional but recommended by the registry: a sentence embedding shown field values with {path}; set null to omit.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.', 'Field order: for a descriptor without groups, apply writes the fields in the order of the keys under fields.', 'owner (22 characters), contractName (30) and url (26) go to metadata; enums maps an enum name to {"value": "Label"} entries (labels up to 20 characters) and replaces metadata.enums.']};
 }
 export function writeDecisions(state: State, id: string, out?: string) {
   const c = getContract(state.project, id), decisions = buildDecisions(state, id);
-  const file = out ?? `${decisionsDir}/${c.name}.json`;
-  writeJson(safePath(state.project.root, file), decisions);
+  const file = out ?? `${decisionsDir}/${c.name}.json`, target = safePath(state.project.root, file);
+  // Rewriting a filled file keeps who filled it; everything else is regenerated from the descriptor.
+  if (fs.existsSync(target)) { try { const prior = readJson<Decisions>(target); if (typeof prior?.author === 'string' && prior.author.trim()) decisions.author = prior.author; } catch { /* unreadable: start over */ } }
+  writeJson(target, decisions);
   return {created: file, functions: Object.keys(decisions.functions).length, next: `Fill intents, formats, denominations and show/hide reasons in ${file}, set author, then run apply --decisions ${file}.`};
 }
 export function applyDecisions(state: State, file: string) {
   const dec = readJson<Decisions>(safePath(state.project.root, file));
-  assertKeys(dec, ['version', 'contract', 'descriptor', 'author', 'generatedAt', 'owner', 'url', 'functions', 'guidance'], 'decisions');
+  assertKeys(dec, ['version', 'contract', 'descriptor', 'author', 'generatedAt', 'owner', 'contractName', 'url', 'enums', 'functions', 'guidance'], 'decisions');
   if (dec.version !== 1 || typeof dec.contract !== 'string' || !dec.functions || typeof dec.functions !== 'object') fail('INVALID_DECISIONS', 'decisions file must have version 1, a contract id and a functions map.', 2);
   if (typeof dec.author !== 'string' || !dec.author.trim()) fail('DECISIONS_AUTHOR', 'Set "author" to "human" or "llm:<model>" so provenance records who decided.', 2);
   const sourceOf = (author: string): Provenance['source'] => /^llm\b/i.test(author) ? 'llm' : 'human';
@@ -471,6 +513,19 @@ export function applyDecisions(state: State, file: string) {
   const d: Descriptor = structuredClone(current);
   if (typeof dec.owner === 'string' && dec.owner.trim()) d.metadata.owner = dec.owner.trim();
   if (typeof dec.url === 'string' && dec.url.trim()) d.metadata.info = {...(d.metadata.info ?? {}), url: dec.url.trim()};
+  if (typeof dec.contractName === 'string' && dec.contractName.trim()) d.metadata.contractName = dec.contractName.trim();
+  const metaProvenance: Omit<Provenance, 'source' | 'author'>[] = [];
+  if (typeof dec.contractName === 'string' && dec.contractName.trim() && dec.contractName.trim() !== (current.metadata.contractName ?? '')) metaProvenance.push({signature: '*', detail: `contractName: ${dec.contractName.trim()}`});
+  // enums replace metadata.enums; absent means leave them as they are.
+  if (dec.enums !== undefined) {
+    if (!dec.enums || typeof dec.enums !== 'object' || Array.isArray(dec.enums)) fail('INVALID_DECISIONS', 'enums must map an enum name to {"value": "Label"} entries.', 2);
+    for (const [name, entries] of Object.entries(dec.enums)) {
+      if (!/^[A-Za-z0-9_]+$/.test(name)) fail('INVALID_DECISIONS', `enums: "${name}" must be letters, digits or _ (it is referenced as $.metadata.enums.${name}).`, 2);
+      if (!entries || typeof entries !== 'object' || Array.isArray(entries) || !Object.keys(entries).length || Object.values(entries).some(v => typeof v !== 'string' || !v.trim())) fail('INVALID_DECISIONS', `enums.${name} must map each value to a nonempty label, e.g. {"1": "Solana"}.`, 2);
+      if (canonical(entries) !== canonical(current.metadata.enums?.[name] ?? null)) metaProvenance.push({signature: '*', detail: `enum ${name}: ${Object.entries(entries).map(([k, v]) => `${k}=${v}`).join(', ')}`});
+    }
+    if (Object.keys(dec.enums).length) d.metadata.enums = dec.enums; else delete d.metadata.enums;
+  }
   const exclusions: Record<string, string> = {...selection.exclusions}, hidden: Record<string, Record<string, string>> = structuredClone(selection.hidden ?? {});
   const provenance: (Provenance & {contract: string})[] = [];
   const byKey = new Map(Object.keys(d.display.formats).map(k => [parseSignature(k).format('sighash'), k]));
@@ -505,7 +560,10 @@ export function applyDecisions(state: State, file: string) {
       spec.interpolatedIntent = fd.interpolatedIntent.trim();
       if (flipped || base.interpolatedIntent !== spec.interpolatedIntent) record(fnAuthor, {signature: sig, detail: `interpolatedIntent: ${spec.interpolatedIntent}`});
     }
-    else delete spec.interpolatedIntent;
+    else {
+      if (!flipped && base.interpolatedIntent) record(fnAuthor, {signature: sig, detail: 'interpolatedIntent: (removed)'});
+      delete spec.interpolatedIntent;
+    }
     // Edit leaves in place to keep existing grouping; append newly shown ones flat. A hidden leaf stays in the
     // descriptor as visible "never", as registry descriptors write it, so the registry linter and reviewers
     // see it was left out on purpose; the reason itself lives in clear-signing.toml.
@@ -549,6 +607,14 @@ export function applyDecisions(state: State, file: string) {
       return [next];
     });
     spec.fields = edit(spec.fields);
+    const reorder = () => {
+      // Flat lists only: a group's members stay where the group puts them.
+      if (spec.fields.some(x => 'fields' in x)) return;
+      const keys = Object.keys(fd.fields ?? {});
+      let last = -1;
+      const ranked = spec.fields.map((item, i) => { const p = mergeDefinition(item as Field, definitions).path, k = typeof p === 'string' ? keys.indexOf(leafKey(p)) : -1; if (k >= 0) last = k; return {item, rank: k >= 0 ? k : last, i}; });
+      spec.fields = ranked.sort((a, b) => a.rank - b.rank || a.i - b.i).map(r => r.item);
+    };
     for (const [full, decision] of Object.entries(fd.fields ?? {})) {
       if (present.has(full)) continue;
       if (decision.show === false) {
@@ -568,9 +634,11 @@ export function applyDecisions(state: State, file: string) {
       if (decision.show !== false) record(author, {signature: sig, path: full, detail: `${decision.format ?? 'raw'}${decision.params ? ` ${JSON.stringify(decision.params)}` : ''}, label "${decision.label}"`});
       else if (hiddenHere[full]) record(author, {signature: sig, path: full, detail: `hidden: ${hiddenHere[full]}`});
     }
+    reorder();
     if (Object.keys(hiddenHere).length) hidden[sig] = hiddenHere; else delete hidden[sig];
     d.display.formats[key] = spec;
   }
+  for (const entry of metaProvenance) provenance.push({contract: dec.contract, ...entry, source, author: dec.author.trim()});
   const nextSelection: Selection = {...selection, exclusions, ...(Object.keys(hidden).length ? {hidden} : {})};
   if (!Object.keys(hidden).length) delete (nextSelection as any).hidden;
   // Validate before writing anything.

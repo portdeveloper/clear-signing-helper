@@ -1,4 +1,7 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { FunctionFragment, ParamType } from 'ethers';
+import { fail } from './io.js';
 import priors from './data/registry-priors.json' with {type: 'json'};
 import { leaves, parseSignature, resolveFields, type Field, type Group, type ResolvedField } from './descriptors.js';
 
@@ -6,7 +9,10 @@ import { leaves, parseSignature, resolveFields, type Field, type Group, type Res
 // changes a draft, it pre-fills suggestions and warns when a draft disagrees in kind with every prior.
 export interface Prior {entity: string; file: string; key: string; intent?: string; interpolatedIntent?: string; fields: any[]}
 export const PRIORS_META = {repository: priors.repository, commit: priors.commit, generatedAt: priors.generatedAt, selectors: priors.selectors};
-export function priorsFor(selector: string): Prior[] { return ((priors.bySelector as Record<string, Prior[]>)[selector.toLowerCase()] ?? []); }
+// The bundled snapshot, unless a command read the user's registry clone (init --registry).
+let active = priors.bySelector as Record<string, Prior[]>;
+export function usePriorsIndex(bySelector: Record<string, Prior[]>) { active = bySelector; descriptorSelectors = undefined; }
+export function priorsFor(selector: string): Prior[] { return active[selector.toLowerCase()] ?? []; }
 // hidden: the leaf is not displayed. raw: shown without formatting. typed: shown with a semantic format.
 export type LeafKind = 'hidden' | 'raw' | 'typed';
 export interface LeafView {path: string; kind: LeafKind; format?: string; params?: Record<string, unknown>}
@@ -57,7 +63,7 @@ export const GENERIC_ENTITIES = 3, MIN_SHARED = 2;
 export interface RegistryMatch {file: string; entity: string; shared: string[]; distinctive: number; described: number; contained: boolean}
 let descriptorSelectors: Map<string, {entity: string; selectors: Set<string>}> | undefined;
 export function registryMatches(selectors: string[]): RegistryMatch[] {
-  const bySelector = priors.bySelector as Record<string, Prior[]>;
+  const bySelector = active;
   if (!descriptorSelectors) {
     descriptorSelectors = new Map();
     for (const [s, list] of Object.entries(bySelector)) for (const p of list) {
@@ -71,4 +77,46 @@ export function registryMatches(selectors: string[]): RegistryMatch[] {
   return [...descriptorSelectors].map(([file, d]) => ({file, entity: d.entity, shared: distinctive.filter(s => d.selectors.has(s)), distinctive: distinctive.length, described: d.selectors.size, contained: [...d.selectors].every(s => ours.has(s))}))
     .filter(m => m.shared.length >= MIN_SHARED && (m.contained || m.shared.length * 2 >= m.distinctive))
     .sort((a, b) => Number(b.contained) - Number(a.contained) || b.shared.length - a.shared.length || a.file.localeCompare(b.file)).slice(0, 3);
+}
+
+// Registry display formats indexed by selector, read from a registry checkout: the bundled snapshot
+// (scripts/snapshot-priors.ts) and init --registry both build it this way. Read-only and offline; a file
+// that does not parse, or an include that leaves the checkout, is skipped and counted.
+export function buildPriorsIndex(checkout: string): {bySelector: Record<string, Prior[]>; descriptors: number; formatKeys: number; unparsableKeys: number; skippedFiles: number} {
+  const root = path.resolve(checkout), registry = path.join(root, 'registry');
+  if (!fs.existsSync(registry)) fail('REGISTRY_NOT_FOUND', `No registry/ under ${root}; pass a clone of ethereum/clear-signing-erc7730-registry.`, 2);
+  const cache = new Map<string, any>();
+  const resolve = (file: string, stack: string[] = []): any => {
+    if (!file.startsWith(root + path.sep) || stack.includes(file)) throw Error(`Invalid include ${file}`);
+    if (cache.has(file)) return cache.get(file);
+    const d = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const parent = d.includes ? resolve(path.resolve(path.dirname(file), d.includes), [...stack, file]) : {};
+    const result = {...parent, ...d, metadata: {...parent.metadata, ...d.metadata}, display: {definitions: {...parent.display?.definitions, ...d.display?.definitions}, formats: {...parent.display?.formats, ...d.display?.formats}}};
+    cache.set(file, result); return result;
+  };
+  // Inline $ref definitions so a prior is self-contained; the field's own keys win.
+  const inline = (fields: any[], definitions: Record<string, any>): any[] => (Array.isArray(fields) ? fields : []).map(f => {
+    if (f && typeof f === 'object' && 'fields' in f) return {...f, fields: inline(f.fields, definitions)};
+    const ref = typeof f?.$ref === 'string' ? /^\$\.display\.definitions\.(.+)$/.exec(f.$ref)?.[1] : undefined;
+    if (!ref) return f;
+    const {$ref, ...rest} = f; return {...(definitions[ref] ?? {}), ...rest};
+  });
+  const bySelector: Record<string, Prior[]> = {};
+  let descriptors = 0, formatKeys = 0, unparsableKeys = 0, skippedFiles = 0;
+  for (const entity of fs.readdirSync(registry).sort()) {
+    const dir = path.join(registry, entity);
+    if (!fs.statSync(dir).isDirectory()) continue;
+    for (const name of fs.readdirSync(dir).sort()) {
+      if (!name.startsWith('calldata-') || !name.endsWith('.json')) continue;
+      let d: any; try { d = resolve(path.join(dir, name)); } catch { skippedFiles++; continue; }
+      descriptors++;
+      for (const [key, spec] of Object.entries<any>(d.display?.formats ?? {})) {
+        formatKeys++;
+        let selector: string;
+        try { selector = FunctionFragment.from(`function ${key}`).selector.toLowerCase(); } catch { unparsableKeys++; continue; }
+        (bySelector[selector] ??= []).push({entity, file: `registry/${entity}/${name}`, key, intent: spec?.intent, ...(spec?.interpolatedIntent ? {interpolatedIntent: spec.interpolatedIntent} : {}), fields: inline(spec?.fields, d.display?.definitions ?? {})});
+      }
+    }
+  }
+  return {bySelector, descriptors, formatKeys, unparsableKeys, skippedFiles};
 }

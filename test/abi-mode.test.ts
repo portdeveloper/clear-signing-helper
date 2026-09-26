@@ -153,7 +153,7 @@ await test('fixture --tx copies a mined transaction as sent, records its hash in
   let toml=fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8');
   toml=toml.replace('exclusions = { }','[contracts.exclusions]\n"approve(address,uint256)" = "demo"\n"burn(uint256)" = "demo"\n"mint(address,uint256)" = "demo"\n"transferAdmin(address)" = "demo"\n"transferFrom(address,address,uint256)" = "demo"\n');
   fs.writeFileSync(path.join(root,'clear-signing.toml'),toml);
-  const {Interface}=await import('ethers');const iface=new Interface(tokenAbi);
+  const {Interface,AbiCoder}=await import('ethers');const iface=new Interface(tokenAbi);
   const transfer=iface.encodeFunctionData('transfer',[proxy,2500000n]);
   const h=(n:number)=>'0x'+n.toString(16).padStart(64,'0'), sender='0x5555555555555555555555555555555555555555';
   const tx=(over:Record<string,unknown>)=>({hash:'',from:sender,to:token,input:transfer,value:'0x0',blockNumber:'0x10',chainId:'0x279f',...over});
@@ -168,6 +168,13 @@ await test('fixture --tx copies a mined transaction as sent, records its hash in
     const e=chain[params[0]];
     if(method==='eth_getTransactionByHash') return reply(e?{...e.tx,hash:params[0]}:null);
     if(method==='eth_getTransactionReceipt') return reply(e?{status:e.status??'0x1'}:null);
+    // ERC-20 metadata for the token the transfer renders: symbol(), decimals(), name().
+    if(method==='eth_call'&&params[0].to.toLowerCase()===token.toLowerCase()) {
+      const coder=AbiCoder.defaultAbiCoder(), sel=params[0].data;
+      if(sel==='0x95d89b41') return reply(coder.encode(['string'],['CLR']));
+      if(sel==='0x313ce567') return reply(coder.encode(['uint8'],[6]));
+      if(sel==='0x06fdde03') return reply(coder.encode(['string'],['Clear Token']));
+    }
     res.writeHead(200);res.end(JSON.stringify({jsonrpc:'2.0',id:rid,error:{message:`${method} not allowed`}}));
   });});
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>server.close());
@@ -177,14 +184,15 @@ await test('fixture --tx copies a mined transaction as sent, records its hash in
   const f=read(path.join(root,made.created));
   assert.deepEqual({chainId:f.chainId,to:f.to,data:f.data,value:f.value,from:f.from,txHash:f.txHash},{chainId:10143,to:token,data:transfer,value:'0',from:sender,txHash:h(1)});
   assert.match(made.source,/at block 16$/);
+  // The token the rendering needs is read from the chain into the fixture.
+  assert.deepEqual(made.tokens,{[token]:{name:'Clear Token',symbol:'CLR',decimals:6}});assert.deepEqual(f.tokens,made.tokens);
   // Only reads: nothing that could sign or send.
-  assert.deepEqual([...new Set(methods)].sort(),['eth_chainId','eth_getTransactionByHash','eth_getTransactionReceipt']);
+  assert.deepEqual([...new Set(methods)].sort(),['eth_call','eth_chainId','eth_getTransactionByHash','eth_getTransactionReceipt']);
   for(const [hash,code] of [[h(2),'TX_REVERTED'],[h(3),'TX_PENDING'],[h(4),'TX_TARGET_MISMATCH'],[h(5),'NONCANONICAL_CALLDATA'],[h(6),'TX_SELECTOR_MISMATCH'],[h(7),'TX_CONTRACT_CREATION'],[h(9),'TX_NOT_FOUND']] as const)
     assert.equal((await fixture(`bad-${code}`,hash,2)).diagnostics[0].code,code,code);
   assert.ok(!fs.existsSync(path.join(root,'clear-signing/fixtures/bad-TX_REVERTED.json')),'a refusal writes no fixture');
   assert.equal(run(root,['fixture','--name','x','--contract',id,'--tx',h(1)],2).diagnostics[0].code,'USAGE_ERROR');
   // The hash travels into the exported registry test case.
-  const ff=path.join(root,made.created),fx=read(ff);fx.tokens={[token]:{name:'Clear Token',symbol:'CLR',decimals:6}};write(ff,fx);
   run(root,['review','--accept']);run(root,['test','--update']);
   const exported=run(root,['export','--out','bundle','--no-lint']).result;
   const tests=read(path.join(root,exported.registryPath,'testsv2/calldata-ClearToken.tests.json'));
@@ -204,6 +212,9 @@ await test('init --address names the verified contract\'s address immutables as 
   const created=(await runAsync(root,['init','--address',staking,'--chain-id','10143','--owner','PuddleSwap'],0,env)).result;
   const d=read(path.join(root,created.contracts[0].descriptor));
   assert.deepEqual(d.metadata.constants,{rewardsToken:'0x97B3070F9Da6C002343862b35E68Bd8e22608943',stakingToken:'0x1FBC7b6B54726D735fF1B47Df75535B4B9021902'});
+  // The verified source is kept for reading, outside the fingerprinted ABI directory.
+  assert.equal(created.imports[0].verifiedSource,'clear-signing/source/StakingRewards');
+  assert.equal(fs.readFileSync(path.join(root,'clear-signing/source/StakingRewards/src/StakingRewards.sol'),'utf8'),record.sources['src/StakingRewards.sol'].content);
   const p=created.provenance.filter((x:any)=>x.source==='verified');
   assert.equal(p.length,2);assert.match(p[0].detail,/immutable in the verified bytecode/);
   // The decisions file offers them as denominations, the one edit PR #3003 needed by hand.
@@ -260,4 +271,61 @@ await test('decisions: receive() needs no exclusion, fallback() has an exclude s
   const again=read(path.join(root,run(root,['decisions','--contract',id]).result.created));
   assert.deepEqual([again.functions['deposit(uint256,address)'].fields.receiver.show,again.functions['deposit(uint256,address)'].fields.receiver.hideReason],[false,'Always the caller in the app']);
   assert.equal(again.functions['fallback()'].excludeReason,'Forwards to the implementation; users call its functions');
+});
+
+// Also from the audit replay: an enum, the contract name and field order could only be set by editing the
+// descriptor; rewriting the decisions file dropped its author; removing an interpolated intent left the old
+// one in provenance.
+await test('decisions: enums and contractName slots, field order follows the keys, author kept, removals recorded',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  fs.writeFileSync(path.join(root,'vault.abi.json'),JSON.stringify(vaultArtifact.abi));
+  run(root,['init','--abi','vault.abi.json','--name','AssetVault','--owner','Example']);
+  const id='clear-signing/abi/AssetVault.json:AssetVault', sig='deposit(uint256,address)';
+  const created=run(root,['decisions','--contract',id]).result,dfile=path.join(root,created.created),dec=read(dfile);
+  assert.deepEqual([dec.contractName,dec.enums],['AssetVault',{}]);
+  assert.deepEqual(Object.keys(dec.functions[sig].fields),['assets','receiver']);
+  dec.author='llm:test-model';dec.contractName='Asset Vault';dec.enums={Tier:{'0':'Basic','1':'Gold'}};
+  for(const [s,f] of Object.entries<any>(dec.functions)) if(s!==sig){f.decision='exclude';f.excludeReason='Outside this test';}
+  const fn=dec.functions[sig];
+  fn.intent='Deposit';fn.interpolatedIntent='Deposit {assets}';
+  // Moving a key moves the field.
+  fn.fields={receiver:{...fn.fields.receiver,label:'Receiver',format:'addressName',params:{types:['eoa']}},assets:{...fn.fields.assets,label:'Tier',format:'enum',params:{$ref:'$.metadata.enums.Tier'}}};
+  write(dfile,dec);
+  run(root,['apply','--decisions',created.created]);
+  const dir=path.join(root,'clear-signing/descriptors'),d=read(path.join(dir,fs.readdirSync(dir)[0]));
+  assert.equal(d.metadata.contractName,'Asset Vault');assert.deepEqual(d.metadata.enums,{Tier:{'0':'Basic','1':'Gold'}});
+  assert.deepEqual(d.display.formats['deposit(uint256 assets,address receiver)'].fields.map((f:any)=>f.path),['receiver','assets']);
+  // A bad enum name is refused before anything is written.
+  dec.enums={'bad name':{'0':'x'}};write(dfile,dec);
+  assert.equal(run(root,['apply','--decisions',created.created],2).diagnostics[0].code,'INVALID_DECISIONS');
+  dec.enums={Tier:{'0':'Basic','1':'Gold'}};fn.interpolatedIntent=null;write(dfile,dec);
+  run(root,['apply','--decisions',created.created]);
+  const prov=read(path.join(root,'clear-signing/provenance.json'))[id].filter((p:any)=>p.signature===sig&&p.detail.startsWith('interpolatedIntent'));
+  assert.deepEqual(prov.map((p:any)=>p.detail),['interpolatedIntent: (removed)'],'the removal replaces the earlier decision');
+  const again=read(path.join(root,run(root,['decisions','--contract',id]).result.created));
+  assert.equal(again.author,'llm:test-model','rewriting the decisions file keeps its author');
+  assert.deepEqual(Object.keys(again.functions[sig].fields),['receiver','assets'],'keys follow the descriptor order');
+  assert.equal(run(root,['apply','--decisions',created.created]).result.recorded,0,'an unchanged file still records nothing');
+});
+
+// init --registry reads matches from the user's clone; find-in-registry.sh tells a deployment from a mention.
+await test('init --registry matches against the named clone, and find-in-registry.sh separates deployments from mentions',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-')),reg=fs.mkdtempSync(path.join(os.tmpdir(),'csh-reg-'));
+  t.after(()=>{fs.rmSync(root,{recursive:true,force:true});fs.rmSync(reg,{recursive:true,force:true});});
+  const deployed='0x6666666666666666666666666666666666666666', mentioned='0x7777777777777777777777777777777777777777';
+  fs.mkdirSync(path.join(reg,'registry/acme/testsv2'),{recursive:true});
+  write(path.join(reg,'registry/acme/calldata-Vault.json'),{context:{contract:{deployments:[{chainId:1,address:deployed}]}},metadata:{owner:'Acme'},display:{formats:{
+    'deposit(uint256 assets,address receiver)':{intent:'Deposit',fields:[{path:'assets',label:'Amount',format:'raw'},{path:'receiver',label:'To',format:'raw'}]},
+    'withdraw(uint256 assets,address receiver,address owner)':{intent:'Withdraw',fields:[{path:'assets',label:'Amount',format:'raw'}]}}}});
+  write(path.join(reg,'registry/acme/testsv2/calldata-Vault.tests.json'),{tests:[{description:'x',to:mentioned}]});
+  fs.writeFileSync(path.join(root,'vault.abi.json'),JSON.stringify(vaultArtifact.abi));
+  const created=run(root,['init','--abi','vault.abi.json','--name','AssetVault','--owner','Example','--registry',reg]).result;
+  assert.deepEqual(created.registryMatches.map((m:any)=>[m.file,m.contained]),[['registry/acme/calldata-Vault.json',true]]);
+  assert.equal(created.registryPriors.registry,reg);
+  const script=path.join(repo,'.claude/skills/clear-signing-helper/scripts/find-in-registry.sh');
+  const search=(q:string)=>spawnSync('bash',[script,q,reg],{encoding:'utf8'}).stdout;
+  assert.match(search(deployed),/calldata-Vault\.json {2}\(deployed on chain 1\)/);
+  const mention=search(mentioned);
+  assert.match(mention,/Descriptors that deploy[^\n]*\n {2}\(none\)/);assert.match(mention,/not a deployment:\n {2}registry\/acme\/testsv2/);assert.doesNotMatch(mention,/add-deployment --registry/);
+  assert.match(search('acme'),/calldata-Vault\.json {2}\(owner: Acme\)/);
 });
