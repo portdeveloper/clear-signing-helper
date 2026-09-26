@@ -34,7 +34,9 @@ Most well-known protocols already have a descriptor and only lack a chain. That 
 
 ```sh
 git clone --depth 1 https://github.com/ethereum/clear-signing-erc7730-registry.git registry-clone
-scripts/find-in-registry.sh <address-or-protocol-name> registry-clone
+bash scripts/find-in-registry.sh <address-or-protocol-name> registry-clone
+# reading this file from GitHub instead of an installed skill? fetch the script first:
+#   mkdir -p scripts && curl -fsSL -o scripts/find-in-registry.sh https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/.claude/skills/clear-signing-helper/scripts/find-in-registry.sh
 ```
 
 The script reads deployments out of the descriptors. An address listed under "Descriptors that deploy" is already in that file; one listed only under "Other mentions" (a recipient in a test, an attestation) is not a deployment and is no reason to add one. A name matches entity folders, file names, owners and contract names.

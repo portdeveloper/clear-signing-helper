@@ -1,3 +1,29 @@
+# Clear Signing Helper 0.6.0-preview.2 — developer preview
+
+The same code as 0.6.0-preview.1, repackaged. That package also carried the maintainer's working notes (the PRD, release handoffs, validation and dogfood write-ups, comparisons) and the agent skill. None of those are meant for users of the package.
+
+## What changed
+
+- The package now holds only the CLI bundle, the schemas, the vendored renderer, the renderer hash check, `README.md`, `LICENSE` and `docs/THIRD-PARTY-NOTICES.md`. It went from 46 files to 20.
+- `npm run release:verify` fails any release that ships a file outside that set.
+- Agents read the skill from GitHub. `llms.txt`, the README and `SKILL.md` give the scripts' exact raw URLs, so an agent no longer has to guess their path.
+
+## Upgrade from 0.6.0-preview.1
+
+Nothing to do beyond installing. The engine fingerprint is unchanged, so reviews and expectations stay valid. If you relied on the skill inside the installed package, read it from https://github.com/portdeveloper/clear-signing-helper/tree/main/.claude/skills/clear-signing-helper instead.
+
+## Install
+
+```sh
+sha256sum --check clear-signing-helper-0.6.0-preview.2.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.6.0-preview.2.tgz
+clear-signing --version
+```
+
+Expected version: `0.6.0-preview.2`. Everything else, including network access, scope and validation, is as described for 0.6.0-preview.1 below.
+
+---
+
 # Clear Signing Helper 0.6.0-preview.1 — developer preview
 
 Fixes what cold agents ran into when we replayed nine of the registry's recent audit fixes (docs/AUDIT-REPLAY.md). The skill now ships in the package. Hidden arguments stay in the descriptor the way registry descriptors write them. The linter's length limits show up before export. A disagreement between the two registry runners no longer forces you to drop both.

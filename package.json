@@ -1,6 +1,6 @@
 {
   "name": "clear-signing-helper",
-  "version": "0.6.0-preview.1",
+  "version": "0.6.0-preview.2",
   "description": "Author and test ERC-7730 clear-signing descriptors in Foundry repositories",
   "type": "module",
   "license": "MIT",
@@ -11,12 +11,10 @@
     "dist",
     "README.md",
     "LICENSE",
-    "PRD.md",
     "schemas",
-    "docs/*.md",
+    "docs/THIRD-PARTY-NOTICES.md",
     "scripts/verify-renderer.mjs",
-    "vendor/clear-signing",
-    ".claude/skills/clear-signing-helper"
+    "vendor/clear-signing"
   ],
   "engines": {
     "node": ">=22"

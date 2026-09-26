@@ -48,9 +48,15 @@ try {
   if (packageJson.license !== 'MIT') throw new Error('release must declare the approved MIT license');
   if (fs.readFileSync(path.join(packedRoot, 'LICENSE'), 'utf8') !== fs.readFileSync(path.join(root, 'LICENSE'), 'utf8')) throw new Error('packed MIT license differs from the source');
   if (packageJson.scripts?.postinstall) throw new Error('release contains a postinstall mutation hook');
-  for (const required of ['vendor/clear-signing/LICENSE', 'vendor/clear-signing/PROVENANCE.md', 'scripts/verify-renderer.mjs', 'docs/THIRD-PARTY-NOTICES.md', '.claude/skills/clear-signing-helper/SKILL.md', '.claude/skills/clear-signing-helper/scripts/find-in-registry.sh']) {
+  for (const required of ['vendor/clear-signing/LICENSE', 'vendor/clear-signing/PROVENANCE.md', 'scripts/verify-renderer.mjs', 'docs/THIRD-PARTY-NOTICES.md']) {
     if (!fs.existsSync(path.join(packedRoot, required))) throw new Error(`release is missing ${required}`);
   }
+  // The package carries code and what a user or a licence needs, never maintainer or agent notes (PRD,
+  // release handoffs, validation write-ups, agent skills). Anything else fails the release.
+  const shipped = (dir, prefix = '') => fs.readdirSync(dir, {withFileTypes: true}).flatMap(e => e.isDirectory() ? shipped(path.join(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
+  const allowed = f => /^(dist|schemas)\//.test(f) || f.startsWith('vendor/clear-signing/') || ['package.json', 'README.md', 'LICENSE', 'docs/THIRD-PARTY-NOTICES.md', 'scripts/verify-renderer.mjs'].includes(f);
+  const unexpected = shipped(packedRoot).filter(f => !allowed(f));
+  if (unexpected.length) throw new Error(`release ships files outside the allowed set: ${unexpected.join(', ')}`);
 
   const consumer = path.join(temp, 'consumer');
   fs.mkdirSync(consumer);

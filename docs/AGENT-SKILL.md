@@ -14,7 +14,7 @@ It checks the registry, generates the draft from verified source or your Foundry
 
 Prefer it as a standing skill? Install with `npx skills add portdeveloper/clear-signing-helper`.
 
-The npm package carries the skill as well. After `npm install --global clear-signing-helper@preview`, the playbook is `$(npm root -g)/clear-signing-helper/.claude/skills/clear-signing-helper/SKILL.md`, with `find-in-registry.sh` and `verify-address.sh` under `scripts/` beside it.
+The npm package carries only the CLI. The playbook and its scripts are read from GitHub: https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/.claude/skills/clear-signing-helper/SKILL.md, https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/.claude/skills/clear-signing-helper/scripts/find-in-registry.sh and https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/.claude/skills/clear-signing-helper/scripts/verify-address.sh.
 
 ## What it does
 

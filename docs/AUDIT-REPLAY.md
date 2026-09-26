@@ -31,7 +31,7 @@ What this shows: with the tool, a capable agent produced drafts that avoid most 
 
 ## Tool and doc defects found (ranked by how many runs hit them)
 
-Fixed on 2026-09-26: every item below, 1 to 10 (and the metadata length limits beside item 4). Re-applying the Hyperliquid run's own decisions file with the fix and exporting took upstream lint from 7 warnings to 3; both runners passed.
+Fixed on 2026-09-26: every item below, 1 to 10 (and the metadata length limits beside item 4). Item 1 was first fixed by shipping the skill in the npm package (0.6.0-preview.1), then reverted: the package carries no files meant for an agent, so the skill's scripts are now linked by exact raw URL where agents start. Re-applying the Hyperliquid run's own decisions file with the fix and exporting took upstream lint from 7 warnings to 3; both runners passed.
 
 1. **The npm package ships no skill** (9 of 9). `SKILL.md` and `scripts/` exist only on GitHub. Several agents guessed the scripts' path wrong on the first try.
 2. **Hidden arguments are dropped instead of written as `"visible": "never"`** (every run with a hidden field). Registry descriptors (Serenita, Hyperliquid EIP-712) use `visible: "never"`. Dropping them leaves upstream lint with "Missing display field" warnings (Kyber 43, p2p 29), and reviewers never see the hide reasons.

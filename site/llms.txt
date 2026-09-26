@@ -4,6 +4,7 @@
 
 If you are an AI agent helping someone make a contract clear-signable, follow the playbook:
 https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/.claude/skills/clear-signing-helper/SKILL.md
+Its two scripts: https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/.claude/skills/clear-signing-helper/scripts/find-in-registry.sh and https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/.claude/skills/clear-signing-helper/scripts/verify-address.sh
 
 In short:
 1. Search the registry first. If the protocol is there, add the chain with `clear-signing registry add-deployment`. `init` checks again by function selectors (`registryMatches`); a match from a fork belongs to another owner, so author your own descriptor instead of adding your address to theirs.

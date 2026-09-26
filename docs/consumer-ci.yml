@@ -1,5 +1,5 @@
 # Copy into your Foundry repository after making the reviewed package tarball
-# available at tooling/clear-signing-helper-0.6.0-preview.1.tgz (or an immutable internal URL).
+# available at tooling/clear-signing-helper-0.6.0-preview.2.tgz (or an immutable internal URL).
 name: Clear signing
 on: [push, pull_request]
 permissions:
@@ -18,9 +18,9 @@ jobs:
         with:
           version: v1.7.1
       # Commit the checksum reviewed with the tarball to this same directory.
-      - run: sha256sum --check clear-signing-helper-0.6.0-preview.1.tgz.sha256
+      - run: sha256sum --check clear-signing-helper-0.6.0-preview.2.tgz.sha256
         working-directory: tooling
-      - run: npm install --global --ignore-scripts ./tooling/clear-signing-helper-0.6.0-preview.1.tgz
+      - run: npm install --global --ignore-scripts ./tooling/clear-signing-helper-0.6.0-preview.2.tgz
       - run: forge build
       - run: clear-signing check --strict-portability --json
       - run: clear-signing test --json
