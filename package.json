@@ -15,7 +15,8 @@
     "schemas",
     "docs/*.md",
     "scripts/verify-renderer.mjs",
-    "vendor/clear-signing"
+    "vendor/clear-signing",
+    ".claude/skills/clear-signing-helper"
   ],
   "engines": {
     "node": ">=22"

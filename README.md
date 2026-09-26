@@ -209,7 +209,7 @@ clear-signing decisions --contract src/Vault.sol:Vault      # writes clear-signi
 clear-signing apply --decisions clear-signing/decisions/Vault.json
 ```
 
-The template lists every function and every argument leaf with its current value and read-only hints: the NatSpec text, the registry's formats for the same selector, candidate denominations for amounts (`@.to`, `$.metadata.constants.*`, address arguments, a literal token), and the formats valid for the type. `apply` validates the result before writing anything, then writes the descriptor, `exclusions` and `hidden` in `clear-signing.toml`, and records each decision in `clear-signing/provenance.json` as `human` or `llm` according to the file's `author`. Hidden native value and unsupported formats are refused. Running `decisions` again reproduces the current state, so the file round-trips.
+The template lists every function and every argument leaf with its current value and read-only hints: the NatSpec text, the registry's formats for the same selector, candidate denominations for amounts (`@.to`, `$.metadata.constants.*`, address arguments, a literal token), and the formats valid for the type. `apply` validates the result before writing anything, then writes the descriptor, `exclusions` and `hidden` in `clear-signing.toml` (a hidden argument stays in the descriptor as a `visible: "never"` field, as registry descriptors write it, so the registry linter counts it and reviewers see it; the reason stays in `clear-signing.toml`), and records each decision in `clear-signing/provenance.json` as `human` or `llm` according to the file's `author`. Hidden native value and unsupported formats are refused. Running `decisions` again reproduces the current state, so the file round-trips.
 
 ## Files and commands
 
@@ -264,7 +264,7 @@ For a deliberate function exclusion, remove its descriptor format and record a r
 "transferAdmin(address)" = "Handled in the separate administrative signing workflow"
 ```
 
-TOML's table applies to the preceding `[[contracts]]` entry. Admin functions are inventoried by default. Receive/fallback entry points require an explicit exclusion because v0.2 does not render them.
+TOML's table applies to the preceding `[[contracts]]` entry. Admin functions are inventoried by default. `receive()` needs no entry: it runs only on empty calldata, so there is nothing to describe. `fallback()` takes calldata that no calldata descriptor can format, so it needs an exclusion reason (the decisions file has a slot for it).
 
 ## Production bindings and registry export
 
@@ -329,7 +329,8 @@ The CLI pins ERC-7730 v2 schema 2.0.0 and Sourcify renderer 0.2.2 with a reprodu
 - Registry idioms are accepted as the renderer accepts them: `#.` root prefixes, `$id`, `display.definitions` with `$ref`, constant-value fields, `visible` set to `always`, `never`, `optional`, `default` or an `ifNotIn`/`mustMatch` rule, relative paths scoped inside groups, and byte slices on leaves. A format's type mismatch (an `addressName` on a `string`, say) is a warning because the renderer renders it raw with a warning; snapshot acceptance still refuses the resulting rendering. Measured against the registry: `npm run registry:acceptance -- <clone>` reports how many merged descriptors the validator accepts; the only class it rejects by design is the `calldata` format.
 - Calldata write functions, overloads, inherited functions, tuples, fixed/dynamic nested arrays, and sequential groups that keep tuple members paired. Nested groups are expanded to concrete indexed paths for each local preview; exported descriptors retain standard nested groups, whose support varies across wallets.
 - Argument leaf paths and `@.to`, `@.from`, `@.value`. Payable functions must display `@.value`; drafts use the `amount` format for it.
-- `interpolatedIntent`: an optional sentence with `{path}` placeholders naming shown fields, e.g. `"Stake {amount}"`. Wallets prefer it over `intent` and the registry recommends one on every format. Placeholders must name displayed fields (or `@.value`); the rendered sentence is checked into expectations and into `testsv2`, where the registry's runners compare it. An argument left out of a format is reported as a warning. Record the reason under the selection's `hidden` table in `clear-signing.toml` to acknowledge it:
+- The registry linter's Ledger length limits, as warnings: intents 30 characters, field and group labels 20, enum entries 20, owner 22, contract name 30, URL 26, legal name 30.
+- `interpolatedIntent`: an optional sentence with `{path}` placeholders naming shown fields, e.g. `"Stake {amount}"`. Wallets prefer it over `intent` and the registry recommends one on every format. Placeholders must name displayed fields (or `@.value`); the rendered sentence is checked into expectations and into `testsv2`, where the registry's runners compare it. An argument left out of a format is reported as a warning. Hide it through `decisions`/`apply`, which writes a `visible: "never"` field and records the reason; or record the reason by hand under the selection's `hidden` table in `clear-signing.toml` (the registry linter still warns about an argument with no field, so prefer `apply`):
 
 ```toml
 [contracts.hidden."swapExactTokensForTokens(uint256,uint256,address[],address,uint256)"]
@@ -343,7 +344,7 @@ Human previews escape terminal controls and bidirectional overrides as visible t
 
 Missing token metadata is visible as warnings and raw fallback in preview, and blocks test acceptance/export. Empty-array notices and unnamed `addressName` values are informational: the address renders in full, as wallets show it, and the warning remains in expectations. Dates beyond the renderer's supported range fail instead of being silently accepted. Registry test runners use their own chain tables; an `amount` field on a chain they do not know will render raw there.
 
-Unsupported features fail explicitly: EIP-712 authoring (adding a chain to an existing EIP-712 descriptor is supported), nested transaction decoding, external includes/references, display definitions, constant-value fields, encryption, interpolated intents, factory bindings, and automatic registry access. Apart from `init --address`, `registry add-deployment` (including the read-only RPC calls behind `--rpc-url`), the upstream lint run on export, and the one-time runner build behind `--registry-runners`, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
+Unsupported features fail explicitly: EIP-712 authoring (adding a chain to an existing EIP-712 descriptor is supported), nested transaction decoding (the `calldata` format), external includes/references, encryption, factory bindings, and automatic registry access. Apart from `init --address`, `registry add-deployment` (including the read-only RPC calls behind `--rpc-url`), `fixture --tx` (read-only RPC), the upstream lint and format run on export and add-deployment, and the one-time runner build behind `--registry-runners`, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
 
 ## Use with an agent
 
@@ -353,7 +354,7 @@ The repository also includes an [agent skill](docs/AGENT-SKILL.md) that drives t
 npx skills add portdeveloper/clear-signing-helper
 ```
 
-The skill lives under `.claude/skills/clear-signing-helper/` and expects the CLI installed as above.
+The skill lives under `.claude/skills/clear-signing-helper/` and expects the CLI installed as above. The npm package ships it too: `SKILL.md` and `scripts/` are in `$(npm root -g)/clear-signing-helper/.claude/skills/clear-signing-helper/` after a global install.
 
 ## Install from source
 

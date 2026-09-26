@@ -14,8 +14,8 @@ function registryClone(options: {registry?: string; ciPins?: string}) {
   return options.registry ?? options.ciPins;
 }
 const program=new Command();
-program.name('clear-signing').description('Developer preview: author, preview, and test ERC-7730 descriptors in a Foundry repository.').version(packageJson.version)
-  .option('--root <directory>','Foundry project root (searches upward by default)')
+program.name('clear-signing').description('Developer preview: author, preview, test and export ERC-7730 descriptors from a Foundry repository, an ABI file, or a verified address.').version(packageJson.version)
+  .option('--root <directory>','Project root: the directory with clear-signing.toml or foundry.toml (searches upward by default)')
   .option('--profile <name>','Foundry profile (defaults to saved configuration)')
   .option('--no-build','Use fingerprint-verified artifacts from an earlier run')
   .option('--json','Emit machine-readable results and diagnostics');

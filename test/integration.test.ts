@@ -364,7 +364,7 @@ await test('decisions template exposes the judgment slots with hints, and apply 
   const d=read(path.join(root,'clear-signing/descriptors',fs.readdirSync(path.join(root,'clear-signing/descriptors'))[0]));
   assert.deepEqual(Object.keys(d.display.formats),['swapExactTokensForTokens(uint256 amountIn,uint256 amountOutMin,address[] path,address to,uint256 deadline)']);
   const spec=Object.values<any>(d.display.formats)[0];
-  assert.equal(spec.intent,'Swap');assert.equal(spec.interpolatedIntent,'Swap {amountIn}');assert.deepEqual(spec.fields.map((f:any)=>[f.path,f.format]),[['amountIn','tokenAmount'],['amountOutMin','tokenAmount'],['to','addressName'],['deadline','date']]);
+  assert.equal(spec.intent,'Swap');assert.equal(spec.interpolatedIntent,'Swap {amountIn}');assert.deepEqual(spec.fields.map((f:any)=>[f.path,f.format ?? f.visible]),[['amountIn','tokenAmount'],['amountOutMin','tokenAmount'],['path.[]','never'],['to','addressName'],['deadline','date']]);
   assert.equal(d.metadata.info.url,'https://example.org');
   const cfg=TOML.parse(fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8')) as any;
   assert.equal(cfg.contracts[0].hidden[swap]['path.[]'],'Route is implied by the token amounts');assert.ok(cfg.contracts[0].exclusions['transferAdmin(address)']);
@@ -386,5 +386,5 @@ await test('decisions template exposes the judgment slots with hints, and apply 
   // A bad decision writes nothing.
   dec.functions[swap].fields['deadline'].format='addressName';write(dfile,dec);
   assert.ok(['FORMAT_TYPE','SCHEMA_INVALID'].includes(run(root,['apply','--decisions',created.created],1).diagnostics[0].code));
-  assert.equal(Object.values<any>(read(path.join(root,'clear-signing/descriptors',fs.readdirSync(path.join(root,'clear-signing/descriptors'))[0])).display.formats)[0].fields[3].format,'date');
+  assert.equal(Object.values<any>(read(path.join(root,'clear-signing/descriptors',fs.readdirSync(path.join(root,'clear-signing/descriptors'))[0])).display.formats)[0].fields[4].format,'date');
 });

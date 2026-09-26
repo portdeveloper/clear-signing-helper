@@ -435,8 +435,12 @@ function buildDecisions(state: State, id: string): Decisions {
       intent: existing?.spec.intent ?? (f.name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/^./, x => x.toUpperCase())), interpolatedIntent: existing?.spec.interpolatedIntent ?? null, fields,
       hints: {...(evidence.notices[sig] ? {natspec: evidence.notices[sig]} : {}), ...(priors.length ? {registryPriors: priors.slice(0, 5).map(summarizePrior), registryPriorCount: priors.length} : {}), ...(priorInterpolations.length ? {registryInterpolatedIntents: priorInterpolations} : {}), intentLimit: 30, interpolatedIntent: 'Optional sentence with {path} placeholders naming shown fields (e.g. "Stake {amount}", "Send {amount} to {to}"). Wallets prefer it; the registry recommends one on every format and warns when the template exceeds 30 characters.'}};
   }
+  // fallback() takes calldata no descriptor can format: its only decision is the reason it is excluded.
+  // receive() needs none (it runs only on empty calldata), so it gets no slot.
+  if (c.special.includes('fallback()')) functions['fallback()'] = {signature: 'fallback()', decision: 'exclude', excludeReason: selection.exclusions['fallback()'] ?? null, intent: '', fields: {},
+    hints: {note: 'fallback() cannot be described by a calldata descriptor. Keep decision "exclude" and write why signers will not reach it, or what it forwards.'}};
   return {version: 1, contract: id, descriptor: selection.descriptor, author: null, generatedAt: new Date().toISOString().slice(0, 10), owner: d.metadata.owner, url: d.metadata.info?.url ?? null, functions,
-    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance for every value you change. Unchanged values keep their existing provenance.', 'A function or field may carry its own "author" that overrides the file author for that function (decision, intent, interpolatedIntent) or that field. Tag each value with whoever decided it.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml.', 'Per field: show true/false (hideReason required when false), label, format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'interpolatedIntent is optional but recommended by the registry: a sentence embedding shown field values with {path}; set null to omit.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.']};
+    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance for every value you change. Unchanged values keep their existing provenance.', 'A function or field may carry its own "author" that overrides the file author for that function (decision, intent, interpolatedIntent) or that field. Tag each value with whoever decided it.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml. fallback() can only be excluded; receive() needs no entry.', 'Per field: show true/false (hideReason required when false; a hidden field is written as visible "never" and its reason kept in clear-signing.toml), label (the registry linter warns above 20 characters), format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'interpolatedIntent is optional but recommended by the registry: a sentence embedding shown field values with {path}; set null to omit.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.']};
 }
 export function writeDecisions(state: State, id: string, out?: string) {
   const c = getContract(state.project, id), decisions = buildDecisions(state, id);
@@ -470,6 +474,13 @@ export function applyDecisions(state: State, file: string) {
   const exclusions: Record<string, string> = {...selection.exclusions}, hidden: Record<string, Record<string, string>> = structuredClone(selection.hidden ?? {});
   const provenance: (Provenance & {contract: string})[] = [];
   const byKey = new Map(Object.keys(d.display.formats).map(k => [parseSignature(k).format('sighash'), k]));
+  if (c.special.includes('fallback()') && dec.functions['fallback()']) {
+    const fd = dec.functions['fallback()'], base = baseline['fallback()'], author = authorOf(fd.author, dec.author.trim(), 'fallback()');
+    if (fd.decision !== 'exclude') fail('DECISIONS_ENTRYPOINT', 'fallback() cannot be described by a calldata descriptor; set decision "exclude" with an excludeReason.', 2);
+    if (typeof fd.excludeReason !== 'string' || !fd.excludeReason.trim()) fail('DECISIONS_REASON', 'fallback(): decision "exclude" needs an excludeReason.', 2);
+    exclusions['fallback()'] = fd.excludeReason.trim();
+    if ((base?.excludeReason ?? '').trim() !== fd.excludeReason.trim()) provenance.push({contract: dec.contract, signature: 'fallback()', detail: `excluded: ${fd.excludeReason.trim()}`, source: sourceOf(author), author});
+  }
   for (const f of c.functions) {
     const sig = f.format('sighash'), fd = dec.functions[sig];
     if (!fd) continue;
@@ -495,7 +506,9 @@ export function applyDecisions(state: State, file: string) {
       if (flipped || base.interpolatedIntent !== spec.interpolatedIntent) record(fnAuthor, {signature: sig, detail: `interpolatedIntent: ${spec.interpolatedIntent}`});
     }
     else delete spec.interpolatedIntent;
-    // Edit leaves in place to keep existing grouping; drop hidden ones; append newly shown ones flat.
+    // Edit leaves in place to keep existing grouping; append newly shown ones flat. A hidden leaf stays in the
+    // descriptor as visible "never", as registry descriptors write it, so the registry linter and reviewers
+    // see it was left out on purpose; the reason itself lives in clear-signing.toml.
     // Paths resolve exactly as the validator reads them (resolveFields): group scope, $ref definitions, "#." roots.
     const definitions = d.display.definitions ?? {};
     const never = neverHidden(resolveFields(spec.fields, definitions), leaves(f.inputs).map(l => l.path));
@@ -512,9 +525,12 @@ export function applyDecisions(state: State, file: string) {
       if (decision.show === false) {
         if (full === '@.value') fail('DECISIONS_NATIVE_VALUE', `${sig}: @.value must stay shown.`, 2);
         if (!decision.hideReason?.trim()) fail('DECISIONS_REASON', `${sig} ${full}: show=false needs a hideReason.`, 2);
+        const reason = decision.hideReason!.trim();
+        if (reason !== DESCRIPTOR_NEVER) hiddenHere[full] = reason;
         // Already hidden by the descriptor: keep it as written.
         if (merged.visible === 'never') return [item];
-        hiddenHere[full] = decision.hideReason!.trim(); return [];
+        if (typeof item.$ref === 'string') return [{...item, visible: 'never'}];
+        return [{path: item.path, label: decision.label?.trim() || merged.label, visible: 'never'}];
       }
       const format = decision.format ?? 'raw';
       if (!(SUPPORTED_FORMATS as readonly string[]).includes(format)) fail('UNSUPPORTED_FORMAT', `${sig} ${full}: ${format} is not a supported format.`, 2);
@@ -537,7 +553,9 @@ export function applyDecisions(state: State, file: string) {
       if (present.has(full)) continue;
       if (decision.show === false) {
         if (!decision.hideReason?.trim()) fail('DECISIONS_REASON', `${sig} ${full}: show=false needs a hideReason.`, 2);
-        if (!never.has(full)) hiddenHere[full] = decision.hideReason!.trim();
+        const reason = decision.hideReason!.trim();
+        if (reason !== DESCRIPTOR_NEVER) hiddenHere[full] = reason;
+        if (!never.has(full) && full !== '@.value') spec.fields.push({path: full, label: decision.label?.trim() || full, visible: 'never'});
         continue;
       }
       const format = decision.format ?? 'raw';

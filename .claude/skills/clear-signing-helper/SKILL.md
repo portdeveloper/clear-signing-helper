@@ -108,11 +108,11 @@ The file lists every function and argument with hints you must read before decid
 - **Addresses**: `addressName` with `"params": {"types": ["eoa","wallet"]}` for recipients, `["contract"]` or `["token"]` where that is what it is.
 - **Native value**: payable functions must display `@.value`; the draft uses `amount`.
 - **Dates and enums**: `date` with `{"encoding": "timestamp"}`; enums are already wired to `metadata.enums` when the source declares them.
-- **Hide noise deliberately**: opaque `bytes` payloads, redundant routes, callback data. Set `show: false` with a `hideReason`; `apply` records it under `hidden` in `clear-signing.toml` and `check` stops warning. Never hide a recipient, spender, amount or limit.
-- **Functions you will not cover** (multicall, `execute(bytes)`, admin flows): set `decision: "exclude"` with an `excludeReason`. Say plainly in the PR what is excluded. Never ship a descriptor that renders a half-empty screen.
+- **Hide noise deliberately**: opaque `bytes` payloads, redundant routes, callback data. Set `show: false` with a `hideReason`; `apply` writes the field as `visible: "never"` (so the registry linter does not warn), keeps the reason under `hidden` in `clear-signing.toml`, and `check` stops warning. Never hide a recipient, spender, amount or limit.
+- **Functions you will not cover** (multicall, `execute(bytes)`, admin flows): set `decision: "exclude"` with an `excludeReason`. `fallback()` appears in the file as exclude-only and needs a reason; `receive()` needs nothing. Say plainly in the PR what is excluded. Never ship a descriptor that renders a half-empty screen.
 - **Nested calldata** cannot be decoded statically; exclude those functions.
 
-Base every label on the contract's semantics: parameter names, NatSpec, source. If a parameter's meaning is unclear, look at the source or ask.
+Keep labels to 20 characters and intents to 30; `apply` and `check` warn above that, as the registry linter does. Base every label on the contract's semantics: parameter names, NatSpec, source. If a parameter's meaning is unclear, look at the source or ask.
 
 ## 4. Fixtures, preview, review, test, export
 

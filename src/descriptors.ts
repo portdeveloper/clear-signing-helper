@@ -130,7 +130,9 @@ export const coveredLeaves = (key: string, leafKeys: Iterable<string>) => [...le
 export interface Provenance {signature: string; path?: string; source: 'natspec' | 'ast' | 'broadcast' | 'verified' | 'convention' | 'registry' | 'human' | 'llm'; author?: string; detail: string}
 const firstSentence = (text: string) => text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, '').trim();
 // The registry linter warns above 30 characters because Ledger devices truncate longer intents.
-export const MAX_INTENT = 30, MAX_LABEL = 32;
+export const MAX_INTENT = 30;
+// The registry linter's other Ledger display limits (erc7730 common/ledger.py): it warns above each.
+export const MAX_LABEL = 20, MAX_ENUM_ENTRY = 20, MAX_OWNER = 22, MAX_CONTRACT_NAME = 30, MAX_URL = 26, MAX_LEGAL_NAME = 30;
 // interpolatedIntent lists phrasings in order of preference, the registry's own first; the scaffold takes the
 // first that fits MAX_INTENT with the contract's parameter names, or none (see scaffoldFormatWithProvenance).
 type Convention = (params: string[]) => {intent: string; interpolatedIntent: string[]; fields: Field[]};
@@ -249,6 +251,8 @@ export const WARNING_REMEDY: Record<string, string> = {
   INVALID_INTERPOLATION: 'Reference only displayed fields in interpolatedIntent.',
   MISSING_INTENT: 'Add an intent.',
   INTENT_LENGTH: `Shorten it to ${MAX_INTENT} characters or fewer; the registry linter warns above that and Ledger devices truncate.`,
+  LABEL_LENGTH: `Shorten the label to ${MAX_LABEL} characters or fewer; the registry linter warns above that and Ledger devices truncate.`,
+  METADATA_LENGTH: 'Shorten it; the registry linter warns above the Ledger limit and devices truncate.',
   MISSING_METADATA: 'Set metadata.owner to the project owner.',
   INVALID_BINDING: 'Remove the duplicate deployment.',
   CORPUS_DISAGREEMENT: 'Compare with the registry priors init lists; keep the difference if it is deliberate.'
@@ -281,6 +285,12 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
     }
     assertKeys(d.metadata, ['owner', 'contractName', 'info', 'token', 'constants', 'enums'], 'metadata');
     if (!d.metadata.owner?.trim()) add('MISSING_METADATA', 'metadata.owner is empty; the registry expects the project owner here.', undefined, 'warning');
+    const tooLong = (what: string, value: unknown, max: number) => { if (typeof value === 'string' && value.length > max) add('METADATA_LENGTH', `${what} "${value}" is ${value.length} characters; the registry linter warns above ${max}.`, undefined, 'warning'); };
+    tooLong('metadata.owner', d.metadata.owner, MAX_OWNER);
+    tooLong('metadata.contractName', d.metadata.contractName ?? d.context.$id, MAX_CONTRACT_NAME);
+    tooLong('metadata.info.url', d.metadata.info?.url, MAX_URL);
+    tooLong('metadata.info.legalName', (d.metadata.info as {legalName?: string} | undefined)?.legalName, MAX_LEGAL_NAME);
+    for (const [name, entries] of Object.entries<any>(d.metadata.enums ?? {})) for (const v of Object.values(entries ?? {})) if (typeof v === 'string' && v.length > MAX_ENUM_ENTRY) add('METADATA_LENGTH', `metadata.enums.${name} entry "${v}" is ${v.length} characters; the registry linter warns above ${MAX_ENUM_ENTRY}.`, undefined, 'warning');
     assertKeys(d.display, ['formats', 'definitions'], 'display');
     const definitions: Record<string, Field> = d.display.definitions ?? {};
     assertKeys(d.display.formats, Object.keys(d.display.formats ?? {}), 'display.formats');
@@ -313,14 +323,18 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         // referenced: leaves a displayed field reads through a parameter (the token of a tokenAmount, an NFT
         // collection, a chain id). The registry linter counts them as displayed; so does UNDISPLAYED_ARGUMENT.
         const seen = new Set<string>(), displayedLeaves = new Set<string>(), declaredHidden = new Set<string>(), referenced = new Set<string>();
+        const longLabels = new Set<string>();
         const resolved = resolveFields(spec.fields, definitions, group => {
           assertKeys(group, ['path','label','fields','iteration','$id'], `group in ${sig}`);
+          if (typeof group.label === 'string' && group.label.length > MAX_LABEL) longLabels.add(group.label);
           if (group.iteration && group.iteration !== 'sequential') fail('UNSUPPORTED_FEATURE', 'Only sequential group iteration is supported.');
         });
         for (const {field, key: leaf} of resolved) {
           assertKeys(field, ['path', 'value', 'label', 'format', 'params', 'separator', 'visible', '$id', '$ref'], `field in ${sig}`);
           if (field.visible !== undefined && !['always', 'never', 'default', 'optional'].includes(String(field.visible)) && !isVisibilityRule(field.visible)) fail('UNSUPPORTED_FEATURE', `visible must be "always", "never", "optional", "default", or a rule object with ifNotIn or mustMatch.`);
           if (typeof field.label !== 'string' || !field.label.trim()) fail('MISSING_LABEL', `${field.path ?? field.value} requires a label.`);
+          // The linter counts every label, hidden fields included.
+          if (field.label.length > MAX_LABEL) longLabels.add(field.label);
           if (field.value !== undefined) {
             // Constant-value field: shown as-is, or resolved from metadata; it displays no argument.
             if (field.path !== undefined) fail('INVALID_FIELDS', `A field has both path and value in ${sig}.`);
@@ -374,6 +388,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
             addressReference(params.collection ?? params.collectionPath, params.collection ? 'collection' : 'collectionPath');
           }
         }
+        for (const label of longLabels) add('LABEL_LENGTH', `${sig} label "${label}" is ${label.length} characters; the registry linter warns above ${MAX_LABEL} because Ledger devices truncate it.`, key, 'warning');
         const hiddenHere = hidden[sig] ?? {};
         for (const [leaf, reason] of Object.entries(hiddenHere)) {
           if (!leafMap.has(leaf)) add('STALE_HIDDEN', `${sig} hidden path ${leaf} is not an argument of the function.`, key);
@@ -402,7 +417,9 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
       if (typeof reason !== 'string' || !reason.trim()) add('EXCLUSION_REASON', `${sig} needs an exclusion reason.`, sig);
       if (covered.has(sig)) add('EXCLUDED_AND_COVERED', `${sig} has both a format and an exclusion.`, sig);
     }
-    for (const sig of inventory) if (!covered.has(sig) && !selection.exclusions[sig]) add(c.special.includes(sig) ? 'UNSUPPORTED_ENTRYPOINT' : 'MISSING_COVERAGE', `${sig} needs a descriptor or an explicit exclusion reason.`, sig);
+    // receive() runs only on empty calldata, so there is nothing to describe and no exclusion to ask for.
+    // fallback() takes arbitrary calldata that a calldata descriptor cannot format, so it needs a reason.
+    for (const sig of inventory) if (sig !== 'receive()' && !covered.has(sig) && !selection.exclusions[sig]) add(c.special.includes(sig) ? 'UNSUPPORTED_ENTRYPOINT' : 'MISSING_COVERAGE', c.special.includes(sig) ? `${sig} cannot be described by a calldata descriptor; record why it is excluded (decisions: its excludeReason, or exclusions in clear-signing.toml).` : `${sig} needs a descriptor or an explicit exclusion reason.`, sig);
   } catch(e) { if (e instanceof Failure) add(e.code, e.message); else throw e; }
   return errors;
 }

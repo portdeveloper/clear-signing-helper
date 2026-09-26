@@ -226,3 +226,38 @@ await test('a Sourcify record too large to fetch with its sources is fetched wit
   assert.equal(seen.length,2);assert.ok(!seen[1].includes('sources'));
   assert.equal(read(path.join(root,created.contracts[0].descriptor)).metadata.constants,undefined);
 });
+
+// Found by the 2026-09-26 audit replay (docs/AUDIT-REPLAY.md): agents hand-edited clear-signing.toml to
+// exclude receive(), hidden arguments vanished from the descriptor (registry lint warned and reviewers
+// never saw them), and long labels surfaced only at export.
+await test('decisions: receive() needs no exclusion, fallback() has an exclude slot, hidden leaves stay as visible never, long labels warn',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  fs.writeFileSync(path.join(root,'vault.abi.json'),JSON.stringify([...vaultArtifact.abi,{type:'receive',stateMutability:'payable'},{type:'fallback',stateMutability:'payable'}]));
+  run(root,['init','--abi','vault.abi.json','--name','AssetVault','--owner','Example']);
+  const id='clear-signing/abi/AssetVault.json:AssetVault';
+  const created=run(root,['decisions','--contract',id]).result,dfile=path.join(root,created.created),dec=read(dfile);
+  assert.equal(dec.functions['receive()'],undefined,'receive() runs only on empty calldata: no slot');
+  assert.deepEqual([dec.functions['fallback()'].decision,dec.functions['fallback()'].excludeReason],['exclude',null]);
+  dec.author='llm:test-model';
+  for(const [sig,f] of Object.entries<any>(dec.functions)) if(sig!=='deposit(uint256,address)'&&sig!=='fallback()'){f.decision='exclude';f.excludeReason='Outside this test';}
+  const dep=dec.functions['deposit(uint256,address)'];
+  dep.intent='Deposit';
+  dep.fields.assets={...dep.fields.assets,label:'Amount of assets to deposit'};
+  dep.fields.receiver={...dep.fields.receiver,show:false,hideReason:'Always the caller in the app'};
+  write(dfile,dec);
+  // An unfilled fallback() reason is refused with a message naming the slot.
+  assert.equal(run(root,['apply','--decisions',created.created],2).diagnostics[0].code,'DECISIONS_REASON');
+  dec.functions['fallback()'].excludeReason='Forwards to the implementation; users call its functions';write(dfile,dec);
+  const applied=run(root,['apply','--decisions',created.created]).result;
+  assert.ok(applied.warnings.some((w:any)=>w.code==='LABEL_LENGTH'&&w.message.includes('Amount of assets to deposit')),'labels over 20 characters warn before export');
+  const dir=path.join(root,'clear-signing/descriptors'),d=read(path.join(dir,fs.readdirSync(dir)[0]));
+  assert.deepEqual(d.display.formats['deposit(uint256 assets,address receiver)'].fields.find((f:any)=>f.path==='receiver'),{path:'receiver',label:'Receiver',visible:'never'});
+  const toml=fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8');
+  assert.ok(toml.includes('Always the caller in the app'),'the hide reason is kept');assert.ok(toml.includes('fallback()'));assert.ok(!toml.includes('receive()'));
+  // Re-applying keeps the reason and records nothing new; the template reports the recorded reason.
+  assert.equal(run(root,['apply','--decisions',created.created]).result.recorded,0);
+  assert.ok(fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8').includes('Always the caller in the app'));
+  const again=read(path.join(root,run(root,['decisions','--contract',id]).result.created));
+  assert.deepEqual([again.functions['deposit(uint256,address)'].fields.receiver.show,again.functions['deposit(uint256,address)'].fields.receiver.hideReason],[false,'Always the caller in the app']);
+  assert.equal(again.functions['fallback()'].excludeReason,'Forwards to the implementation; users call its functions');
+});

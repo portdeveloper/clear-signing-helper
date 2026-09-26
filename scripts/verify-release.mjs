@@ -48,7 +48,7 @@ try {
   if (packageJson.license !== 'MIT') throw new Error('release must declare the approved MIT license');
   if (fs.readFileSync(path.join(packedRoot, 'LICENSE'), 'utf8') !== fs.readFileSync(path.join(root, 'LICENSE'), 'utf8')) throw new Error('packed MIT license differs from the source');
   if (packageJson.scripts?.postinstall) throw new Error('release contains a postinstall mutation hook');
-  for (const required of ['vendor/clear-signing/LICENSE', 'vendor/clear-signing/PROVENANCE.md', 'scripts/verify-renderer.mjs', 'docs/THIRD-PARTY-NOTICES.md']) {
+  for (const required of ['vendor/clear-signing/LICENSE', 'vendor/clear-signing/PROVENANCE.md', 'scripts/verify-renderer.mjs', 'docs/THIRD-PARTY-NOTICES.md', '.claude/skills/clear-signing-helper/SKILL.md', '.claude/skills/clear-signing-helper/scripts/find-in-registry.sh']) {
     if (!fs.existsSync(path.join(packedRoot, required))) throw new Error(`release is missing ${required}`);
   }
 
