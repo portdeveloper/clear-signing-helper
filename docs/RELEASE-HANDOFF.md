@@ -5,6 +5,25 @@
 - Refresh the advisory registry prior: `npm run priors:snapshot -- <fresh registry clone>` and commit `src/data/registry-priors.json`; its `commit` and `generatedAt` fields are shown to users.
 - Run `npm run registry:acceptance -- <fresh registry clone>` and record the accepted count in CLAUDE.md. Any new rejection class other than the `calldata` format is a regression against what the registry accepts.
 
+## 0.6.0-preview.2 (2026-09-26)
+
+The code of 0.6.0-preview.1, repackaged: that package shipped the PRD, 23 other internal docs and the agent skill, none meant for users (owner, 2026-09-26: "we should not publish files that are meant for me or an llm"). The package now holds `dist/`, `schemas/`, `vendor/clear-signing/`, `scripts/verify-renderer.mjs`, `README.md`, `LICENSE` and `docs/THIRD-PARTY-NOTICES.md` (46 files to 20), and `verify-release.mjs` fails on any other file; run against the 0.6.0-preview.1 package it rejects 26.
+
+- [x] Registry unchanged at `53d86dc`, so the prior and the acceptance run (263 of 285) from the same day still hold.
+- [x] Tag `v0.6.0-preview.2` on `main` at `e457ea5`; CI run [36257617625](https://github.com/portdeveloper/clear-signing-helper/actions/runs/36257617625) passed on Node 22.22.3 and 24.20.0, ubuntu-24.04 and macos-15. All four CI candidate packages have the same SHA-256 as the local candidate.
+- [x] `npm run release:verify` produced `clear-signing-helper-0.6.0-preview.2.tgz`, SHA-256 `7ac717c3d9e376cfbaa9469d07f6a592cde909c42da4d5608e47762d7023877d`, and `release-verification.json`. All nine checks passed, plus the new file allowlist. The engine fingerprint is unchanged, so no user runs `upgrade`.
+- [x] [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.2) created with the tarball, checksum and verification record. The downloaded asset matched the checksum.
+- [x] Published that tarball to npm as [`clear-signing-helper@0.6.0-preview.2`](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.2) with `--tag preview --ignore-scripts --access public`, then moved `latest` to it. Registry integrity `sha512-qxq1GJa9wOg95+liyuaYAhfoidny9hZry4mXNt0w06MElSf9lRrIafFbH0LXRnZLZWAEtII5EqzD78G85O46DQ==` equals the GitHub asset. A credential-free `npx --package=clear-signing-helper@preview clear-signing --version` and a plain `npm install` report `0.6.0-preview.2` (the first `npx` attempt crashed inside npm's arborist on a cache left by the preview.1 check; a fresh cache installs cleanly).
+- [x] Deprecated `0.6.0-preview.1` on npm: "Contains maintainer notes that were not meant to ship; use 0.6.0-preview.2". Not unpublished: a full scan found no credentials, and unpublishing would burn the version number anyway.
+- [x] README, DISTRIBUTION and site point at 0.6.0-preview.2. The token was held in a mode-600 file in the session scratchpad, used with `--userconfig`, and deleted after each use. No copy is in the repository.
+- [ ] Revoke the npm token used for 0.6.0-preview.1 and preview.2 on npmjs.com (it was pasted into the session transcript).
+
+## 0.6.0-preview.1 (2026-09-26, deprecated)
+
+- [x] Tag `v0.6.0-preview.1` on `main` at `b17fd15`; CI run [36248741000](https://github.com/portdeveloper/clear-signing-helper/actions/runs/36248741000) passed on all four platforms, and the four candidate packages matched the local SHA-256 `0d3d6120333f0ee83dabdbc2716d38f3d65b8ca338e1dde98ce6960e4c705f49`.
+- [x] [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.1) and npm publication under `preview` and `latest`; registry integrity `sha512-GJKPKS8uYuQdnSGcxjuUiJ0Fb4drLeENb0CvR0bVUdJBeo+dQgUuyv3BSC7yGhhso+EBu9ZLlS3SCzRPc9bCag==` equals the GitHub asset.
+- [x] Superseded the same day by 0.6.0-preview.2 and deprecated: the package carried maintainer and agent files (see above).
+
 ## 0.5.0-preview.1 (2026-09-25)
 
 - [x] The registry did not move after the morning measurement: prior refreshed and acceptance run at registry `53d86dc` (285 descriptors, 533 selectors; 263 of 285 accepted, same 22 rejections), recorded in CLAUDE.md. `e823abc` is the lint pin on registry master and built in.
