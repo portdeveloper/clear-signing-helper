@@ -14,7 +14,7 @@ Make it easy for a team to go from a deployed contract to a descriptor and test 
 
 The success test is simple: a team with a real project (reference case: the sibling repo `../puddleswap`, a Uniswap V2 fork on Monad testnet, chain 10143) runs the tool, edits labels, and ends with files the registry maintainers would merge. Anything that makes them leave the tool to finish, or that rejects a descriptor the registry would accept, is a defect against this purpose. So is asking a human for something the repository already proves (see roadmap item 3).
 
-## What the tool is today (main; release 0.5.0-preview.1)
+## What the tool is today (main; release 0.6.0-preview.1)
 
 A Node 22+ CLI, `clear-signing`, that works from a Foundry repo, an ABI file, or a verified address (`mode = "abi"` in `clear-signing.toml`).
 

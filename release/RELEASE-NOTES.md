@@ -1,3 +1,101 @@
+# Clear Signing Helper 0.6.0-preview.1 — developer preview
+
+Fixes what cold agents ran into when we replayed nine of the registry's recent audit fixes (docs/AUDIT-REPLAY.md). The skill now ships in the package. Hidden arguments stay in the descriptor the way registry descriptors write them. The linter's length limits show up before export. A disagreement between the two registry runners no longer forces you to drop both.
+
+## Upgrade from 0.5.0-preview.1
+
+No `upgrade` step: the engine fingerprint (renderer, schema, validator subset) is unchanged, so reviews and expectations stay valid. Install the new version and run `clear-signing check`. Re-running `apply` rewrites hidden arguments as `visible: "never"` fields. That changes the descriptor, so review it again afterwards.
+
+## What changed
+
+**The skill is in the package.** `SKILL.md` and `scripts/` ship under `.claude/skills/clear-signing-helper/` in the tarball. Every audit-replay agent had fetched them from GitHub.
+
+**Hidden arguments stay visible to reviewers.** `apply` writes a hidden argument as `{path, label, visible: "never"}` instead of dropping it, which is how merged registry descriptors write it. The reason stays in `clear-signing.toml` and survives re-applies. The registry linter no longer reports "Missing display field" for it: on the Hyperliquid replay, upstream warnings went from 7 to 3.
+
+**Length limits before export.** `check` and `apply` warn where the registry linter does:
+- `LABEL_LENGTH`: field and group labels over 20 characters;
+- `METADATA_LENGTH`: owner over 22, contract name over 30, URL over 26, legal name over 30, enum entries over 20.
+
+NatSpec labels are adopted only if they fit.
+
+**`receive()` and `fallback()`.** `receive()` needs no exclusion, because it runs only on empty calldata. `fallback()` has an exclude-only slot in the decisions file.
+
+**Decisions file:**
+- top-level `enums`, referenced as `$.metadata.enums.<name>`;
+- `contractName`;
+- field order follows the key order in descriptors without groups;
+- re-running `decisions` keeps the file's `author`;
+- struct members show their parent's `@param` as `natspecOfParent`;
+- `nftName` is offered for integers;
+- in provenance, a later decision replaces the earlier one for the same slot, and a removed interpolated intent is recorded as removed.
+
+**Runner disagreements.** `export --registry-runners` and `registry add-deployment --runners` take `--accept-runner-failure <sourcify|rust>=<reason>`. Use it when one runner fails because the two implementations disagree. For example, the Rust runner hard-codes the native ticker: MATIC on Polygon, ETH on Celo and Sonic (registry #3027). The other runner must pass. The failing runner's output and the reason are recorded in `review/validation.json` and the bundle README.
+
+**Other changes:**
+- `fixture --rpc-url` fills missing token metadata with read-only `eth_call` (`symbol`, `decimals`, `name`), with or without `--tx`. A contract that does not answer as an ERC-20 is listed under `unresolvedTokens`.
+- `init --address` saves the verified source under `clear-signing/source/<Name>/`, for reading while you decide intents and denominations.
+- `init --registry <clone>` matches against your registry clone instead of the bundled snapshot.
+- `find-in-registry.sh` reads deployments out of descriptors, following includes. It lists mentions in test files separately and suggests `add-deployment` only for a real match.
+- `export --out` accepts an absolute path inside the project, and a path outside it is refused with the reason.
+- A `@notice` about who may call a function ("Only callable by msig") is no longer used as an intent.
+- A checksum typo in an address is reported as a wrong EIP-55 checksum.
+- Docs: the README boundary no longer lists supported features as unsupported. The CLI help covers ABI and address mode. `CLEAR_SIGNING_RUNNERS_DIR` is documented.
+
+## Network access
+
+Only at explicit moments:
+- `init --address` (Sourcify, then Etherscan with a key);
+- `registry add-deployment` (the same, plus read-only `eth_chainId`, `eth_getCode` and `eth_call` for EIP-712);
+- `fixture --rpc-url`: read-only `eth_chainId`, `eth_getTransactionByHash` and `eth_getTransactionReceipt` for `--tx`, and, new, `eth_call` for token metadata;
+- upstream `erc7730 lint` and `format` through `uvx`;
+- the one-time clone and build of the registry runners.
+
+Every RPC call goes to the `--rpc-url` you name. Everything else is offline.
+
+## Scope and limitations
+
+Unchanged from 0.5.0-preview.1:
+- Authoring new EIP-712 descriptors, the `calldata` format and encrypted fields are unsupported and fail explicitly.
+- `fixture --tx` does not discover transactions.
+- A registry match cannot tell a fork from the original protocol.
+- An `addressName` field typed `token` resolves through `addressNames`, not token metadata (the renderer's behaviour).
+- Generated content requires developer review. The CLI never claims audit, attestation, wallet certification or registry acceptance, and it does not hold keys, send transactions or publish.
+
+## Install
+
+Requires Node.js 22+ and, for Foundry mode, Foundry. From the release assets:
+
+```sh
+sha256sum --check clear-signing-helper-0.6.0-preview.1.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.6.0-preview.1.tgz
+clear-signing --version
+```
+
+On macOS, use `shasum -a 256 --check`. Expected version: `0.6.0-preview.1`. Upstream lint and format need `uv` (`uvx`) on the PATH; the registry runners need `git`, `npm` and `cargo`.
+
+## Validation
+
+- **Automated:** 73 tests. New ones cover:
+  - hidden fields as `visible: "never"` with reasons kept across re-applies;
+  - `receive()` and `fallback()`;
+  - the length warnings;
+  - the enums and `contractName` slots, field order and author retention;
+  - accepted runner failures;
+  - token metadata from a mocked JSON-RPC;
+  - `init --registry` and `find-in-registry.sh` against a fake registry;
+  - the saved verified source;
+  - checksum and access-notice handling.
+- **Audit replay:** 9 contracts from the registry's Cyfrin audit fix PRs, run by a cold agent against a blinded registry. 10 of 11 audit findings were avoided (3 by the tool, 7 by the agent), with 0 lint errors (docs/AUDIT-REPLAY.md).
+- **Live checks:**
+  - Hyperliquid re-export: upstream lint 7 warnings to 3, and both runners passed.
+  - QuickSwap export with the Rust runner's MATIC/POL failures accepted: Sourcify passed 17/17.
+  - A Morpho repay fixture read PYUSD's metadata from mainnet and rendered "3526 PYUSD".
+  - `init --address` on QuickSwap's router saved its source and found `quickswap/calldata-QuickSwap.json` in a registry clone.
+- **Registry acceptance** is unchanged at 263 of 285 (registry `53d86dc`).
+- Physical-device and human review results from 0.2.0-preview.1 were not repeated for this version.
+
+---
+
 # Clear Signing Helper 0.5.0-preview.1 — developer preview
 
 Follows the registry CI's current linter, copies real transactions into test cases, names token constants from a verified address, tells you when the registry already describes your contract, and cuts the warnings a fresh draft shows to the ones that matter.
