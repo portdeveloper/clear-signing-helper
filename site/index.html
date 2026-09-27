@@ -123,25 +123,6 @@ flowchart TD
 </div>
 <p class="legend"><strong>Where each stage lives:</strong> inputs <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/foundry.ts">foundry.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/abi-project.ts">abi-project.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fetch.ts">fetch.ts</a> · scaffold <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">descriptors.ts</a> with evidence from <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/evidence.ts">evidence.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/ast.ts">ast.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/broadcast.ts">broadcast.ts</a> · decisions and apply in <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">app.ts</a> · validator <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/descriptors.ts">descriptors.ts</a> and priors <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/priors.ts">priors.ts</a> · fixtures and rendering <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/fixtures.ts">fixtures.ts</a> over the <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/vendor/clear-signing/PROVENANCE.md">vendored renderer</a> · export, lint and runners <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/app.ts">app.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/lint.ts">lint.ts</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/runners.ts">runners.ts</a> · add-deployment <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/src/registry-edit.ts">registry-edit.ts</a>.</p>
 
-<h2>Run it yourself</h2>
-<pre><code># Node 22+. Foundry only for Foundry projects. uv enables the registry's linter.
-npm install --global --ignore-scripts clear-signing-helper@preview
-
-# From a verified address
-clear-signing init --address 0xYourContract --chain-id 143 --owner "Your Protocol"
-clear-signing decisions --contract clear-signing/abi/YourContract.json:YourContract
-#   fill intents, denominations, show/hide, exclude; set "author"
-clear-signing apply --decisions clear-signing/decisions/YourContract.json
-clear-signing fixture --name stake --contract &lt;id&gt; --function 'stake(uint256)' --args '["1000000000000000000"]' --chain-id 143 --to 0xYourContract
-clear-signing preview --fixture clear-signing/fixtures/stake.json
-clear-signing review --accept &amp;&amp; clear-signing test --update
-clear-signing export --strict-portability --registry-runners --out bundle
-
-# Protocol already in the registry, new chain
-clear-signing registry add-deployment --registry ./registry-clone \
-  --descriptor registry/weth/calldata-weth.json --chain-id 143 --address 0x... --token 0x...=WMON:18</code></pre>
-<p>Inside a Foundry repository, <code>forge build</code> once, then <code>clear-signing init</code>; the tool also reads NatSpec, enums and broadcast records there. Full command reference in the <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/README.md">README</a>; the agent playbook is the <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/.claude/skills/clear-signing-helper/SKILL.md">skill</a>.</p>
-
 <h2>Compared with what exists</h2>
 <div class="tablewrap">
 <table>
