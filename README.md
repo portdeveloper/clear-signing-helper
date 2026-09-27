@@ -6,7 +6,24 @@ Use it to turn compiled contract functions into editable ERC-7730 JSON drafts, i
 
 **Developer preview: `0.6.0-preview.2`.** Drafts are built from what the repository proves (ABI, NatSpec, compiler AST, broadcast records, verified source), accept every format the registry does, and export registry-shaped bundles checked by the registry's own linter. Works with Foundry projects or from a verified address. Generated labels, units and intent require developer review. Independent human review, protocol-maintainer assessment, physical-device testing and production wallet delivery remain pending. The CLI does not sign or send transactions.
 
-[Overview site](https://portdeveloper.github.io/clear-signing-helper/) · [Install](#install-the-developer-preview) · [Try an example](#try-the-included-example) · [Use your own project](#add-clear-signing-to-your-foundry-repository) · [Commands](#files-and-commands)
+[Overview site](https://portdeveloper.github.io/clear-signing-helper/) · [How it compares](#how-it-compares) · [Install](#install-the-developer-preview) · [Try an example](#try-the-included-example) · [Use your own project](#add-clear-signing-to-your-foundry-repository) · [Commands](#files-and-commands)
+
+## How it compares
+
+**With other tools.** `erc7730` (the EF/Ledger Python tool), Ledger's JSON Builder and Cyfrin's `clearsig` all draft a descriptor from an ABI. None of them writes the registry test file with exact expected values, runs the registry CI's two test runners locally, or adds a chain to an existing descriptor with a proof that the address is the same contract. This tool does all three. It also binds deployments from broadcasts or verified source, and snapshots the rendering for regression tests in your CI. It does not author EIP-712 descriptors (use `erc7730`) and does not decode arbitrary calldata or compute Safe or ERC-8213 hashes (use `clearsig`). The full table, with each claim linked to its code, is on the [overview site](https://portdeveloper.github.io/clear-signing-helper/).
+
+**With an agent alone** ([COMPARISON.md](docs/COMPARISON.md), 2026-09-23). Claude Code (`claude-opus-5-5`) took PuddleSwap StakingRewards to registry-ready files twice with the tool and twice without it, from clean directories, scored with the registry's own pull-request checks:
+
+| | With the tool | Without |
+|---|---|---|
+| Wall-clock | 7.6 and 8.2 min | 11.6 and 22.5 min |
+| Cost | $2.58 and $2.66 | $2.72 and $4.36 |
+| Turns | 39 and 46 | 57 and 83 |
+| Registry checks and both runners | all pass | all pass |
+
+All four made the same semantic calls. The tool made runs faster, cheaper and consistent, not more correct: on this contract a capable agent reached a green PR by building the registry's runners itself. The tool ruled out one mistake (a baseline formatted a `bytes32` role as an `enum`, which both runners reject). The baselines' files were richer, with real transactions and named token constants; both are closed since (`fixture --tx`, and `init --address` naming immutables). One contract, two runs per arm: a data point, not a benchmark.
+
+**Against audit findings** ([AUDIT-REPLAY.md](docs/AUDIT-REPLAY.md), 2026-09-26). 9 contracts whose merged descriptors the registry later fixed after a Cyfrin audit, run cold by an agent with the tool against a registry clone with the audited files removed. The output avoided 10 of 11 audit findings (3 through the tool's defaults, 7 through the agent's reading of the verified source) and missed Kiln's withdrawal-credential decoding. Every bundle had 0 lint errors, and 8 of 9 passed both registry runners. This replay had no run without the tool, so it does not yet show that an agent alone would repeat the auditors' findings.
 
 ## Install the developer preview
 

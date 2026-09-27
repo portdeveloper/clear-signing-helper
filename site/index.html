@@ -195,13 +195,34 @@ clear-signing registry add-deployment --registry ./registry-clone \
 </ul>
 <p>This is one contract with two runs per arm, not a benchmark. The prompts, raw metrics, every output and the limits are in <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/COMPARISON.md">COMPARISON.md</a> and <a href="https://github.com/portdeveloper/clear-signing-helper/tree/main/docs/comparison/2026-09-23">the run data</a>.</p>
 
+<h2 id="checked-against-audit-findings">Checked against audit findings</h2>
+<p>In September 2026 the registry merged a series of Cyfrin audit fix PRs, each correcting a descriptor that had already been merged. We took 9 of those contracts, removed the audited descriptors (and anything that leaked them) from a registry clone and its priors, and had a cold agent (<code>claude-opus-5-5</code>, no project context, nobody to answer questions) take each one from address to exported bundle with the tool. Then we checked whether its output repeated the defect the auditors found.</p>
+<div class="tablewrap">
+<table>
+<tr><th>Contract</th><th>Audit finding</th><th>Result</th><th>Credit</th></tr>
+<tr><td>QuickSwap router</td><td><code>addLiquidityETH</code> hides the native value</td><td>pass</td><td>tool: <code>@.value</code> is always shown</td></tr>
+<tr><td>QuickSwap router</td><td><code>approveMax</code> hidden on permit removes</td><td>pass</td><td>tool: every argument shown by default</td></tr>
+<tr><td>Morpho Blue</td><td><code>assets</code> raw, should be a token amount of the market's token</td><td>pass</td><td>agent</td></tr>
+<tr><td>Morpho Blue</td><td><code>shares</code> must not read as a token amount</td><td>pass</td><td>agent</td></tr>
+<tr><td>p2p NativeTokenVault</td><td>vault shares shown as a token amount</td><td>pass</td><td>agent</td></tr>
+<tr><td>Flying Tulip PutManager</td><td>FT amounts raw</td><td>pass</td><td>agent</td></tr>
+<tr><td>Flying Tulip EpochRewardsVault</td><td><code>claim</code> intent names the wrong token</td><td>pass</td><td>tool: NatSpec and a verified constant</td></tr>
+<tr><td>SwissBorg NttManager</td><td>Wormhole chain id shown raw</td><td>pass</td><td>agent</td></tr>
+<tr><td>Kiln batch deposit</td><td>withdrawal credentials shown as a raw blob</td><td><strong>miss</strong></td><td>agent copied pre-audit labels from another Kiln test</td></tr>
+<tr><td>KyberSwap router</td><td>zero receiver shows as the null address</td><td>pass</td><td>agent</td></tr>
+<tr><td>Hyperliquid CctpExtension</td><td>total debited hidden, per-batch amount labeled "Amount"</td><td>pass</td><td>agent</td></tr>
+</table>
+</div>
+<p><strong>10 of 11 audit checks passed</strong>: 3 because of the tool's defaults, 7 because of the agent's reading of the verified source. Every bundle had 0 lint errors, and 8 of 9 passed both registry runners in <code>export</code>. The ninth hit a runner's hard-coded chain table (registry #3027), which the audit PR itself also hit. Runs took 10 to 18 min and cost $1.40 to $2.71 each. The ten tool defects the runs exposed were fixed the same day.</p>
+<p>What it does not show: whether an agent <em>without</em> the tool avoids the same findings. This replay had no baseline arm, and 7 of the 10 passes came from the agent. It is 9 contracts with one run each. Details, blinding and the defect list are in <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/AUDIT-REPLAY.md">AUDIT-REPLAY.md</a>.</p>
+
 <h2>Status</h2>
 <ul class="status">
   <li><strong>Published:</strong> <a href="https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.2">0.6.0-preview.2 on npm</a> and as a <a href="https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.2">GitHub prerelease</a>, byte-for-byte identical (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/RELEASE-HANDOFF.md">release record</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/scripts/verify-release.mjs">verification script</a>).</li>
   <li><strong>First real submission:</strong> <a href="https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003">registry PR #3003</a>, a staking contract on Monad testnet, produced entirely by the tool. All 13 registry checks passed on the first push; maintainer review pending (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/DOGFOOD.md">dogfood record</a>, including what still needed a human).</li>
   <li><strong>Measured against the registry:</strong> the validator accepts 263 of 285 merged descriptors (registry <code>53d86dc</code>, 2026-09-25); the rest use nested-call or encrypted fields, which are out of scope by design (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/scripts/registry-acceptance.ts">acceptance script</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/CLAUDE.md">recorded run</a>).</li>
   <li><strong>Tested:</strong> 73 automated tests (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/test">test/</a>, <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/.github/workflows/ci.yml">CI</a>), the registry's full corpus of 283 descriptors and 605 real transactions (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/test/registry-compatibility.test.ts">registry-compatibility.test.ts</a>), a mined Anvil deposit (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/test/anvil.test.ts">anvil.test.ts</a>), and a mocked Sourcify for offline CI (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/test/abi-mode.test.ts">abi-mode.test.ts</a>).</li>
-  <li><strong>Not yet:</strong> authoring new EIP-712 descriptors, and a cold run by a team that did not build it (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/CLAUDE.md">roadmap</a>). The stand-in so far: a cold agent on 9 contracts from the registry's audit fixes avoided 10 of 11 audit findings (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/AUDIT-REPLAY.md">audit replay</a>).</li>
+  <li><strong>Not yet:</strong> authoring new EIP-712 descriptors, and a cold run by a team that did not build it (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/CLAUDE.md">roadmap</a>). The stand-in so far is the <a href="#checked-against-audit-findings">audit replay</a> above.</li>
 </ul>
 
 <footer>
