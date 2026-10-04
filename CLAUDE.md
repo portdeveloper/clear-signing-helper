@@ -30,6 +30,10 @@ It never signs, sends, publishes, verifies bytecode beyond a Sourcify match, or 
 
 ## Next up (start here after a context reset)
 
+State on 2026-10-04: main is clean and pushed; CI and Pages green at `af2ccc1`. Both registry PRs still have 0 reviews (#3003 last activity 2026-09-24). 2026-09-27: the site was cut to its two jobs (explain the tool, agent entry point) and the README gained "How it compares". Adoption check that day: of the last 100 registry PRs (2026-08-28 to 09-25), only #3003 names this tool in its body; Cyfrin `clearsig` appears in 3 (LI.FI sync bot, attestation re-sign). Not yet the preferred tool: no outside users, no merged PR, no EIP-712 authoring.
+
+0. **Next experiment (proposed, not started): audit replay with a baseline arm.** The replay has no run without the tool, and `docs/COMPARISON.md` found the tool "not more correct" on one easy contract, so nothing yet shows the tool beats an agent alone on correctness. Re-run the 9 blinded audit contracts (clone at `53d86dc`) with arms Opus with/without the tool and Sonnet 5 with/without, 2 runs each (~72 runs, ~$120-180), scored on the 11 audit checks plus registry CI, time and cost; add `erc7730 generate` and `clearsig` drafts as tool-only references. Publish whatever comes out. Before running, let `decisions` create an enum (SwissBorg was a hand edit). Then outreach: 2-3 Monad ecosystem teams submitting with the tool.
+
 State on 2026-09-26: main is clean and pushed. The audit-replay fixes (item 3 below) shipped in 0.6.0-preview.2. The acceptance run and the prior snapshot were re-measured at registry `53d86dc` (263 of 285).
 
 1. **Released 0.6.0-preview.2 on 2026-09-26** (npm `preview` and `latest`, GitHub prerelease, record in `docs/RELEASE-HANDOFF.md`). 0.6.0-preview.1 shipped maintainer and agent files and is deprecated on npm. Open: revoke the npm tokens used for 0.5.0 and 0.6.0, on npmjs.com.
