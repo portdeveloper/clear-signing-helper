@@ -11,7 +11,7 @@ export const SCHEMA_URL = 'https://eips.ethereum.org/assets/eip-7730/erc7730-v2.
 // The engine is what decides rendering and validation: renderer, schema and the validator subset. The tool
 // version is not part of it, so a release that changes none of these keeps configs, reviews and expectations
 // valid. Bump subset when validator semantics change.
-export const ENGINE = {renderer: '@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1', schema: hash(schema), subset: 3};
+export const ENGINE = {renderer: '@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1', schema: hash(schema), subset: 4};
 export type Field = {path?: string; value?: unknown; label?: string; format?: string; params?: Record<string, any>; separator?: string; visible?: unknown; $id?: string; $ref?: string};
 export type Group = {path: string; label?: string; fields: (Field | Group)[]; iteration?: 'sequential'; $id?: string};
 export type Descriptor = {
@@ -252,7 +252,6 @@ export const WARNING_REMEDY: Record<string, string> = {
   TOKEN_MAPPING: 'Set token or tokenPath so the amount renders with its symbol and decimals.',
   FORMAT_TYPE: 'Use a format that matches the argument type, or raw.',
   INVALID_INTERPOLATION: 'Reference only displayed fields in interpolatedIntent.',
-  MISSING_INTENT: 'Add an intent.',
   INTENT_LENGTH: `Shorten it to ${MAX_INTENT} characters or fewer; the registry linter warns above that and Ledger devices truncate.`,
   LABEL_LENGTH: `Shorten the label to ${MAX_LABEL} characters or fewer; the registry linter warns above that and Ledger devices truncate.`,
   METADATA_LENGTH: 'Shorten it; the registry linter warns above the Ledger limit and devices truncate.',
@@ -267,8 +266,17 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
   const errors: Diagnostic[] = [];
   const add = (code: string, message: string, sig?: string, severity?: 'warning') => errors.push({code, message, file: selection.descriptor, signature: sig, remedy: severity ? WARNING_REMEDY[code] ?? 'Review it; warnings do not block export.' : 'Edit the descriptor or record an explicit exclusion in clear-signing.toml, then run check.', ...(severity ? {severity} : {})});
   try { assertTreeBudget(d); } catch (e) { if (e instanceof Failure) { add(e.code, e.message); return errors; } throw e; }
+  // Schema 2.1.0 requires a non-blank intent on every format; the registry validates against it. Named here rather
+  // than as an anonymous schema error, and the schema's own complaint about the same intent is dropped.
+  const noIntent = new Set<string>();
+  for (const [key, spec] of Object.entries<any>(d?.display?.formats ?? {})) {
+    const intent = spec?.intent;
+    const blank = intent === undefined || (typeof intent === 'string' && !/\S/.test(intent)) || (intent && typeof intent === 'object' && !Array.isArray(intent) && !Object.keys(intent).length);
+    if (blank) { noIntent.add(`/display/formats/${key.replace(/~/g, '~0').replace(/\//g, '~1')}`); add('MISSING_INTENT', `${key} has no intent; registry schema 2.1.0 requires one on every format.`, key); }
+  }
   if (!schemaValidate(d)) {
-    for (const error of (schemaValidate.errors ?? []).slice(0, 12)) add('SCHEMA_INVALID', `${error.instancePath || '/'} ${error.message}`);
+    const aboutIntent = (e: {instancePath: string; params?: any}) => [...noIntent].some(p => e.instancePath === p && e.params?.missingProperty === 'intent' || e.instancePath.startsWith(`${p}/intent`));
+    for (const error of (schemaValidate.errors ?? []).filter(e => !aboutIntent(e)).slice(0, 12)) add('SCHEMA_INVALID', `${error.instancePath || '/'} ${error.message}`);
     return errors;
   }
   try {
@@ -315,8 +323,6 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         if (covered.has(sig)) fail('DUPLICATE_FORMAT', `More than one format describes ${sig}.`);
         covered.add(sig);
         assertKeys(spec, ['intent', 'interpolatedIntent', 'fields', '$id'], `formats.${key}`);
-        // The registry has merged formats without an intent; the renderer falls back to the function name.
-        if (typeof spec.intent !== 'string' || !spec.intent.trim()) add('MISSING_INTENT', `${sig} has no intent; a signer would see the function name.`, key, 'warning');
         if (typeof spec.intent === 'string' && spec.intent.length > MAX_INTENT) add('INTENT_LENGTH', `${sig} intent "${spec.intent}" is ${spec.intent.length} characters; the registry linter warns above ${MAX_INTENT} because Ledger devices truncate it.`, key, 'warning');
         if (spec.fields === undefined) spec.fields = [];
         if (!Array.isArray(spec.fields)) fail('INVALID_FIELDS', `${sig} fields must be an array.`);

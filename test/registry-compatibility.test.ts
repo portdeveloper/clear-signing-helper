@@ -107,3 +107,23 @@ await test('representative registry ABIs compile through real Forge and the auth
     assert.deepEqual(renderedValues(r.fields),[...f.inputs.flatMap((p,j)=>rawValues(p,sample(p,j))),'7 wei'],ref.entry.file);
   }
 });
+
+await test('schema 2.1.0: a format without a non-blank intent is a named error, and amount accepts threshold and message',()=>{
+  const entry=corpus.descriptors[0],c=registryContract(entry),sel={id:c.id,descriptor:entry.file,exclusions:{}};
+  const key=Object.keys(scaffold(c,entry.owner).display.formats)[0];
+  for(const intent of [undefined,'','  ',{}]) {
+    const d=scaffold(c,entry.owner);
+    if(intent===undefined) delete (d.display.formats[key] as any).intent; else (d.display.formats[key] as any).intent=intent;
+    const errs=errorsOf(validateDescriptor(d,c,sel));
+    assert.deepEqual(errs.map(e=>e.code),['MISSING_INTENT'],`intent ${JSON.stringify(intent)}: the schema's own complaint about it is not repeated`);
+  }
+  // Registry #3036 synced 2.1.0, which types amount's params; the renderer already shows message at or above threshold.
+  const payable=registryContract(entry,true),d=scaffold(payable,entry.owner);
+  const amount=Object.values(d.display.formats).flatMap(f=>f.fields).find((f:any)=>f.format==='amount') as any;
+  assert.ok(amount,'a payable function scaffolds @.value as amount');
+  amount.params={threshold:'0xff',message:'All'};
+  assert.deepEqual(errorsOf(validateDescriptor(d,payable,{...sel,id:payable.id})),[]);
+  amount.params={threshold:255,message:'All'};
+  const codes=errorsOf(validateDescriptor(d,payable,{...sel,id:payable.id})).map(e=>e.code);
+  assert.ok(codes.length&&codes.every(c=>c==='SCHEMA_INVALID'),'2.1.0 types threshold as a string');
+});

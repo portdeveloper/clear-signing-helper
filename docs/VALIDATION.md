@@ -6,7 +6,7 @@ Updated: 2026-09-08. This records executed checks, rather than planned acceptanc
 
 - Linux ARM64; Node 22.22.3; npm 10.9.8. The same 31-test suite also passes using verified official Node 24.20.0 ARM64 binaries in a temporary directory.
 - Forge, Anvil, and Cast 1.7.1; Solidity 0.8.28 for automated examples and 0.8.19 for the separate Morpho exercise.
-- ERC-7730 schema 2.0.0 (vendored copy); Sourcify renderer 0.2.2 with the pinned signed-integer fix.
+- ERC-7730 schema 2.1.0 (vendored copy); Sourcify renderer 0.2.2 with the pinned signed-integer fix.
 
 ## Executed checks
 
