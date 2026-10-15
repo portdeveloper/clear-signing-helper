@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { DEFAULT_PINS } from '../src/runners.js';
 
 // The registry runners are external toolchains. These tests stand in stub executables at the
 // paths setupRunners expects, so result parsing and failure handling run offline.
@@ -12,7 +13,7 @@ const cli=path.join(repo,'dist/cli.js');
 const vault='src/AssetVault.sol:AssetVault', address='0x0000000000000000000000000000000000000001', receiver='0x0000000000000000000000000000000000000002', asset='0x0000000000000000000000000000000000000003';
 function stubRunners(mode:'pass'|'fail') {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'csh-runner-stubs-'));
-  const s=path.join(dir,'sourcify-dae3cdab/dist'), r=path.join(dir,'rust-10605ba7/target/release');
+  const s=path.join(dir,`sourcify-${DEFAULT_PINS.sourcify.ref.slice(0,8)}/dist`), r=path.join(dir,`rust-${DEFAULT_PINS.rust.ref.slice(0,8)}/target/release`);
   fs.mkdirSync(s,{recursive:true});fs.mkdirSync(r,{recursive:true});
   // Both stubs echo the fixture's cases back with the requested status.
   fs.writeFileSync(path.join(s,'cli.js'),`const fs=require('fs');const [file,,out]=process.argv.slice(2);const t=JSON.parse(fs.readFileSync(file,'utf8'));

@@ -4,24 +4,35 @@ import { spawnSync } from 'node:child_process';
 
 // The registry's own linter, run exactly as its CI runs it. The registry installs erc7730 from
 // .github/requirements.txt (a Sourcify fork pinned by commit) for both lint and format, and lints with
-// the flags in .github/workflows/pull_request.yml. Run through uvx so nothing is installed into the
+// the flags of the pull-request workflow that runs `erc7730 lint`. Run through uvx so nothing is installed into the
 // project. Absent uvx, the exact command is reported for the user to run.
 export interface LintPin {requirement: string; flags: string[]; source: string}
-// Registry CI since ethereum/clear-signing-erc7730-registry#3038 (merged 2026-09-24): Sourcify verification required.
+// Registry CI since ethereum/clear-signing-erc7730-registry#3083 (merged 2026-10-01): EIP-55 checksum check; Sourcify verification required since #3038.
 export const DEFAULT_LINT_PIN: LintPin = {
-  requirement: 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e823abc2f69b87db902464b8d204912831e8969e',
+  requirement: 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@13eed8e3ee20798cc237de825be9e37d489b41a2',
   flags: ['--require-verified'],
-  source: 'built-in (registry master since ethereum/clear-signing-erc7730-registry#3038, merged 2026-09-24)'
+  source: 'built-in (registry master since ethereum/clear-signing-erc7730-registry#3083, merged 2026-10-01)'
 };
-const PR_WORKFLOWS = ['registry-checks.yml', 'pull_request.yml'];
+// The pull-request lint lived in pull_request.yml, then registry-checks.yml (#3046, 2026-09-24), then descriptor-lint.yml
+// (by 2026-10-15). Known names are tried first, then any workflow; a file is used only if it actually runs `erc7730 lint`,
+// so a rename never again yields an empty flag list.
+const PR_WORKFLOWS = ['descriptor-lint.yml', 'registry-checks.yml', 'pull_request.yml'];
+const LINT_LINE = /\berc7730 lint\b([^\r\n]*)/;
+export function lintWorkflow(clone: string): string | undefined {
+  const dir = path.join(clone, '.github', 'workflows');
+  if (!fs.existsSync(dir)) return undefined;
+  const others = fs.readdirSync(dir).filter(f => /\.ya?ml$/.test(f) && !PR_WORKFLOWS.includes(f)).sort();
+  const lints = [...PR_WORKFLOWS, ...others].map(f => path.join(dir, f)).filter(f => fs.existsSync(f) && LINT_LINE.test(fs.readFileSync(f, 'utf8')));
+  // A workflow that runs on pull requests is the one a submission meets; master.yml lints after the merge.
+  return lints.find(f => /\bpull_request(_target)?\b/.test(fs.readFileSync(f, 'utf8'))) ?? lints[0];
+}
 // A registry clone's own CI definition; a clone without it falls back to the built-in pin, and says so.
 export function lintPinFromRegistry(clone: string): LintPin {
-  // The pull-request workflow was pull_request.yml until registry #3046 (2026-09-24) renamed it registry-checks.yml.
   const requirements = path.join(clone, '.github', 'requirements.txt');
-  const workflow = PR_WORKFLOWS.map(name => path.join(clone, '.github', 'workflows', name)).find(f => fs.existsSync(f));
-  if (!fs.existsSync(requirements) || !workflow) return {...DEFAULT_LINT_PIN, source: `${DEFAULT_LINT_PIN.source}; ${clone} has no .github/requirements.txt or ${PR_WORKFLOWS.join(' / ')}`};
+  const workflow = lintWorkflow(clone);
+  if (!fs.existsSync(requirements) || !workflow) return {...DEFAULT_LINT_PIN, source: `${DEFAULT_LINT_PIN.source}; ${clone} has no .github/requirements.txt or no workflow that runs erc7730 lint`};
   const requirement = /^\s*(erc7730\b[^#\r\n]*)/m.exec(fs.readFileSync(requirements, 'utf8'))?.[1].trim();
-  const lintLine = /\berc7730 lint\b([^\r\n]*)/.exec(fs.readFileSync(workflow, 'utf8'))?.[1] ?? '';
+  const lintLine = LINT_LINE.exec(fs.readFileSync(workflow, 'utf8'))?.[1] ?? '';
   if (!requirement) return {...DEFAULT_LINT_PIN, source: `${DEFAULT_LINT_PIN.source}; no erc7730 requirement in ${requirements}`};
   // Flags that change the verdict; --gha only changes the output format.
   const flags = lintLine.split(/\s+/).filter(t => /^--[a-z][a-z0-9-]*$/.test(t) && t !== '--gha');

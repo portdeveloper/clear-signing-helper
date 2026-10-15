@@ -27,7 +27,8 @@
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
     "registry:snapshot": "tsx scripts/snapshot-registry.ts",
     "priors:snapshot": "tsx scripts/snapshot-priors.ts",
-    "registry:acceptance": "tsx scripts/registry-acceptance.ts"
+    "registry:acceptance": "tsx scripts/registry-acceptance.ts",
+    "registry:drift": "tsx scripts/check-registry-drift.ts"
   },
   "dependencies": {
     "@ethereum-sourcify/clear-signing": "file:vendor/clear-signing",

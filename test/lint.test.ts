@@ -16,18 +16,18 @@ function clone(requirement: string, lintLine: string, workflow = 'pull_request.y
 }
 test('the lint pin follows a registry clone\'s CI definition, and the built-in pin requires Sourcify verification', t => {
   const before = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e7bdf8481440c8aad2200d132459b2157d24396b', 'erc7730 lint $AFFECTED_FILES --gha');
-  const after = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e823abc2f69b87db902464b8d204912831e8969e', 'erc7730 lint --require-verified $AFFECTED_FILES --gha');
+  const after = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@13eed8e3ee20798cc237de825be9e37d489b41a2', 'erc7730 lint --require-verified $AFFECTED_FILES --gha');
   const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'csh-lint-pin-'));
   t.after(() => { for (const d of [before, after, empty]) fs.rmSync(d, {recursive: true, force: true}); });
   const a = lintPinFromRegistry(before), b = lintPinFromRegistry(after), c = lintPinFromRegistry(empty);
   assert.equal(a.requirement, 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e7bdf8481440c8aad2200d132459b2157d24396b');
   assert.deepEqual(a.flags, [], '--gha changes output only');
   assert.deepEqual(b.flags, ['--require-verified']);
-  assert.deepEqual([b.requirement, b.flags], [DEFAULT_LINT_PIN.requirement, DEFAULT_LINT_PIN.flags], 'the built-in pin is the post-#3038 CI');
+  assert.deepEqual([b.requirement, b.flags], [DEFAULT_LINT_PIN.requirement, DEFAULT_LINT_PIN.flags], 'the built-in pin is the current CI (#3083)');
   assert.deepEqual([c.requirement, c.flags], [DEFAULT_LINT_PIN.requirement, DEFAULT_LINT_PIN.flags]);
-  assert.match(c.source, /has no \.github\/requirements\.txt/);
+  assert.match(c.source, /has no \.github\/requirements\.txt or no workflow that runs erc7730 lint/);
   // The printed command is copy-pasteable: the requirement carries spaces.
-  assert.equal(lintCommand(['registry/x/calldata-X.json'], b), `uvx --from 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e823abc2f69b87db902464b8d204912831e8969e' erc7730 lint --require-verified registry/x/calldata-X.json`);
+  assert.equal(lintCommand(['registry/x/calldata-X.json'], b), `uvx --from 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@13eed8e3ee20798cc237de825be9e37d489b41a2' erc7730 lint --require-verified registry/x/calldata-X.json`);
 });
 test('the pull-request workflow is found under its current name, registry-checks.yml, as well as the former pull_request.yml', t => {
   const renamed = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@1111111111111111111111111111111111111111', 'erc7730 lint --require-verified $AFFECTED_FILES --gha', 'registry-checks.yml');
@@ -36,4 +36,24 @@ test('the pull-request workflow is found under its current name, registry-checks
   assert.equal(pin.requirement, 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@1111111111111111111111111111111111111111');
   assert.deepEqual(pin.flags, ['--require-verified']);
   assert.match(pin.source, /registry-checks\.yml/);
+});
+test('the lint flags come from the workflow that runs erc7730 lint, not from a known name that no longer does', t => {
+  // Registry at 4fba34d (2026-10-15): registry-checks.yml still exists but the lint moved to descriptor-lint.yml.
+  // Reading registry-checks.yml gave no flags, so --registry <clone> silently linted without --require-verified.
+  const root = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@2222222222222222222222222222222222222222', 'erc7730 lint --require-verified $AFFECTED_FILES --gha', 'descriptor-lint.yml');
+  t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  fs.writeFileSync(path.join(root, '.github/workflows/registry-checks.yml'), 'on:\n  pull_request:\njobs:\n  names:\n    steps:\n      - run: echo checking file names\n');
+  fs.writeFileSync(path.join(root, '.github/workflows/master.yml'), 'on:\n  push:\njobs:\n  lint:\n    steps:\n      - run: erc7730 lint --require-verified --some-master-flag $FILES --gha\n');
+  const pin = lintPinFromRegistry(root);
+  assert.deepEqual(pin.flags, ['--require-verified']);
+  assert.match(pin.source, /descriptor-lint\.yml/);
+  // With the known names gone, any workflow that lints is used, a pull-request one first.
+  fs.renameSync(path.join(root, '.github/workflows/descriptor-lint.yml'), path.join(root, '.github/workflows/zz-lint.yml'));
+  fs.appendFileSync(path.join(root, '.github/workflows/zz-lint.yml'), 'on:\n  pull_request_target:\n');
+  assert.match(lintPinFromRegistry(root).source, /zz-lint\.yml/);
+  // No workflow lints at all: the built-in flags, said so, never an empty list.
+  for (const f of ['zz-lint.yml', 'master.yml']) fs.rmSync(path.join(root, '.github/workflows', f));
+  const fallback = lintPinFromRegistry(root);
+  assert.deepEqual(fallback.flags, DEFAULT_LINT_PIN.flags);
+  assert.match(fallback.source, /no workflow that runs erc7730 lint/);
 });
