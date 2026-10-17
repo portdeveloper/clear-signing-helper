@@ -81,6 +81,12 @@ test('standard interfaces and single coincidences suggest nothing',()=>{
   // ERC-20 and ERC-4626 functions are described by many entities; they name an interface, not a protocol.
   assert.deepEqual(registryMatches(selectorsOf('approve(address,uint256)','transfer(address,uint256)','transferFrom(address,address,uint256)','deposit()','withdraw(uint256)')),[]);
   assert.deepEqual(registryMatches(selectorsOf('deposit(uint256,address)','withdraw(uint256,address,address)','mint(uint256,address)','redeem(uint256,address,address)','approve(address,uint256)')),[]);
-  // One shared distinctive function is a coincidence (StakingRewards shares withdraw(uint256) with one file).
-  assert.deepEqual(registryMatches(selectorsOf('stake(uint256)','withdraw(uint256)','getReward()','exit()','notifyRewardAmount(uint256)')),[]);
+  // One shared distinctive function is a coincidence: withdraw(uint256) alongside functions no file describes.
+  assert.deepEqual(registryMatches(selectorsOf('withdraw(uint256)','settleEpochRewards(uint256)','rotateKeeper(address)','pauseMarket(bytes32)')),[]);
+});
+test('a contract whose descriptor was merged finds it',()=>{
+  // Registry #3003 (merged 2026-10-16) added puddleswap/calldata-StakingRewards.json; before it, this set matched nothing.
+  const [m]=registryMatches(selectorsOf('stake(uint256)','withdraw(uint256)','getReward()','exit()','notifyRewardAmount(uint256)'));
+  assert.equal(m?.file,'registry/puddleswap/calldata-StakingRewards.json');
+  assert.ok(m.contained);
 });

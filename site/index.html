@@ -34,7 +34,7 @@
 <header>
   <h1>Clear Signing Helper</h1>
   <p class="lead">Turns a deployed contract into an <a href="https://eips.ethereum.org/EIPS/eip-7730">ERC-7730</a> descriptor and test file for the <a href="https://github.com/ethereum/clear-signing-erc7730-registry">clear-signing registry</a>, so wallets show your transactions as readable text instead of hex. It computes everything with one right answer, asks you only what the contract cannot answer, and runs the registry's own checks before you open the pull request.</p>
-  <p><span class="pill">0.6.0-preview.2</span><span class="pill">MIT</span> <a href="https://github.com/portdeveloper/clear-signing-helper">GitHub and README</a> · <a href="https://www.npmjs.com/package/clear-signing-helper">npm</a></p>
+  <p><span class="pill">0.6.0-preview.3</span><span class="pill">MIT</span> <a href="https://github.com/portdeveloper/clear-signing-helper">GitHub and README</a> · <a href="https://www.npmjs.com/package/clear-signing-helper">npm</a></p>
 </header>
 
 <h2>Use it</h2>
@@ -69,7 +69,7 @@
 <h2>Why use it</h2>
 <p>Other tools (<code>erc7730</code>, Ledger's JSON Builder, Cyfrin's <code>clearsig</code>) draft a descriptor. None writes the test file with its expected wallet text, or runs the registry's CI checks before you submit.</p>
 <p>A capable agent can get there alone, but with the tool it was faster and cheaper: 7.6 to 8.2 min and about $2.60 per run, against 11.6 to 22.5 min and up to $4.36 without (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/COMPARISON.md">comparison</a>). On 9 contracts the registry later fixed after an audit, an agent using it avoided 10 of 11 of the auditors' findings (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/AUDIT-REPLAY.md">audit replay</a>). Both are small samples.</p>
-<p>First submission: <a href="https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003">registry PR #3003</a>, produced by the tool, green on every registry check, awaiting maintainer review.</p>
+<p>First submission: <a href="https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003">registry PR #3003</a>, produced by the tool, merged on 2026-10-16 with no change requested.</p>
 
 <footer>
   <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/LICENSE">MIT licensed</a>. Built by <a href="https://github.com/portdeveloper">portdeveloper</a>. Inclusion in the registry is not an audit, and neither is this tool.

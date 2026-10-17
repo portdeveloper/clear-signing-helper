@@ -1,3 +1,37 @@
+# Clear Signing Helper 0.6.0-preview.3 — developer preview
+
+Follows the registry's CI again. Three things had moved under the tool since 0.6.0-preview.2: the descriptor schema, the linter, and the workflow the linter runs in.
+
+## What changed
+
+- **Schema 2.1.0.** The bundled `erc7730-v2.schema.json` is now 2.1.0, the version the registry validates against (identical upstream). Every format needs a non-blank `intent`: a missing one is now a `MISSING_INTENT` error instead of a warning, because registry CI rejects it. `amount` accepts typed `threshold` and `message` params.
+- **Linter pin `13eed8e`** (registry #3083, adds an EIP-55 checksum check), and the Rust runner pin `dc158b1` (registry #3054).
+- **`--registry <clone>` linted without `--require-verified`.** The registry moved its pull-request lint into `descriptor-lint.yml`; the tool kept reading `registry-checks.yml`, found no lint line and dropped the flag. It now reads whichever workflow actually runs `erc7730 lint`, and falls back to the built-in flags, saying so, if none does.
+- Registry priors refreshed at `fbe748d` (288 descriptors, 551 selectors). The validator accepts 266 of the registry's 288 merged calldata descriptors; the 22 it rejects are the same as before (the `calldata` format and one encrypted field).
+
+## Upgrade from 0.6.0-preview.2
+
+The engine fingerprint changed (schema, and validator subset 3 to 4), so in each project run:
+
+```sh
+clear-signing upgrade
+clear-signing check          # a format without an intent now fails here
+clear-signing review --accept
+clear-signing test --update
+```
+
+## Install
+
+```sh
+sha256sum --check clear-signing-helper-0.6.0-preview.3.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.6.0-preview.3.tgz
+clear-signing --version
+```
+
+Expected version: `0.6.0-preview.3`. Network access, scope and validation are otherwise as described for 0.6.0-preview.1 below.
+
+---
+
 # Clear Signing Helper 0.6.0-preview.2 — developer preview
 
 The same code as 0.6.0-preview.1, repackaged. That package also carried the maintainer's working notes (the PRD, release handoffs, validation and dogfood write-ups, comparisons) and the agent skill. None of those are meant for users of the package.
