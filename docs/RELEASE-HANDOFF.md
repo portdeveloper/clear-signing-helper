@@ -5,6 +5,18 @@
 - Refresh the advisory registry prior: `npm run priors:snapshot -- <fresh registry clone>` and commit `src/data/registry-priors.json`; its `commit` and `generatedAt` fields are shown to users.
 - Run `npm run registry:acceptance -- <fresh registry clone>` and record the accepted count in CLAUDE.md. Any new rejection class other than the `calldata` format is a regression against what the registry accepts.
 
+## 0.6.0-preview.3 (2026-10-17)
+
+Follows registry CI again: schema 2.1.0 (every format needs an intent; engine `subset` 3 to 4, so users run `upgrade`), lint pin `13eed8e`, Rust runner `dc158b1`, and the fix for `--registry <clone>` linting without `--require-verified` after the registry moved its lint into `descriptor-lint.yml`.
+
+- [x] Prior refreshed and acceptance run at registry `fbe748d`: 288 descriptors, 551 selectors; 266 of 288 accepted, same 22 rejections. `npm run registry:drift` passed all 7 checks at the same commit.
+- [x] Tag `v0.6.0-preview.3` on `main` at `14edfd6`; CI run [39007073618](https://github.com/portdeveloper/clear-signing-helper/actions/runs/39007073618) passed on Node 22.22.3 and 24.20.0, ubuntu-24.04 and macos-15. All four CI candidate packages have the same SHA-256 as the local candidate.
+- [x] `npm run release:verify` produced `clear-signing-helper-0.6.0-preview.3.tgz`, SHA-256 `0690998bb02d7f4f44520c34a942f2739ed6499cb7feb6a6e73bc25cfdc531b3`, and `release-verification.json`.
+- [x] [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.3) with the tarball, checksum and verification record; the downloaded asset matched the checksum.
+- [x] Published that tarball to npm as [`clear-signing-helper@0.6.0-preview.3`](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.3) with `--tag preview --ignore-scripts --access public`, then moved `latest` to it. Registry integrity `sha512-6BgiNIlNnGFsfUU8z1JX8SEv3M0K5DvUhIVhiGgZzNwjGqRedXILeyRy3NvtJsfDYYS1akAxtZx3sK3E3dS7+A==` equals the GitHub asset, and the registry tarball has the same SHA-256. npm now processes a publish before serving it: the metadata appeared about 8 minutes after `npm publish` reported success, and the tarball about 4 minutes later (404 until then). Wait for both before verifying. A credential-free `npx --package=clear-signing-helper@preview clear-signing --version` reported `0.6.0-preview.3`; from a fresh clone of the tag, with the published package, the example previewed ("Deposit", "1 USDC", "Alice") and its signing test passed.
+- [x] README, DISTRIBUTION, consumer CI example and site point at 0.6.0-preview.3. The token was held in a mode-600 file in the session scratchpad, used with `--userconfig`, and deleted right after use. No copy is in the repository.
+- [ ] Revoke the npm token used for this release on npmjs.com (it was pasted into the session transcript), together with the older ones still open below.
+
 ## 0.6.0-preview.2 (2026-09-26)
 
 The code of 0.6.0-preview.1, repackaged: that package shipped the PRD, 23 other internal docs and the agent skill, none meant for users (owner, 2026-09-26: "we should not publish files that are meant for me or an llm"). The package now holds `dist/`, `schemas/`, `vendor/clear-signing/`, `scripts/verify-renderer.mjs`, `README.md`, `LICENSE` and `docs/THIRD-PARTY-NOTICES.md` (46 files to 20), and `verify-release.mjs` fails on any other file; run against the 0.6.0-preview.1 package it rejects 26.
