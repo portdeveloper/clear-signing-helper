@@ -5,6 +5,17 @@
 - Refresh the advisory registry prior: `npm run priors:snapshot -- <fresh registry clone>` and commit `src/data/registry-priors.json`; its `commit` and `generatedAt` fields are shown to users.
 - Run `npm run registry:acceptance -- <fresh registry clone>` and record the accepted count in CLAUDE.md. Any new rejection class other than the `calldata` format is a regression against what the registry accepts.
 
+## 0.6.0-preview.4 (2026-10-21)
+
+Follows registry CI of 2026-10-21 (master `2c2ddeb`): linter `964176e` (#3128, `context.contract.abi` is a lint error, so `--inline-abi` is removed), Sourcify runner `9d6d2fe` (#3127), Rust runner `65af228` (#3131). The validator accepts `iteration: "bundled"` and groups without a `path`. Engine fingerprint unchanged, so users run no `upgrade`.
+
+- [x] Prior refreshed and acceptance run at registry `2c2ddeb`: 391 descriptors, 803 selectors; 366 of 391 accepted, the 25 rejections are the `calldata` format and one encrypted field. `npm run registry:drift` passed all 7 checks at the same commit. Renderer 0.2.2 and 0.3.0 gave identical output on all 2,022 registry test cases, so the vendored renderer stays.
+- [x] Live: `registry add-deployment` of Safe 1.4.1 on chain 143 passed lint (0 errors) and both new runners (2/2), with "Payment: 0 MON".
+- [x] `npm run release:verify` (Node 24.22.1, linux-arm64, Foundry 1.7.1) produced `clear-signing-helper-0.6.0-preview.4.tgz`, SHA-256 `b5f887d9ce4fdd98253b4b0b98b3d5ee57a35ac5d2e2bc223d1c64c85bb4f56c`. No prior candidate was given, so upgrade and rollback were not exercised (the engine is unchanged).
+- [x] Published that tarball to npm as [`clear-signing-helper@0.6.0-preview.4`](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.4) with `--tag preview --ignore-scripts --access public`, then moved `latest` to it. The registry tarball has the same SHA-256 as the local one, and its integrity is `sha512-rRxhbR22raGncefaiyAsSZgSxn8FRHFTLjOd+XYE6HVJImDrVi4xVUArflYLBHbVLW3uoWB8MOx/f9ODt/zwTw==`. Both `preview` and `latest` point to it, and a credential-free `npx --package=clear-signing-helper@preview clear-signing --version` reported `0.6.0-preview.4`. The token was held in a mode-600 file in the session scratchpad, used with `--userconfig`, and deleted right after use.
+- [ ] **Out of order:** published before the push and CI, because the session machine had no GitHub credentials. Push `main` (commits `d5fcc0e`, `e64fc2c` and this record), tag `v0.6.0-preview.4`, and confirm the CI candidates' SHA-256 equals the one above. Then create the GitHub prerelease with the tarball, the `.sha256` and `release-verification.json`.
+- [ ] Revoke the npm token used for this release on npmjs.com (it was pasted into the session transcript), together with the older ones still open below.
+
 ## 0.6.0-preview.3 (2026-10-17)
 
 Follows registry CI again: schema 2.1.0 (every format needs an intent; engine `subset` 3 to 4, so users run `upgrade`), lint pin `13eed8e`, Rust runner `dc158b1`, and the fix for `--registry <clone>` linting without `--require-verified` after the registry moved its lint into `descriptor-lint.yml`.
