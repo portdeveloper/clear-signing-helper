@@ -9,8 +9,8 @@ import { fail, readJson } from './io.js';
 // to read them from there instead. Building them is a one-time, opt-in, network-dependent step.
 export interface RunnerPins {sourcify: {repo: string; ref: string}; rust: {repo: string; ref: string}}
 export const DEFAULT_PINS: RunnerPins = {
-  sourcify: {repo: 'https://github.com/sourcifyeth/clear-signing-test-runner.git', ref: 'dae3cdabd0eab26173d7f7a31a2ca7e75bf07daf'}, // registry CI @ 2026-08-06
-  rust: {repo: 'https://github.com/llbartekll/clear-signing.git', ref: 'dc158b13b13a325f378577453ae3d3d6aef3ab2d'}               // registry CI @ 2026-09-28 (#3054)
+  sourcify: {repo: 'https://github.com/sourcifyeth/clear-signing-test-runner.git', ref: '9d6d2fe4715d53e002bb966f6593e1fbc44b53c7'}, // registry CI @ 2026-10-21 (#3127; renderer 0.3.0)
+  rust: {repo: 'https://github.com/llbartekll/clear-signing.git', ref: '65af2281aa1366e1d770f9ac445007e56dbe29ca'}               // registry CI @ 2026-10-21 (#3131; EIP-155 native currencies)
 };
 export interface CaseResult {description: string; status: 'pass' | 'fail' | 'error' | 'skipped'; message?: string; rendered?: unknown}
 export interface RunnerResult {name: 'sourcify' | 'rust'; ran: boolean; passed: boolean; acceptedFailure?: string; implementation?: string; ref: string; cases: Record<string, number>; failures: CaseResult[]; resultsFile?: string; reason?: string; command?: string}

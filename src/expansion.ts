@@ -8,7 +8,7 @@ import { stripRoot, scopeParams } from './descriptors.js';
 // and index visible. The portable descriptor on disk remains unchanged.
 export function expandNestedFields(input: (Field | Group)[], fn: FunctionFragment, args: readonly unknown[]): (Field | Group)[] {
   // Normalize "#." roots first so lookups against decoded arguments line up; the renderer strips them too.
-  const strip = (items: (Field | Group)[]): (Field | Group)[] => items.map(item => 'fields' in item ? {...item, path: stripRoot(item.path), fields: strip(item.fields)} : {...item, ...(typeof item.path === 'string' ? {path: stripRoot(item.path)} : {})});
+  const strip = (items: (Field | Group)[]): (Field | Group)[] => items.map(item => 'fields' in item ? {...item, ...(typeof item.path === 'string' ? {path: stripRoot(item.path)} : {}), fields: strip(item.fields)} : {...item, ...(typeof item.path === 'string' ? {path: stripRoot(item.path)} : {})});
   const fields = strip(input);
   const needsExpansion = (items: (Field | Group)[], grouped = false): boolean => items.some(item =>
     'fields' in item ? grouped || needsExpansion(item.fields, true) : (typeof item.path === 'string' ? (item.path.match(/\[\]/g)?.length ?? 0) : 0) > (grouped ? 0 : 1));

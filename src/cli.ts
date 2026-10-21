@@ -93,14 +93,15 @@ program.command('export').description('Validate and write a submission bundle; d
   .option('--contract <path:name>','Export only this selected contract and its fixtures (repeatable)',select,[])
   .option('--strict-portability','Fail on known consumer compatibility issues before writing a bundle')
   .option('--entity <slug>','Registry folder name under registry/ (defaults to a slug of metadata.owner)')
-  .option('--inline-abi','Embed the compiled ABI in context.contract.abi (deprecated by the schema; off by default)')
+  .addOption(new Option('--inline-abi','Removed: registry lint rejects context.contract.abi since registry #3128').hideHelp())
   .option('--no-lint','Skip running the pinned upstream erc7730 lint')
   .option('--registry-runners','Also run the registry CI\'s Sourcify and Rust implementations on the exported tests (builds them once; needs git, npm, cargo)')
   .option('--skip-registry-runners <reason>','Export without the registry runners although a displayed field uses a shape where this tool and the registry CI render differently; the reason is recorded')
   .option('--accept-runner-failure <runner=reason>','With --registry-runners: export although this runner (sourcify or rust) fails, e.g. when the two disagree with each other; the other must pass and the reason is recorded',select,[])
   .option('--registry <directory>','Read the erc7730 package, lint flags and runner revisions from this registry clone\'s CI definition instead of the built-in pins (nothing is written to the clone)')
   .addOption(new Option('--ci-pins <directory>','Former name of --registry').hideHelp())
-  .action(async options=>output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,inlineAbi:options.inlineAbi===true,lint:options.lint!==false,registryRunners:options.registryRunners===true,skipRegistryRunners:options.skipRegistryRunners,acceptRunnerFailure:options.acceptRunnerFailure,ciPins:registryClone(options),log:progress})));
+  .action(async options=>{if(options.inlineAbi) throw new Failure('USAGE_ERROR','--inline-abi was removed: registry lint fails a v2 descriptor that sets context.contract.abi (ethereum/clear-signing-erc7730-registry#3128). Lint reads the ABI from the Sourcify-verified deployment instead.',2);
+    output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,lint:options.lint!==false,registryRunners:options.registryRunners===true,skipRegistryRunners:options.skipRegistryRunners,acceptRunnerFailure:options.acceptRunnerFailure,ciPins:registryClone(options),log:progress}));});
 const registry=program.command('registry').description('Edit an existing registry clone; never commits or opens pull requests');
 registry.command('add-deployment').description('Add a verified deployment (and a rendered test case) to a descriptor already in the registry')
   .requiredOption('--registry <directory>','Path to a clone of ethereum/clear-signing-erc7730-registry')

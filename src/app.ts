@@ -315,7 +315,7 @@ export async function runTests(state: State, update=false, ids?: string[]) {
   for(const u of updates) writeJson(u.file,u.rendering);
   return {passed:renders.length, updated:updates.length, renders};
 }
-export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; inlineAbi?: boolean; lint?: boolean; registryRunners?: boolean; skipRegistryRunners?: string; acceptRunnerFailure?: string[]; ciPins?: string; log?: (line: string) => void}
+export interface ExportOptions {strictPortability?: boolean; ids?: string[]; entity?: string; lint?: boolean; registryRunners?: boolean; skipRegistryRunners?: string; acceptRunnerFailure?: string[]; ciPins?: string; log?: (line: string) => void}
 // Registry entity folders are kebab-case slugs of the owner name, e.g. "Morpho DAO" -> "morpho-dao".
 export const entitySlug = (owner: string) => owner.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const REGISTRY_SCHEMA = '../../specs/erc7730-v2.schema.json';
@@ -368,7 +368,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
       names.add(name);
       const descriptor=structuredClone(source);
       descriptor.$schema=REGISTRY_SCHEMA;
-      if(options.inlineAbi) descriptor.context.contract.abi=c.abi;
+      if(descriptor.context.contract.abi!==undefined) fail('DEPRECATED_FIELD',`${s.descriptor} sets context.contract.abi, which registry lint rejects since ethereum/clear-signing-erc7730-registry#3128. Remove it; lint reads the ABI from the verified deployment.`);
       writeJson(path.join(registryDir,name),descriptor); descriptorFiles.push(path.join('registry',entity,name));
       const fixtures = tests.renders.filter(r=>r.rendering.contract===s.id).map(r=>({name:r.file,fixture:readJson<Fixture>(safePath(state.project.root,r.file)),rendering:r.rendering}));
       if(fixtures.length) { const testsName=name.replace(/\.json$/,'.tests.json'); writeJson(path.join(registryDir,'testsv2',testsName),registryTests(name,source,fixtures)); testsFiles.push(path.join('registry',entity,'testsv2',testsName)); }
@@ -573,7 +573,7 @@ export function applyDecisions(state: State, file: string) {
     const hiddenHere: Record<string, string> = {};
     const present = new Set<string>();
     const edit = (items: (Field | Group)[], prefix = ''): (Field | Group)[] => items.flatMap((item): (Field | Group)[] => {
-      if ('fields' in item) { const inner = edit(item.fields, joinPath(prefix, item.path) + '.'); return inner.length ? [{...item, fields: inner}] : []; }
+      if ('fields' in item) { const inner = edit(item.fields, item.path === undefined ? prefix : joinPath(prefix, item.path) + '.'); return inner.length ? [{...item, fields: inner}] : []; }
       const merged = mergeDefinition(item, definitions);
       if (typeof merged.path !== 'string') return [item];
       const full = leafKey(joinPath(prefix, merged.path));

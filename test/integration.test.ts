@@ -173,8 +173,8 @@ await test('production export is gated and produces valid registry test input',t
   assert.ok(format?.includes('registry/example/calldata-ClearToken.json')&&format.includes('registry/example/testsv2/calldata-ClearToken.tests.json'),`format call: ${format}`);
   assert.ok(codes(run(root,['export','--out','../outside'],2)).includes('USAGE_ERROR'),'a bundle outside the project is refused, with the reason');
   assert.ok(codes(run(root,['export','--out','bad','--no-lint','--entity','Not A Slug'],1)).includes('ENTITY_INVALID'));
-  const withAbi=run(root,['export','--out','with-abi','--no-lint','--inline-abi','--entity','clear']).result;assert.equal(withAbi.entity,'clear');
-  assert.ok(Array.isArray(read(path.join(root,'with-abi/registry/clear/calldata-ClearToken.json')).context.contract.abi));
+  assert.ok(codes(run(root,['export','--out','with-abi','--no-lint','--inline-abi'],2)).includes('USAGE_ERROR'),'--inline-abi is refused: registry lint rejects context.contract.abi (#3128)');
+  const entity=run(root,['export','--out','entity','--no-lint','--entity','clear']).result;assert.equal(entity.entity,'clear');
 });
 
 await test('safe file handling rejects symlink escapes',t=>{

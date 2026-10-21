@@ -13,7 +13,7 @@ export const SCHEMA_URL = 'https://eips.ethereum.org/assets/eip-7730/erc7730-v2.
 // valid. Bump subset when validator semantics change.
 export const ENGINE = {renderer: '@ethereum-sourcify/clear-signing@0.2.2+signed-int-fix.1', schema: hash(schema), subset: 4};
 export type Field = {path?: string; value?: unknown; label?: string; format?: string; params?: Record<string, any>; separator?: string; visible?: unknown; $id?: string; $ref?: string};
-export type Group = {path: string; label?: string; fields: (Field | Group)[]; iteration?: 'sequential'; $id?: string};
+export type Group = {path?: string; label?: string; fields: (Field | Group)[]; iteration?: 'sequential' | 'bundled'; $id?: string};
 export type Descriptor = {
   $schema: string;
   context: {contract: {deployments: {chainId: number; address: string}[]; abi?: unknown[]}; $id?: string};
@@ -114,8 +114,9 @@ export function resolveFields(items: (Field | Group)[], definitions: Record<stri
     if (!item || typeof item !== 'object') fail('INVALID_FIELDS', 'Fields must be objects.');
     if ('fields' in item) {
       onGroup?.(item);
-      if (typeof item.path !== 'string' || !item.path || !Array.isArray(item.fields)) fail('INVALID_PATH', 'Groups require a path and fields array.');
-      return resolveFields(item.fields, definitions, onGroup, joinPath(prefix, item.path) + '.', depth + 1);
+      // The schema requires only fields: a group without a path (bundled iteration over sibling arrays) scopes nothing.
+      if (!Array.isArray(item.fields) || (item.path !== undefined && (typeof item.path !== 'string' || !item.path))) fail('INVALID_PATH', 'Groups require a fields array, and a non-empty path when one is given.');
+      return resolveFields(item.fields, definitions, onGroup, item.path === undefined ? prefix : joinPath(prefix, item.path) + '.', depth + 1);
     }
     const merged = mergeDefinition(item, definitions);
     const params = scopeParams(merged.params, prefix);
@@ -257,6 +258,7 @@ export const WARNING_REMEDY: Record<string, string> = {
   METADATA_LENGTH: 'Shorten it; the registry linter warns above the Ledger limit and devices truncate.',
   MISSING_METADATA: 'Set metadata.owner to the project owner.',
   INVALID_BINDING: 'Remove the duplicate deployment.',
+  DEPRECATED_FIELD: 'Remove context.contract.abi; registry lint fails a v2 descriptor that sets it, and export refuses it.',
   CORPUS_DISAGREEMENT: 'Compare with the registry priors init lists; keep the difference if it is deliberate.'
 };
 export const WARNING_RANK = Object.keys(WARNING_REMEDY);
@@ -286,6 +288,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
     assertKeys(d.context.contract, ['deployments', 'abi'], 'context.contract');
     if (!Array.isArray(d.context.contract.deployments)) fail('INVALID_BINDING', 'context.contract.deployments must be an array (empty for local drafts).');
     if (d.context.contract.abi !== undefined && !Array.isArray(d.context.contract.abi)) fail('INVALID_BINDING', 'context.contract.abi must be an ABI array when present.');
+    if (d.context.contract.abi !== undefined) add('DEPRECATED_FIELD', 'context.contract.abi is deprecated; registry lint fails it since ethereum/clear-signing-erc7730-registry#3128.', undefined, 'warning');
     const bindings = new Set<string>();
     for (const dep of d.context.contract.deployments) {
       assertKeys(dep, ['chainId', 'address'], 'deployment');
@@ -336,7 +339,8 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         const resolved = resolveFields(spec.fields, definitions, group => {
           assertKeys(group, ['path','label','fields','iteration','$id'], `group in ${sig}`);
           if (typeof group.label === 'string' && group.label.length > MAX_LABEL) longLabels.add(group.label);
-          if (group.iteration && group.iteration !== 'sequential') fail('UNSUPPORTED_FEATURE', 'Only sequential group iteration is supported.');
+          // bundled walks parallel arrays index by index (the renderer warns BUNDLED_ARRAY_SIZE_MISMATCH on unequal lengths).
+          if (group.iteration && group.iteration !== 'sequential' && group.iteration !== 'bundled') fail('UNSUPPORTED_FEATURE', 'Group iteration must be sequential or bundled.');
         });
         for (const {field, key: leaf} of resolved) {
           assertKeys(field, ['path', 'value', 'label', 'format', 'params', 'separator', 'visible', '$id', '$ref'], `field in ${sig}`);

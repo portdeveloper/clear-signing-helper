@@ -21,6 +21,17 @@ await test('tuple array members stay paired in sequential groups',async()=>{
   const flatten=(fields:any[]):any[]=>fields.flatMap(f=>f.fields?flatten(f.fields):[f]);
   assert.deepEqual(flatten(r.fields).map(f=>f.value),['1',address,'2',other]);
 });
+await test('bundled groups pair parallel arrays index by index',async()=>{
+  const c=contract('send(uint256[] amounts,address[] recipients)');
+  const d=scaffold(c,'Example');
+  d.display.formats['send(uint256[] amounts,address[] recipients)']={intent:'Send',fields:[{iteration:'bundled',fields:[{path:'#.amounts.[]',label:'Amount',format:'raw'},{path:'#.recipients.[]',label:'To',format:'raw'}]}]} as any;
+  assert.deepEqual(validateDescriptor(d,c,{id:c.id,descriptor:'test.json',exclusions:{}}).filter(e=>e.severity!=='warning'),[]);
+  const r=await renderFixture({contract:c.id,chainId:31337,to:address,data:new Interface(c.abi).encodeFunctionData('send',[[1,2],[address,other]]),value:'0',localBinding:true},d,c);
+  const flatten=(fields:any[]):any[]=>fields.flatMap(f=>f.fields?flatten(f.fields):[f]);
+  assert.deepEqual(flatten(r.fields).map(f=>f.value),['1',address,'2',other]);
+  (d.display.formats['send(uint256[] amounts,address[] recipients)'].fields[0] as any).iteration='parallel';
+  assert.ok(validateDescriptor(d,c,{id:c.id,descriptor:'test.json',exclusions:{}}).some(e=>e.severity!=='warning'),'an iteration mode outside the schema is rejected');
+});
 await test('compiler names and full signature names must agree',()=>{
   const c=contract('send(uint256 amount)');
   const d=scaffold(c,'Example');d.display.formats={'send(uint256 junk)':{intent:'Send',fields:[{path:'junk',label:'Junk',format:'raw'}]}};

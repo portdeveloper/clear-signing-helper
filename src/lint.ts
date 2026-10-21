@@ -7,11 +7,12 @@ import { spawnSync } from 'node:child_process';
 // the flags of the pull-request workflow that runs `erc7730 lint`. Run through uvx so nothing is installed into the
 // project. Absent uvx, the exact command is reported for the user to run.
 export interface LintPin {requirement: string; flags: string[]; source: string}
-// Registry CI since ethereum/clear-signing-erc7730-registry#3083 (merged 2026-10-01): EIP-55 checksum check; Sourcify verification required since #3038.
+// Registry CI since ethereum/clear-signing-erc7730-registry#3128 (merged 2026-10-21): a v2 descriptor with the deprecated
+// context.contract.abi or context.eip712.schemas is a lint error; EIP-55 checksum check since #3083; Sourcify verification required since #3038.
 export const DEFAULT_LINT_PIN: LintPin = {
-  requirement: 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@13eed8e3ee20798cc237de825be9e37d489b41a2',
+  requirement: 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@964176e28918299dfecb269e20a267a652ada475',
   flags: ['--require-verified'],
-  source: 'built-in (registry master since ethereum/clear-signing-erc7730-registry#3083, merged 2026-10-01)'
+  source: 'built-in (registry master since ethereum/clear-signing-erc7730-registry#3128, merged 2026-10-21)'
 };
 // The pull-request lint lived in pull_request.yml, then registry-checks.yml (#3046, 2026-09-24), then descriptor-lint.yml
 // (by 2026-10-15). Known names are tried first, then any workflow; a file is used only if it actually runs `erc7730 lint`,

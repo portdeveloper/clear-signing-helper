@@ -16,18 +16,18 @@ function clone(requirement: string, lintLine: string, workflow = 'pull_request.y
 }
 test('the lint pin follows a registry clone\'s CI definition, and the built-in pin requires Sourcify verification', t => {
   const before = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e7bdf8481440c8aad2200d132459b2157d24396b', 'erc7730 lint $AFFECTED_FILES --gha');
-  const after = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@13eed8e3ee20798cc237de825be9e37d489b41a2', 'erc7730 lint --require-verified $AFFECTED_FILES --gha');
+  const after = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@964176e28918299dfecb269e20a267a652ada475', 'erc7730 lint --require-verified $AFFECTED_FILES --gha');
   const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'csh-lint-pin-'));
   t.after(() => { for (const d of [before, after, empty]) fs.rmSync(d, {recursive: true, force: true}); });
   const a = lintPinFromRegistry(before), b = lintPinFromRegistry(after), c = lintPinFromRegistry(empty);
   assert.equal(a.requirement, 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@e7bdf8481440c8aad2200d132459b2157d24396b');
   assert.deepEqual(a.flags, [], '--gha changes output only');
   assert.deepEqual(b.flags, ['--require-verified']);
-  assert.deepEqual([b.requirement, b.flags], [DEFAULT_LINT_PIN.requirement, DEFAULT_LINT_PIN.flags], 'the built-in pin is the current CI (#3083)');
+  assert.deepEqual([b.requirement, b.flags], [DEFAULT_LINT_PIN.requirement, DEFAULT_LINT_PIN.flags], 'the built-in pin is the current CI (#3128)');
   assert.deepEqual([c.requirement, c.flags], [DEFAULT_LINT_PIN.requirement, DEFAULT_LINT_PIN.flags]);
   assert.match(c.source, /has no \.github\/requirements\.txt or no workflow that runs erc7730 lint/);
   // The printed command is copy-pasteable: the requirement carries spaces.
-  assert.equal(lintCommand(['registry/x/calldata-X.json'], b), `uvx --from 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@13eed8e3ee20798cc237de825be9e37d489b41a2' erc7730 lint --require-verified registry/x/calldata-X.json`);
+  assert.equal(lintCommand(['registry/x/calldata-X.json'], b), `uvx --from 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@964176e28918299dfecb269e20a267a652ada475' erc7730 lint --require-verified registry/x/calldata-X.json`);
 });
 test('the pull-request workflow is found under its current name, registry-checks.yml, as well as the former pull_request.yml', t => {
   const renamed = clone('erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@1111111111111111111111111111111111111111', 'erc7730 lint --require-verified $AFFECTED_FILES --gha', 'registry-checks.yml');
