@@ -33,7 +33,7 @@ For a local tarball install:
 ```sh
 npm run build
 npm pack --ignore-scripts
-npm install --ignore-scripts ./clear-signing-helper-0.6.0-preview.3.tgz
+npm install --ignore-scripts ./clear-signing-helper-0.6.0-preview.4.tgz
 ```
 
 `npm ci --ignore-scripts` is the supported clean checkout verification path.
@@ -44,7 +44,7 @@ in the commands above to make the verification boundary explicit.
 
 The first public release uses version `0.2.0-preview.1` and a GitHub prerelease tagged `v0.2.0-preview.1`. Attach the verified tarball, SHA-256 sidecar and `release-verification.json`, with a link to green CI for the tagged source revision. Verify the downloaded release artifact and a fresh installation after publication. Keep the prerelease status visible.
 
-`0.6.0-preview.3` was published on 2026-10-17 under the `preview` and `latest` tags (`0.6.0-preview.2` on 2026-09-26; `0.6.0-preview.1` the same day, deprecated because it shipped maintainer notes; `0.5.0-preview.1` on 2026-09-25, `0.4.0-preview.1` on 2026-09-23, `0.3.0-preview.1` on 2026-09-19); publishing requires a granular token with 2FA bypass or an interactive one-time code. The owner authorized npm publication on 2026-09-09. The exact GitHub tarball was published as [`clear-signing-helper@0.2.0-preview.1`](https://www.npmjs.com/package/clear-signing-helper/v/0.2.0-preview.1) with `--tag preview --ignore-scripts`. Anonymous download matched the GitHub SHA-256 and registry SHA-512 integrity. A fresh credential-free install through `@preview`, the documented npx command, and the Foundry workflow passed; see `npm-verification.json` in the GitHub release assets.
+`0.6.0-preview.4` was published on 2026-10-21 under the `preview` and `latest` tags (`0.6.0-preview.3` on 2026-10-17; `0.6.0-preview.2` on 2026-09-26; `0.6.0-preview.1` the same day, deprecated because it shipped maintainer notes; `0.5.0-preview.1` on 2026-09-25, `0.4.0-preview.1` on 2026-09-23, `0.3.0-preview.1` on 2026-09-19); publishing requires a granular token with 2FA bypass or an interactive one-time code. The owner authorized npm publication on 2026-09-09. The exact GitHub tarball was published as [`clear-signing-helper@0.2.0-preview.1`](https://www.npmjs.com/package/clear-signing-helper/v/0.2.0-preview.1) with `--tag preview --ignore-scripts`. Anonymous download matched the GitHub SHA-256 and registry SHA-512 integrity. A fresh credential-free install through `@preview`, the documented npx command, and the Foundry workflow passed; see `npm-verification.json` in the GitHub release assets.
 
 The registry returned both `preview` and `latest` pointing to this first prerelease despite the explicit publish tag. Removing `latest` with `npm dist-tag rm clear-signing-helper latest` was rejected with HTTP 403. Cleanup remains pending; this tag does not establish stable or production-ready status. Document installation through `@preview` or the exact prerelease version. Temporary publishing credentials were removed after use.
 

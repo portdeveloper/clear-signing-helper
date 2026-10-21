@@ -1,3 +1,28 @@
+# Clear Signing Helper 0.6.0-preview.4 — developer preview
+
+Follows registry CI again after four registry changes on 2026-10-21, and accepts two descriptor shapes the registry has merged since 0.6.0-preview.3.
+
+## What changed
+
+- **`--inline-abi` removed.** Registry lint now fails a v2 descriptor that sets the deprecated `context.contract.abi` (registry #3128). `export --inline-abi` is refused with that reason, `export` refuses a descriptor that carries the field, and `check` warns on it (`DEPRECATED_FIELD`). Lint reads the ABI from the Sourcify-verified deployment.
+- **Pins follow registry master `2c2ddeb`:** linter `964176e` (#3128), Sourcify runner `9d6d2fe` (#3127, renderer `@ethereum-sourcify/clear-signing` 0.3.0) and Rust runner `65af228` (#3131). With the new Rust runner, native amounts on chains it did not list (Monad shows "MON", not "ETH") and `calldata` fields on array paths match the Sourcify runner, so `--accept-runner-failure rust=...` is no longer needed for a Monad native amount.
+- **Bundled groups.** The validator rejected `iteration: "bundled"` and groups without a `path`, both valid under the schema and rendered by the renderer. Eleven merged registry descriptors use them (Flare, Morpho bundles, USDT0 on Flare). They are accepted now.
+- Registry priors refreshed at `2c2ddeb` (391 descriptors, 803 selectors). The validator accepts 366 of the registry's 391 merged calldata descriptors; the 25 it rejects are the `calldata` format (nested calls) and one encrypted field, the same two classes as before.
+
+## Upgrade from 0.6.0-preview.3
+
+The engine fingerprint is unchanged, so existing configs, reviews and expectations stay valid. If a descriptor sets `context.contract.abi`, delete the field before the next export.
+
+## Install
+
+```sh
+sha256sum --check clear-signing-helper-0.6.0-preview.4.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.6.0-preview.4.tgz
+clear-signing --version
+```
+
+Expected version: `0.6.0-preview.4`. Network access, scope and validation are otherwise as described for 0.6.0-preview.1 below.
+
 # Clear Signing Helper 0.6.0-preview.3 — developer preview
 
 Follows the registry's CI again. Three things had moved under the tool since 0.6.0-preview.2: the descriptor schema, the linter, and the workflow the linter runs in.
