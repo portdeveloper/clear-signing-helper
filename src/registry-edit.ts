@@ -37,11 +37,14 @@ export async function addDeployment(o: AddDeploymentOptions) {
   if (/^eip712-.*\.json$/.test(path.basename(descriptorFile))) return addTypedDataDeployment(o, registry, descriptorFile, address);
   if (!/^calldata-.*\.json$/.test(path.basename(descriptorFile))) fail('UNSUPPORTED_DESCRIPTOR', 'Only calldata-*.json and eip712-*.json descriptors are supported.', 2);
   if (o.rpcUrl || o.set?.length || o.template) fail('USAGE_ERROR', '--rpc-url, --set and --template apply to EIP-712 descriptors; a calldata deployment is proven by its verified ABI.', 2);
-  const original = readText(descriptorFile);
-  const d = JSON.parse(original);
-  if (d.includes !== undefined || !d.display?.formats) fail('UNSUPPORTED_DESCRIPTOR', 'This descriptor includes another file or has no display.formats; edit it by hand.', 2);
-  if (!Array.isArray(d.context?.contract?.deployments)) fail('UNSUPPORTED_DESCRIPTOR', 'Descriptor has no context.contract.deployments array.', 2);
-  if (d.context.contract.deployments.some((x: any) => x.chainId === o.chainId && String(x.address).toLowerCase() === address.toLowerCase())) fail('DEPLOYMENT_EXISTS', `${o.chainId}:${address} is already listed in ${o.descriptor}.`, 2);
+  // Formats often live in a shared file the descriptor includes (Safe, 1inch, ERC-4626 vaults); the proof and
+  // the rendering use the merged view, and the deployment goes into the file that lists the deployments.
+  const chain = includeChain(registry, descriptorFile);
+  const holder = chain.find(x => Array.isArray(x.json.context?.contract?.deployments));
+  if (!holder) fail('UNSUPPORTED_DESCRIPTOR', `Neither ${o.descriptor} nor its includes has a context.contract.deployments array.`, 2);
+  const d: any = structuredClone(mergedOf(chain));
+  if (!d.display?.formats || !Object.keys(d.display.formats).length) fail('UNSUPPORTED_DESCRIPTOR', `${o.descriptor} has no display.formats, in itself or its includes.`, 2);
+  if (d.context.contract.deployments.some((x: any) => x.chainId === o.chainId && String(x.address).toLowerCase() === address.toLowerCase())) fail('DEPLOYMENT_EXISTS', `${o.chainId}:${address} is already listed in ${path.relative(registry, holder.file)}.`, 2);
 
   // 1. Obtain the ABI at the new address, verified unless the user supplies one they trust.
   let abi: any[], verification: {source: string; match?: string; url?: string; proxy?: VerifiedContract['proxy']; name?: string};
@@ -113,18 +116,24 @@ export async function addDeployment(o: AddDeploymentOptions) {
     test = {file: path.relative(registry, testsFile), description, template: template.c.description, expected: entry.expected};
   }
 
-  // 4. Insert into the existing text so the diff is only the change, then run the registry's own checks.
-  const relDescriptor = path.relative(registry, descriptorFile);
+  // 4. Insert into the existing text so the diff is only the change, then run the registry's own checks on
+  // every descriptor that resolves through the edited file.
+  const relDescriptor = path.relative(registry, descriptorFile), relHolder = path.relative(registry, holder.file);
+  const affected = includers(registry, holder.file);
   const {lint, runners} = writeChecked(o, registry, [
-    {file: descriptorFile, original, updated: insertDeployment(original, ['context', 'contract', 'deployments'], o.chainId, address)},
+    {file: holder.file, original: holder.text, updated: insertDeployment(holder.text, ['context', 'contract', 'deployments'], o.chainId, address)},
     ...(testsOriginal !== undefined ? [{file: testsFile, original: testsOriginal, updated: insertTest(testsOriginal, testsUpdated)}] : [])
-  ], [relDescriptor], testsFile);
+  ], affected, testsFile);
   const entity = path.basename(entityDir);
-  const changed = [relDescriptor, ...(test ? [test.file] : [])];
+  const changed = [relHolder, ...(test ? [test.file] : [])];
   const next = nextCommands(registry, entity, o.chainId, changed, verification.name ?? name.replace(/^calldata-|\.json$/g, ''),
-    `Adds ${o.chainId}:${address} to ${relDescriptor}${test ? ` with test case \\"${test.description}\\"` : ''}. ABI verified via ${verification.source}${verification.match ? ` (${verification.match})` : ''}.`);
-  return {descriptor: relDescriptor, deployment: {chainId: o.chainId, address}, verification, selectorsChecked: formats.length, test: test ?? null, skippedTemplates, lint, registryRunners: runners,
-    ...(o.skipRegistryRunners && divergence.length ? {registryRunnersSkipped: {reason: o.skipRegistryRunners.trim(), divergence}} : {}), changed, next, note: 'Files changed in the registry clone; nothing committed. Open the pull request from an account tied to the contract owner.'};
+    `Adds ${o.chainId}:${address} to ${relHolder}${test ? ` with test case \\"${test.description}\\"` : ''}. ABI verified via ${verification.source}${verification.match ? ` (${verification.match})` : ''}.`);
+  // Constants are not keyed by chain: an address there (an underlying token, a vault ticker's asset) is the
+  // existing chain's, and the new deployment displays it as its own unless the same address exists there.
+  const constantAddresses = Object.entries(d.metadata?.constants ?? {}).filter(([, v]) => typeof v === 'string' && isAddress(v) && v.toLowerCase() !== ZERO).map(([k, v]) => `${k}=${v}`);
+  return {descriptor: relDescriptor, deploymentsFile: relHolder, includes: chain.slice(1).map(x => path.relative(registry, x.file)), deployment: {chainId: o.chainId, address}, verification, selectorsChecked: formats.length, test: test ?? null, skippedTemplates, constantAddresses, affectedDescriptors: affected, lint, registryRunners: runners,
+    ...(o.skipRegistryRunners && divergence.length ? {registryRunnersSkipped: {reason: o.skipRegistryRunners.trim(), divergence}} : {}), changed, next,
+    note: `Files changed in the registry clone; nothing committed.${affected.length > 1 ? ` ${relHolder} is shared: ${affected.length} descriptors now resolve on chain ${o.chainId}, and only ${relDescriptor} gained a test.` : ''}${constantAddresses.length ? ` metadata.constants holds addresses from the existing chains (${constantAddresses.join(', ')}); the new deployment displays them unchanged, so confirm they are the same contracts on chain ${o.chainId}, or author a separate descriptor.` : ''} Open the pull request from an account tied to the contract owner.`};
 }
 
 // EIP-712: the deployments usually live in a shared file several descriptors include. The address is
@@ -139,7 +148,7 @@ async function addTypedDataDeployment(o: AddDeploymentOptions, registry: string,
   const chain = includeChain(registry, descriptorFile);
   const holder = chain.find(x => Array.isArray(x.json.context?.eip712?.deployments));
   if (!holder) fail('UNSUPPORTED_DESCRIPTOR', `Neither ${relDescriptor} nor its includes has a context.eip712.deployments array.`, 2);
-  const merged: any = chain.slice(0, -1).reduceRight((acc: any, x) => mergeDescriptors(x.json, acc), chain[chain.length - 1].json);
+  const merged: any = mergedOf(chain);
   const deployments: any[] = merged.context?.eip712?.deployments ?? [];
   const domain = merged.context?.eip712?.domain ?? {};
   if (domain.chainId !== undefined || domain.verifyingContract !== undefined) fail('UNSUPPORTED_DESCRIPTOR', `The descriptor's domain pins chainId or verifyingContract, so it cannot describe another deployment; edit it by hand.`, 2);
@@ -254,8 +263,7 @@ async function addTypedDataDeployment(o: AddDeploymentOptions, registry: string,
 
   // 4. Write positionally, then lint every descriptor that includes the edited file: all of them now
   // resolve on the new chain.
-  const affected = walk(path.join(registry, 'registry'), '.json').filter(f => /^(eip712|calldata)-/.test(path.basename(f)) && !f.split(path.sep).includes('tests') && !f.split(path.sep).includes('testsv2'))
-    .filter(f => { try { return includeChain(registry, f).some(x => x.file === holder.file); } catch { return false; } }).map(f => path.relative(registry, f));
+  const affected = includers(registry, holder.file);
   const {lint, runners} = writeChecked(o, registry, [
     {file: holder.file, original: holder.text, updated: holderUpdated},
     ...(testsUpdated ? [{file: testsFile, original: testsOriginal!, updated: insertTest(testsOriginal!, testsUpdated)}] : [])
@@ -269,6 +277,13 @@ async function addTypedDataDeployment(o: AddDeploymentOptions, registry: string,
     note: `Files changed in the registry clone; nothing committed.${affected.length > 1 ? ` ${relHolder} is shared: ${affected.length} descriptors now resolve on chain ${o.chainId}, and only ${relDescriptor} gained a test.` : ''}${templateAddresses.length ? ` The new test still uses message addresses from "${test!.template}" (${templateAddresses.join(', ')}); if those contracts differ on chain ${o.chainId}, rerun with --set <path>=<address> and --token.` : ''} Open the pull request from an account tied to the contract owner.`};
 }
 
+// The merged view of an include chain, as the renderer resolves it: each including file overrides what it includes.
+function mergedOf(chain: {json: any}[]): any { return chain.slice(0, -1).reduceRight((acc: any, x) => mergeDescriptors(x.json, acc), chain[chain.length - 1].json); }
+// Every registry descriptor whose include chain reaches `file` (itself included): all of them change with it.
+function includers(registry: string, file: string) {
+  return walk(path.join(registry, 'registry'), '.json').filter(f => /^(eip712|calldata)-/.test(path.basename(f)) && !f.split(path.sep).includes('tests') && !f.split(path.sep).includes('testsv2'))
+    .filter(f => { try { return includeChain(registry, f).some(x => x.file === file); } catch { return false; } }).map(f => path.relative(registry, f));
+}
 // The descriptor and every file it includes, outermost first, each read once and kept inside the clone.
 function includeChain(registry: string, file: string) {
   const chain: {file: string; text: string; json: any}[] = [];

@@ -70,6 +70,40 @@ await test('registry add-deployment proves the ABI, appends the deployment, rend
   assert.equal((await runAsync(['registry','add-deployment','--registry',root,'--descriptor','registry/example/calldata-ClearToken.json','--chain-id','10143','--address',monadToken,'--no-lint'],2,env)).diagnostics[0].code,'DEPLOYMENT_EXISTS');
 });
 
+// Calldata through includes, as Safe, 1inch and the ERC-4626 vaults are laid out: the formats live in a
+// shared file, the descriptor holds only deployments and constants.
+await test('registry add-deployment follows includes for a calldata descriptor and names chain-specific constants',async t=>{
+  const root=registryClone();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const dir=path.join(root,'registry/example'),desc=path.join(dir,'calldata-ClearToken.json');
+  const full=read(desc);
+  const common={$schema:'../../specs/erc7730-v2.schema.json',context:{contract:{}},metadata:{owner:'Example'},display:full.display};
+  fs.writeFileSync(path.join(dir,'common-ClearToken.json'),JSON.stringify(common,null,2)+'\n');
+  const thin={$schema:'../../specs/erc7730-v2.schema.json',includes:'common-ClearToken.json',context:{contract:{deployments:full.context.contract.deployments}},metadata:{contractName:'ClearToken',constants:{underlyingToken:other}}};
+  fs.writeFileSync(desc,JSON.stringify(thin,null,2)+'\n');
+  const commonBefore=fs.readFileSync(path.join(dir,'common-ClearToken.json'),'utf8');
+  const server=createServer((req,res)=>{
+    const url=new URL(req.url!,'http://x');const send=(status:number,body:unknown)=>{res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(body));};
+    if(url.pathname===`/v2/contract/10143/${monadToken}`) return send(200,{match:'exact_match',chainId:'10143',address:monadToken,abi:tokenAbi,compilation:{name:'ClearToken'},proxyResolution:{isProxy:false,implementations:[]}});
+    if(url.pathname===`/v2/contract/10143/${other}`) return send(200,{match:'match',chainId:'10143',address:other,abi:tokenAbi.filter((f:any)=>f.name!=='transfer'),compilation:{name:'NotTheToken'},proxyResolution:{isProxy:false,implementations:[]}});
+    return send(404,{match:null});
+  });
+  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));t.after(()=>server.close());
+  const env={CLEAR_SIGNING_SOURCIFY_URL:`http://127.0.0.1:${(server.address() as any).port}`,ETHERSCAN_API_KEY:''};
+  const args=['registry','add-deployment','--registry',root,'--descriptor','registry/example/calldata-ClearToken.json','--chain-id','10143','--no-lint'];
+  // The selector proof reads the included formats: a contract without transfer is still refused.
+  const mismatch=await runAsync([...args,'--address',other],1,env);
+  assert.equal(mismatch.diagnostics[0].code,'ABI_MISMATCH');assert.match(mismatch.diagnostics[0].message,/transfer\(address,uint256\)/);
+  const r=(await runAsync([...args,'--address',monadToken,'--token',`${monadToken}=mCLR:18`],0,env)).result;
+  assert.equal(r.deploymentsFile,'registry/example/calldata-ClearToken.json');assert.deepEqual(r.includes,['registry/example/common-ClearToken.json']);
+  assert.equal(r.selectorsChecked,1);assert.equal(r.test.description,'Send - chain 10143');
+  assert.deepEqual(r.test.expected,{intent:'Send',owner:'Example',fields:[{label:'To',value:'Alice'},{label:'Amount',value:'0.0000000000025 mCLR'}]});
+  assert.deepEqual(read(desc).context.contract.deployments,[{chainId:1,address:mainnetToken},{chainId:10143,address:monadToken}]);
+  assert.equal(read(desc).includes,'common-ClearToken.json');
+  assert.equal(fs.readFileSync(path.join(dir,'common-ClearToken.json'),'utf8'),commonBefore,'the shared formats file is not touched');
+  assert.deepEqual(r.constantAddresses,[`underlyingToken=${other}`]);assert.match(r.note,/underlyingToken/);
+  assert.deepEqual(r.affectedDescriptors,['registry/example/calldata-ClearToken.json']);
+});
+
 // EIP-712: the deployments live in a shared file two descriptors include; the address is proven by
 // a mocked JSON-RPC endpoint's DOMAIN_SEPARATOR().
 function typedRegistryClone() {
