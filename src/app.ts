@@ -6,6 +6,7 @@ import { loadProject, defaultContracts, deployedContracts, suggestedContracts, g
 import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
 import { priorsFor, summarizePrior, registryMatches, buildPriorsIndex, usePriorsIndex, PRIORS_META } from './priors.js';
 import { gatherEvidence } from './evidence.js';
+import { permitOf } from './permits.js';
 import {portabilityFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
 import { renderFixture, validateFixture, blockingWarnings, decodeCanonical, type Fixture, type Rendering } from './fixtures.js';
@@ -502,6 +503,7 @@ function buildDecisions(state: State, id: string): Decisions {
     // Keys follow the descriptor's field order, then the leaves it does not show in ABI order; apply
     // orders a flat field list by these keys, so moving a key moves the field.
     const order = [...new Set(resolved.map(r => r.key).filter((k): k is string => !!k && (k === '@.value' || leafList.some(l => l.path === k))))];
+    const permit = permitOf(leafList), grants = new Map(permit?.grants.map(g => [g.path, g.what]) ?? []);
     const byOrder = [...leafList].sort((a, b) => { const i = order.indexOf(a.path), j = order.indexOf(b.path); return (i < 0 ? order.length : i) - (j < 0 ? order.length : j); });
     const valueAt = order.indexOf('@.value');
     for (const leaf of byOrder) {
@@ -516,6 +518,8 @@ function buildDecisions(state: State, id: string): Decisions {
       if (doc) { if (top === leaf.path) hints.natspec = doc; else hints.natspecOfParent = `@param ${top}: ${doc}`; }
       const formatsForType = leaf.type === 'address' ? ['addressName', 'tokenTicker', 'raw'] : /^u?int\d*$/.test(leaf.type) ? ['tokenAmount', 'amount', 'date', 'duration', 'unit', 'enum', 'chainId', 'nftName', 'raw'] : leaf.type === 'bool' ? ['enum', 'raw'] : ['raw'];
       hints.formatsForType = formatsForType;
+      if (grants.has(leaf.path)) hints.permit = `Part of what the permit in this call grants (${grants.get(leaf.path)}): keep it visible.`;
+      else if (permit?.signature.includes(leaf.path)) hints.permit = 'Permit signature bytes: may be hidden with a reason.';
       if (formatsForType.includes('enum')) hints.enum = `params {"$ref": "$.metadata.enums.<name>"} naming an entry of the file's top-level enums (add one there)`;
       fields[leaf.path] = {type: leaf.type, show: !!cur || !hidden, ...(hidden && !cur ? {hideReason: hidden} : {}), label: cur?.label ?? humanized, format: cur?.format ?? 'raw', params: cur?.params ?? null, hints};
     }
@@ -524,7 +528,7 @@ function buildDecisions(state: State, id: string): Decisions {
     const priorInterpolations = priors.map(p => p.interpolatedIntent).filter((x): x is string => typeof x === 'string').slice(0, 5);
     functions[sig] = {signature: key, decision: existing ? 'describe' : selection.exclusions[sig] ? 'exclude' : 'describe', excludeReason: selection.exclusions[sig] ?? null,
       intent: existing?.spec.intent ?? (f.name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/^./, x => x.toUpperCase())), interpolatedIntent: existing?.spec.interpolatedIntent ?? null, fields,
-      hints: {...(evidence.notices[sig] ? {natspec: evidence.notices[sig]} : {}), ...(priors.length ? {registryPriors: priors.slice(0, 5).map(summarizePrior), registryPriorCount: priors.length} : {}), ...(priorInterpolations.length ? {registryInterpolatedIntents: priorInterpolations} : {}), intentLimit: 30, interpolatedIntent: 'Optional sentence with {path} placeholders naming shown fields (e.g. "Stake {amount}", "Send {amount} to {to}"). Wallets prefer it; the registry recommends one on every format and warns when the template exceeds 30 characters.'}};
+      hints: {...(permit ? {permit: `Takes a permit (${permit.kind}), which grants an approval as part of the call. Hide only the signature (${permit.signature.join(', ') || 'none found'}); keep visible what it grants: ${permit.grants.map(g => `${g.path} (${g.what})`).join(', ') || 'nothing detected, so check the source'}.`} : {}), ...(evidence.notices[sig] ? {natspec: evidence.notices[sig]} : {}), ...(priors.length ? {registryPriors: priors.slice(0, 5).map(summarizePrior), registryPriorCount: priors.length} : {}), ...(priorInterpolations.length ? {registryInterpolatedIntents: priorInterpolations} : {}), intentLimit: 30, interpolatedIntent: 'Optional sentence with {path} placeholders naming shown fields (e.g. "Stake {amount}", "Send {amount} to {to}"). Wallets prefer it; the registry recommends one on every format and warns when the template exceeds 30 characters.'}};
   }
   // fallback() takes calldata no descriptor can format: its only decision is the reason it is excluded.
   // receive() needs none (it runs only on empty calldata), so it gets no slot.

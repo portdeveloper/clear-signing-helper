@@ -5,6 +5,7 @@ import schema from '../schemas/erc7730-v2.schema.json' with {type: 'json'};
 import { Contract } from './foundry.js';
 import type { Evidence } from './evidence.js';
 import { disagreements, priorsFor, summarizePrior } from './priors.js';
+import { permitOf } from './permits.js';
 import { assertKeys, assertTreeBudget, Diagnostic, fail, Failure, hash } from './io.js';
 
 export const SCHEMA_URL = 'https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json';
@@ -249,6 +250,7 @@ export const errorsOf = (list: Diagnostic[]) => list.filter(d => d.severity !== 
 // Warnings in the order check prints them: what the signer sees wrong first, then what registry lint
 // reports, then advice. Each code carries its own remedy; a code missing here sorts last.
 export const WARNING_REMEDY: Record<string, string> = {
+  PERMIT_GRANT_HIDDEN: 'Show what the permit grants (amount or unlimited flag, token, spender, how long the approval lasts); only the signature, its nonce and its deadline may be hidden.',
   UNDISPLAYED_ARGUMENT: 'Display the argument, or record a reason under hidden in clear-signing.toml if leaving it out is deliberate.',
   TOKEN_MAPPING: 'Set token or tokenPath so the amount renders with its symbol and decimals.',
   FORMAT_TYPE: 'Use a format that matches the argument type, or raw.',
@@ -410,6 +412,9 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           if (typeof reason !== 'string' || !reason.trim()) add('HIDDEN_REASON', `${sig} hidden path ${leaf} needs a reason.`, key);
         }
         for (const leaf of leafMap.keys()) if (!displayedLeaves.has(leaf) && !referenced.has(leaf) && !hiddenHere[leaf] && !declaredHidden.has(leaf)) add('UNDISPLAYED_ARGUMENT', `${sig} does not display ${leaf}. Signers will not see this argument.`, key, 'warning');
+        // A permit in the call grants an approval; what it grants must stay on screen (permits.ts).
+        const permit = permitOf([...leafMap].map(([path, type]) => ({path, type})));
+        for (const g of permit?.grants ?? []) if (!displayedLeaves.has(g.path) && !referenced.has(g.path)) add('PERMIT_GRANT_HIDDEN', `${sig} takes a permit (${permit!.kind}) but hides ${g.path}, the ${g.what}. Signers will not see what the permit grants.`, key, 'warning');
         if (spec.interpolatedIntent !== undefined) {
           if (typeof spec.interpolatedIntent !== 'string' || !spec.interpolatedIntent.trim()) fail('INVALID_INTERPOLATION', `${sig} interpolatedIntent must be a nonempty string.`);
           // The registry linter applies its 30-character rule to the template text as well.
