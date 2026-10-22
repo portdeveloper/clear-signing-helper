@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import TOML from '@iarna/toml';
-import { Interface, getAddress } from 'ethers';
+import { Interface, FunctionFragment, getAddress } from 'ethers';
 import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
 import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
 import { priorsFor, summarizePrior, registryMatches, buildPriorsIndex, usePriorsIndex, PRIORS_META } from './priors.js';
@@ -13,7 +13,8 @@ import { registryTests } from './registry.js';
 import { runUpstreamLint, runUpstreamFormat, skippedLint, lintPinFromRegistry, DEFAULT_LINT_PIN, type LintResult } from './lint.js';
 import { setupRunners, runRegistryRunners, pinsFromRegistry, DEFAULT_PINS, parseAcceptedFailures, unacceptedFailures, type RunnerResult } from './runners.js';
 import { loadAbiProject, importAbiFile, importVerified, ABI_DIR } from './abi-project.js';
-import { fetchVerifiedContract, fetchTokenMetadata, type ChainTransaction } from './fetch.js';
+import { fetchVerifiedContract, fetchTokenMetadata, fetchTransaction, rpcCall, redactUrl, type ChainTransaction } from './fetch.js';
+import { discoverCalls } from './discover.js';
 import packageJson from '../package.json' with {type: 'json'};
 
 export interface Config {version: number; profile: string; engine: string; mode?: 'foundry' | 'abi'; contracts: Selection[]}
@@ -279,6 +280,56 @@ export async function fillTokenMetadata(state: State, file: string, rpcUrl: stri
   }
   if (Object.keys(added).length) { f.tokens = {...(f.tokens ?? {}), ...added}; validateFixture(f); writeJson(target, f); }
   return {tokens: added, ...(unresolved.length ? {unresolvedTokens: unresolved} : {})};
+}
+// Fixtures from real transactions without hashes in hand: for each described function of a contract that has
+// no fixture yet, nominate successful direct calls to its deployment (discover.ts), then take each nominee
+// through the --tx path (re-read over the user's RPC, every refusal applies) and fill its token metadata.
+export async function discoverFixtures(state: State, o: {contract: string; rpcUrl: string; chainId?: string; functions?: string[]; perFunction: number; maxBlocks: number; log: (line: string) => void}) {
+  if (!Number.isInteger(o.perFunction) || o.perFunction < 1 || o.perFunction > 10) fail('USAGE_ERROR', '--per-function must be an integer from 1 to 10.', 2);
+  if (!Number.isInteger(o.maxBlocks) || o.maxBlocks < 1 || o.maxBlocks > 1_000_000) fail('USAGE_ERROR', '--max-blocks must be an integer from 1 to 1000000.', 2);
+  const c = getContract(state.project, o.contract);
+  if (!state.config.contracts.some(s => s.id === c.id)) fail('CONTRACT_NOT_SELECTED', 'Run init --contract for this contract first.', 2);
+  const d = state.descriptors.get(c.id)!, deployments = d.context.contract.deployments;
+  const chains = [...new Set(deployments.map(x => x.chainId))];
+  const chainId = o.chainId !== undefined ? Number(o.chainId) : chains.length === 1 ? chains[0] : NaN;
+  if (!chains.length) fail('NO_DEPLOYMENT', `${c.id} has no deployment bound in its descriptor; discovery searches calls to a deployed address.`, 2);
+  if (!Number.isSafeInteger(chainId) || !chains.includes(chainId)) fail('USAGE_ERROR', `Pass --chain-id with one of the chains ${c.id} is bound on: ${chains.join(', ')}.`, 2);
+  const addresses = deployments.filter(x => x.chainId === chainId).map(x => getAddress(x.address));
+  const served = Number(BigInt(await rpcCall(o.rpcUrl, 'eth_chainId', [])));
+  if (served !== chainId) fail('RPC_CHAIN_MISMATCH', `${redactUrl(o.rpcUrl)} serves chain ${served}, but discovery is for chain ${chainId}.`, 2);
+  // The functions the descriptor describes; with --function, only those named (by name or signature).
+  const described = Object.keys(d.display.formats).map(key => FunctionFragment.from(`function ${key}`));
+  const wanted = o.functions?.length ? described.filter(f => o.functions!.some(w => w === f.name || w === f.format('sighash') || w === f.format('full').replace(/^function /, ''))) : described;
+  if (o.functions?.length && wanted.length !== new Set(o.functions).size) fail('USAGE_ERROR', `--function names a function the descriptor does not describe. Described: ${described.map(f => f.format('sighash')).join(', ')}.`, 2);
+  // Without --function, functions that already have a fixture for this contract are left alone.
+  const covered = new Set(fixtureFiles(state, [c.id]).map(file => readJson<Fixture>(safePath(state.project.root, file)).data.slice(0, 10).toLowerCase()));
+  const targets = o.functions?.length ? wanted : wanted.filter(f => !covered.has(f.selector));
+  const alreadyCovered = wanted.filter(f => !targets.includes(f)).map(f => f.format('sighash'));
+  if (!targets.length) return {searched: null, created: [], missing: [], refused: [], alreadyCovered, next: 'Every described function already has a fixture; pass --function to add more.'};
+  const token = process.env.ENVIO_API_TOKEN?.trim() || undefined;
+  // A few spare nominees per function, since a nominee can still be refused (non-canonical calldata).
+  const found = await discoverCalls({chainId, addresses, selectors: targets.map(f => f.selector.toLowerCase()), target: o.perFunction + 2, rpcUrl: o.rpcUrl, token, maxBlocks: o.maxBlocks, log: o.log});
+  const created: Record<string, unknown>[] = [], refused: {function: string; txHash: string; code: string; message: string}[] = [], missing: string[] = [];
+  const freeName = (base: string) => { for (let i = 1; ; i++) { const name = i === 1 ? base : `${base}-${i}`; if (!fs.existsSync(safePath(state.project.root, `clear-signing/fixtures/${name}.json`))) return name; } };
+  for (const f of targets) {
+    let made = 0;
+    for (const n of found.nominees[f.selector.toLowerCase()] ?? []) {
+      if (made >= o.perFunction) break;
+      try {
+        const transaction = await fetchTransaction(o.rpcUrl, n.hash);
+        const r = createFixture(state, {name: freeName(f.name), contract: c.id, args: '[]', value: '0', local: false, transaction});
+        created.push({function: f.format('sighash'), file: r.created, txHash: n.hash, blockNumber: n.blockNumber, ...await fillTokenMetadata(state, r.created, o.rpcUrl)});
+        made++;
+      } catch (e) {
+        if (!(e instanceof Failure)) throw e;
+        refused.push({function: f.format('sighash'), txHash: n.hash, code: e.code, message: e.message});
+      }
+    }
+    if (!made) missing.push(f.format('sighash'));
+  }
+  const widen = token ? 'HyperSync searched the whole chain, so these were never called directly' : 'set ENVIO_API_TOKEN to search the whole chain, or raise --max-blocks';
+  return {source: found.source, searched: found.searched, created, missing, refused, alreadyCovered,
+    next: missing.length ? `No successful direct call found for ${missing.join(', ')}: ${widen}; encode an example with fixture --function.` : 'Preview the new fixtures, then run review --accept and test --update.'};
 }
 export function fixtureFiles(state: State, ids?: string[]) {
   const files = walk(safePath(state.project.root,'clear-signing/fixtures'),'.json').map(file=>path.relative(state.project.root,file));

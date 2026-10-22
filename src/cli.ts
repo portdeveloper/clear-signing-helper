@@ -1,5 +1,5 @@
 import { Command, CommanderError, Option } from 'commander';
-import { init, loadState, check, review, sync, preview, createFixture, fillTokenMetadata, runTests, exportBundle, upgrade, writeDecisions, applyDecisions } from './app.js';
+import { init, loadState, check, review, sync, preview, createFixture, fillTokenMetadata, discoverFixtures, runTests, exportBundle, upgrade, writeDecisions, applyDecisions } from './app.js';
 import { Failure } from './io.js';
 import { servePreview } from './preview.js';
 import { displayText, humanOutput } from './output.js';
@@ -75,6 +75,14 @@ program.command('fixture').description('Encode an example transaction from the c
     const created=createFixture(s,{...options,local:options.local===true,transaction});
     output(options.rpcUrl?{...created,...await fillTokenMetadata(s,created.created,options.rpcUrl)}:created);
   });
+program.command('discover').description('Find real transactions sent to a contract\'s deployment and make fixtures from them, for each described function without one')
+  .requiredOption('--contract <path:name>','Selected contract identity')
+  .requiredOption('--rpc-url <url>','Read-only endpoint for the deployment\'s chain: every candidate is re-read and checked here, and token metadata comes from it')
+  .option('--chain-id <number>','Chain to search when the contract is bound on several')
+  .option('--function <signature>','Only this described function, by name or signature (repeatable; also re-searches functions that have a fixture)',select,[])
+  .option('--per-function <n>','Fixtures to create per function','1')
+  .option('--max-blocks <n>','Without ENVIO_API_TOKEN: how many recent blocks the RPC scan reads','20000')
+  .action(async options=>output(await discoverFixtures(state(),{contract:options.contract,rpcUrl:options.rpcUrl,chainId:options.chainId,functions:options.function,perFunction:Number(options.perFunction),maxBlocks:Number(options.maxBlocks),log:progress})));
 program.command('preview').description('Render one transaction fixture locally')
   .requiredOption('--fixture <path>','Fixture path relative to the project root')
   .option('--open','Serve on loopback and open a browser')

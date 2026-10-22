@@ -114,6 +114,57 @@ export async function rpcCall(url: string, method: 'eth_chainId' | 'eth_getCode'
   if (typeof result !== 'string' || !/^0x[0-9a-fA-F]*$/.test(result)) fail('RPC_FAILED', `${method} on ${redact(url)} returned no hex result.`, 2);
   return result;
 }
+// Batched read-only JSON-RPC for the block scan in discovery (discover.ts). Entries the node answers with an
+// error come back as null. Rate limits are retried a few times with backoff, since public endpoints throttle.
+type ScanMethod = 'eth_blockNumber' | 'eth_getBlockByNumber' | 'eth_getTransactionReceipt';
+export async function rpcBatch(url: string, calls: {method: ScanMethod; params: unknown[]}[], timeoutMs = 60_000): Promise<unknown[]> {
+  const shown = redact(url);
+  for (let attempt = 0; ; attempt++) {
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {method: 'POST', signal: controller.signal, headers: {'content-type': 'application/json', accept: 'application/json'}, body: JSON.stringify(calls.map((c, id) => ({jsonrpc: '2.0', id, method: c.method, params: c.params})))});
+      const text = await response.text();
+      if (text.length > 64 * 1024 * 1024) fail('FETCH_TOO_LARGE', `${shown} returned more than 64 MiB for a batch of ${calls.length}.`, 2);
+      if (response.status === 429 && attempt < 4) { await new Promise(r => setTimeout(r, 1000 * 2 ** attempt)); continue; }
+      let body: any = null; try { body = JSON.parse(text); } catch { body = null; }
+      if (!Array.isArray(body)) fail('RPC_FAILED', `${shown} answered a JSON-RPC batch with HTTP ${response.status} and no batch result; the block scan needs an endpoint that accepts batches.`, 2);
+      const byId = new Map<number, any>(body.map((r: any) => [r?.id, r]));
+      return calls.map((_, id) => byId.get(id)?.result ?? null);
+    } catch (e) {
+      if (e instanceof Failure) throw e;
+      if (attempt < 4) { await new Promise(r => setTimeout(r, 1000 * 2 ** attempt)); continue; }
+      if ((e as Error).name === 'AbortError') fail('FETCH_TIMEOUT', `${shown} did not answer a batch within ${timeoutMs / 1000}s.`, 2);
+      fail('FETCH_FAILED', `${shown}: ${(e as Error).message}`, 2);
+    } finally { clearTimeout(timer); }
+  }
+}
+// Envio HyperSync, used only when the user sets ENVIO_API_TOKEN. It nominates transactions by target, selector
+// and success over a chain's whole history; each nominee is re-read and checked over the user's RPC before it
+// becomes a fixture, so the index is never the evidence.
+const HYPERSYNC = process.env.CLEAR_SIGNING_HYPERSYNC_URL ?? 'https://{chainId}.hypersync.xyz';
+export async function hypersyncQuery(chainId: number, token: string, query: unknown, timeoutMs = 60_000): Promise<any> {
+  const url = `${HYPERSYNC.replace('{chainId}', String(chainId))}/query`;
+  for (let attempt = 0; ; attempt++) {
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {method: 'POST', signal: controller.signal, headers: {'content-type': 'application/json', accept: 'application/json', authorization: `Bearer ${token}`}, body: JSON.stringify(query)});
+      const text = await response.text();
+      if (text.length > 64 * 1024 * 1024) fail('FETCH_TOO_LARGE', `${url} returned more than 64 MiB.`, 2);
+      let body: any = null; try { body = JSON.parse(text); } catch { body = null; }
+      const message = typeof body?.error === 'string' ? body.error : '';
+      if (response.status === 401 || response.status === 403 || /token/i.test(message)) fail('ENVIO_TOKEN_REJECTED', `HyperSync refused ENVIO_API_TOKEN: ${message || `HTTP ${response.status}`}`, 2);
+      if (response.status === 429 && attempt < 4) { await new Promise(r => setTimeout(r, 1000 * 2 ** attempt)); continue; }
+      if (response.status !== 200 || !body || message) fail('FETCH_FAILED', `HyperSync for chain ${chainId} returned HTTP ${response.status}${message ? `: ${message.slice(0, 300)}` : ''}.`, 2);
+      return body;
+    } catch (e) {
+      if (e instanceof Failure) throw e;
+      if (attempt < 4) { await new Promise(r => setTimeout(r, 1000 * 2 ** attempt)); continue; }
+      if ((e as Error).name === 'AbortError') fail('FETCH_TIMEOUT', `${url} did not answer within ${timeoutMs / 1000}s.`, 2);
+      fail('FETCH_FAILED', `${url}: ${(e as Error).message}`, 2);
+    } finally { clearTimeout(timer); }
+  }
+}
+export { redact as redactUrl };
 // A mined, successful transaction as sent: the calldata is copied, never re-encoded. Only the top-level
 // call is visible here, so a call that reached a contract through a router or multicall has another `to`.
 export interface ChainTransaction {hash: string; chainId: number; from: string; to: string; data: string; value: string; blockNumber: number; rpc: string}

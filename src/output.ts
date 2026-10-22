@@ -53,6 +53,12 @@ function formatHumanOutput(data: any): string {
     ...(data.registryRunnersSkipped?[`Registry runners skipped (${data.registryRunnersSkipped.reason}); ${data.registryRunnersSkipped.divergence.length} displayed field(s) may render differently in registry CI.`]:[]),
     ...portability,'See review/portability.json. Wallet/deployment verification and registry publication have not been performed.'].join('\n');
   if (data.passed !== undefined) return `${data.passed} signing test(s) passed.${data.updated ? ` ${data.updated} expectation(s) updated.` : ''}`;
+  if (data.alreadyCovered !== undefined && Array.isArray(data.missing)) return [
+    ...(data.searched ? [`Searched: ${data.searched}`] : []),
+    ...data.created.map((c:any)=>`Created ${c.file} from ${c.txHash} (block ${c.blockNumber})${c.unresolvedTokens?`; unresolved tokens: ${c.unresolvedTokens.join('; ')}`:''}`),
+    ...data.refused.map((r:any)=>`Skipped ${r.txHash} for ${r.function}: ${r.code}`),
+    ...(data.alreadyCovered.length ? [`Already have a fixture (${data.alreadyCovered.length}): ${data.alreadyCovered.map((s:string)=>s.split('(')[0]).join(', ')}`] : []),
+    data.next].join('\n');
   if (data.created) {
     if (typeof data.created === 'string') return `Created ${data.created}${data.source?` from ${data.source}`:''}\n${data.next}`;
     const imports=(data.imports??[]).map((i:any)=>`  ${i.contract} from ${i.source}${i.match?` (${i.match})`:''}: ${i.origin}${i.proxy?`\n    proxy ${i.proxy.type??''} -> implementation ${i.proxy.implementation.address}${i.proxy.implementation.name?` (${i.proxy.implementation.name})`:''}; the descriptor binds the proxy address`:''}`);
