@@ -341,9 +341,9 @@ await test('decisions: sliced token candidates, no tokens offered for non-amount
   const created=run(root,['decisions','--contract',id]).result,dfile=path.join(root,created.created),dec=read(dfile);
   assert.equal(dec.registryName,'SwapRouter');
   const hints=(sig:string,leaf:string)=>dec.functions[sig].fields[leaf].hints.denominations as string[]|undefined;
-  // A packed route offers its first and last token; a uint token offers its low 20 bytes.
+  // A packed route offers only its first token (the caller can append bytes after the last hop); a uint token offers its low 20 bytes.
   assert.ok(hints(ei,'params.amountIn')!.some(h=>h.startsWith('tokenPath params.path.[0:20] ')));
-  assert.ok(hints(ei,'params.amountOutMinimum')!.some(h=>h.startsWith('tokenPath params.path.[-20:] ')));
+  assert.ok(!hints(ei,'params.amountOutMinimum')!.some(h=>h.startsWith('tokenPath params.path.[-20:]')));
   assert.ok(hints(ux,'amount')!.some(h=>h.startsWith('tokenPath srcToken.[-20:] ')));
   // Deadlines, ids, narrow integers and a packed token are never amounts.
   for(const [sig,leaf] of [[ei,'params.deadline'],[ux,'srcToken'],[ux,'fee'],[ux,'v'],[ux,'orderId']]) assert.equal(hints(sig,leaf),undefined,`${sig} ${leaf}`);
@@ -357,7 +357,8 @@ await test('decisions: sliced token candidates, no tokens offered for non-amount
   dec.registryName='bad/name';write(dfile,dec);
   assert.equal(run(root,['apply','--decisions',created.created],2).diagnostics[0].code,'INVALID_DECISIONS');
   dec.registryName='SwapRouter';write(dfile,dec);
-  run(root,['apply','--decisions',created.created]);
+  // Counting from the end of the path reads whatever the caller appended.
+  assert.deepEqual(run(root,['apply','--decisions',created.created]).result.warnings.filter((w:any)=>w.code==='TAIL_SLICE_TOKEN').map((w:any)=>w.message.split(' for ')[0]),['tokenPath params.path.[-20:]']);
   const dir=path.join(root,'clear-signing/descriptors'),descFile=path.join(dir,fs.readdirSync(dir)[0]),d=read(descFile);
   d.context.contract.deployments=[{chainId:1,address:proxy}];write(descFile,d);
   const a='0x'+'aa'.repeat(20),b='0x'+'bb'.repeat(20);

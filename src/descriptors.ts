@@ -254,6 +254,7 @@ export const errorsOf = (list: Diagnostic[]) => list.filter(d => d.severity !== 
 // Warnings in the order check prints them: what the signer sees wrong first, then what registry lint
 // reports, then advice. Each code carries its own remedy; a code missing here sorts last.
 export const WARNING_REMEDY: Record<string, string> = {
+  TAIL_SLICE_TOKEN: 'Read the address from the start of the value, or exclude the function: a contract that decodes packed bytes from the front (a Uniswap V3 path) ignores bytes after the last hop, so the caller can append any address and the wallet shows it.',
   LIMIT_WORDING: 'Say it is a limit: "Maximum" in the label and "up to" or "at most" in the sentence for a cap the contract may not fully use; "Minimum" and "at least" for a floor.',
   PERMIT_GRANT_HIDDEN: 'Show what the permit grants (amount or unlimited flag, token, spender, how long the approval lasts); only the signature, its nonce and its deadline may be hidden.',
   UNDISPLAYED_ARGUMENT: 'Display the argument, or record a reason under hidden in clear-signing.toml if leaving it out is deliberate.',
@@ -396,6 +397,11 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
             if (constant) { const v = d.metadata.constants?.[constant[1]]; if (typeof v !== 'string' || !isAddress(v)) fail('TOKEN_MAPPING', `${field.path} references ${value}, which is not an address in metadata.constants${typeof v === 'string' && /^0x[0-9a-fA-F]{40}$/.test(v) ? ` (${v} has a wrong EIP-55 checksum)` : ''}.`); return; }
             // Any argument leaf may serve: the renderer reads an address out of address, bytes and integer values, and out of byte slices.
             if (!typeOf(value)) fail('TOKEN_MAPPING', `Invalid ${what} ${value} for ${field.path}: it must be a literal address, @.to, a metadata reference, or a path to an argument such as path.[0].`);
+            // A slice counted from the end of variable-length bytes reads whatever the caller appended. Uniswap V3
+            // decodes a path from the front and ignores trailing bytes, so "path.[-20:]" can show any token.
+            // Integers and fixed-size bytes have no room for trailing bytes.
+            const ref = value as string, slice = /\.\[(-?\d*):(-?\d*)\]$/.exec(ref), base = slice ? typeOf(ref.slice(0, slice.index)) : undefined;
+            if (slice && (slice[1].startsWith('-') || slice[2].startsWith('-')) && /^(bytes|string)$/.test(base ?? '')) add('TAIL_SLICE_TOKEN', `${what} ${ref} for ${field.path} counts from the end of a variable-length ${base}; a caller can append bytes the contract ignores and choose the address shown.`, key, 'warning');
           };
           if (field.format === 'tokenAmount') {
             if (params.token && params.tokenPath) fail('TOKEN_MAPPING', `tokenAmount on ${field.path} sets both token and tokenPath.`);

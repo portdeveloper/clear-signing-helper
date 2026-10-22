@@ -17,16 +17,15 @@ export function maybeAmount(name: string, type: string): boolean {
 }
 
 // Token references that need a byte slice, from the two idioms merged descriptors use:
-// a packed route in bytes (Uniswap V3 `path`: token, fee, token, ...), whose first and last 20 bytes are
-// tokens, and a token address packed into the low 20 bytes of a uint256 with flags (1inch and OKX
-// `srcToken`, `fromToken`).
+// a packed route in bytes (Uniswap V3 `path`: token, fee, token, ...), whose first 20 bytes are a token,
+// and a token address packed into the low 20 bytes of a uint256 with flags (1inch and OKX `srcToken`,
+// `fromToken`).
 export function slicedTokenCandidates(leaves: {path: string; type: string}[]): string[] {
   const out: string[] = [];
   for (const l of leaves) {
     const name = l.path.split('.').pop() ?? l.path;
-    if (l.type === 'bytes' && /path/i.test(name)) out.push(
-      `tokenPath ${l.path}.[0:20] (first token of a packed route: token, fee, token, ...; an exact-output route is often reversed, so check the source)`,
-      `tokenPath ${l.path}.[-20:] (last token of the packed route)`);
+    // Only the first token: the last one, [-20:], is whatever the caller appended (TAIL_SLICE_TOKEN).
+    if (l.type === 'bytes' && /path/i.test(name)) out.push(`tokenPath ${l.path}.[0:20] (first token of a packed route: token, fee, token, ...; an exact-output route is often reversed, so check the source. Its last token cannot be read safely: the contract ignores bytes after the last hop, so [-20:] shows whatever the caller appended)`);
     else if (/^uint\d*$/.test(l.type) && width(l.type) >= 160 && PACKED_TOKEN.test(name)) out.push(`tokenPath ${l.path}.[-20:] (token address in the low 20 bytes of a uint)`);
   }
   return out;
