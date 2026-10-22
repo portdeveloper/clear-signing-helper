@@ -6,6 +6,7 @@ import { Contract } from './foundry.js';
 import type { Evidence } from './evidence.js';
 import { disagreements, priorsFor, summarizePrior } from './priors.js';
 import { permitOf } from './permits.js';
+import { limitOf, saysLimit, sentenceSaysLimit, weakLimitName } from './limits.js';
 import { assertKeys, assertTreeBudget, Diagnostic, fail, Failure, hash } from './io.js';
 
 export const SCHEMA_URL = 'https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json';
@@ -250,6 +251,7 @@ export const errorsOf = (list: Diagnostic[]) => list.filter(d => d.severity !== 
 // Warnings in the order check prints them: what the signer sees wrong first, then what registry lint
 // reports, then advice. Each code carries its own remedy; a code missing here sorts last.
 export const WARNING_REMEDY: Record<string, string> = {
+  LIMIT_WORDING: 'Say it is a limit: "Maximum" in the label and "up to" or "at most" in the sentence for a cap the contract may not fully use; "Minimum" and "at least" for a floor.',
   PERMIT_GRANT_HIDDEN: 'Show what the permit grants (amount or unlimited flag, token, spender, how long the approval lasts); only the signature, its nonce and its deadline may be hidden.',
   UNDISPLAYED_ARGUMENT: 'Display the argument, or record a reason under hidden in clear-signing.toml if leaving it out is deliberate.',
   TOKEN_MAPPING: 'Set token or tokenPath so the amount renders with its symbol and decimals.',
@@ -412,6 +414,16 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           if (typeof reason !== 'string' || !reason.trim()) add('HIDDEN_REASON', `${sig} hidden path ${leaf} needs a reason.`, key);
         }
         for (const leaf of leafMap.keys()) if (!displayedLeaves.has(leaf) && !referenced.has(leaf) && !hiddenHere[leaf] && !declaredHidden.has(leaf)) add('UNDISPLAYED_ARGUMENT', `${sig} does not display ${leaf}. Signers will not see this argument.`, key, 'warning');
+        // A maximum or minimum (by its argument name) shown as if it were the amount moved (limits.ts).
+        for (const {field, key: leaf, hidden: isHidden} of resolved) {
+          if (isHidden || !leaf || typeof field.label !== 'string') continue;
+          const name = leaf.split('.').pop() ?? leaf, kind = limitOf(name, leafMap.get(leaf) ?? '');
+          if (!kind || weakLimitName(name)) continue;
+          const placeholder = new RegExp(`\\{(?:#\\.)?${leaf.replace(/[.[\]]/g, m => '\\' + m)}\\}`);
+          const inSentence = typeof spec.interpolatedIntent === 'string' ? sentenceSaysLimit(kind, spec.interpolatedIntent, placeholder) : undefined;
+          const where = [...(saysLimit(kind, field.label) ? [] : [`labels it "${field.label}"`]), ...(inSentence === false ? ['names it in the sentence without saying so'] : [])];
+          if (where.length) add('LIMIT_WORDING', `${sig} shows ${leaf}, a ${kind} by its name, but ${where.join(' and ')}. Signers will read it as the exact amount.`, key, 'warning');
+        }
         // A permit in the call grants an approval; what it grants must stay on screen (permits.ts).
         const permit = permitOf([...leafMap].map(([path, type]) => ({path, type})));
         for (const g of permit?.grants ?? []) if (!displayedLeaves.has(g.path) && !referenced.has(g.path)) add('PERMIT_GRANT_HIDDEN', `${sig} takes a permit (${permit!.kind}) but hides ${g.path}, the ${g.what}. Signers will not see what the permit grants.`, key, 'warning');

@@ -7,6 +7,7 @@ import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithPr
 import { priorsFor, summarizePrior, registryMatches, buildPriorsIndex, usePriorsIndex, PRIORS_META } from './priors.js';
 import { gatherEvidence } from './evidence.js';
 import { permitOf } from './permits.js';
+import { limitOf, LIMIT_HINT } from './limits.js';
 import {portabilityFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
 import { renderFixture, validateFixture, blockingWarnings, decodeCanonical, type Fixture, type Rendering } from './fixtures.js';
@@ -518,6 +519,8 @@ function buildDecisions(state: State, id: string): Decisions {
       if (doc) { if (top === leaf.path) hints.natspec = doc; else hints.natspecOfParent = `@param ${top}: ${doc}`; }
       const formatsForType = leaf.type === 'address' ? ['addressName', 'tokenTicker', 'raw'] : /^u?int\d*$/.test(leaf.type) ? ['tokenAmount', 'amount', 'date', 'duration', 'unit', 'enum', 'chainId', 'nftName', 'raw'] : leaf.type === 'bool' ? ['enum', 'raw'] : ['raw'];
       hints.formatsForType = formatsForType;
+      const limit = limitOf(leaf.path.split('.').pop() ?? leaf.path, leaf.type);
+      if (limit) hints.limit = LIMIT_HINT[limit];
       if (grants.has(leaf.path)) hints.permit = `Part of what the permit in this call grants (${grants.get(leaf.path)}): keep it visible.`;
       else if (permit?.signature.includes(leaf.path)) hints.permit = 'Permit signature bytes: may be hidden with a reason.';
       if (formatsForType.includes('enum')) hints.enum = `params {"$ref": "$.metadata.enums.<name>"} naming an entry of the file's top-level enums (add one there)`;
