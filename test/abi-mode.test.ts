@@ -329,3 +329,51 @@ await test('init --registry matches against the named clone, and find-in-registr
   assert.match(mention,/Descriptors that deploy[^\n]*\n {2}\(none\)/);assert.match(mention,/not a deployment:\n {2}registry\/acme\/testsv2/);assert.doesNotMatch(mention,/add-deployment --registry/);
   assert.match(search('acme'),/calldata-Vault\.json {2}\(owner: Acme\)/);
 });
+
+await test('decisions: sliced token candidates, no tokens offered for non-amounts; registryName names the export',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const abi=[
+    {type:'function',name:'exactInput',stateMutability:'nonpayable',outputs:[],inputs:[{name:'params',type:'tuple',components:[{name:'path',type:'bytes'},{name:'recipient',type:'address'},{name:'deadline',type:'uint256'},{name:'amountIn',type:'uint256'},{name:'amountOutMinimum',type:'uint256'}]}]},
+    {type:'function',name:'unxswapTo',stateMutability:'nonpayable',outputs:[],inputs:[{name:'srcToken',type:'uint256'},{name:'amount',type:'uint256'},{name:'receiver',type:'address'},{name:'fee',type:'uint24'},{name:'v',type:'uint8'},{name:'orderId',type:'uint256'}]}];
+  fs.writeFileSync(path.join(root,'router.abi.json'),JSON.stringify(abi));
+  run(root,['init','--abi','router.abi.json','--name','SwapRouter','--owner','Example']);
+  const id='clear-signing/abi/SwapRouter.json:SwapRouter', ei='exactInput((bytes,address,uint256,uint256,uint256))', ux='unxswapTo(uint256,uint256,address,uint24,uint8,uint256)';
+  const created=run(root,['decisions','--contract',id]).result,dfile=path.join(root,created.created),dec=read(dfile);
+  assert.equal(dec.registryName,'SwapRouter');
+  const hints=(sig:string,leaf:string)=>dec.functions[sig].fields[leaf].hints.denominations as string[]|undefined;
+  // A packed route offers its first and last token; a uint token offers its low 20 bytes.
+  assert.ok(hints(ei,'params.amountIn')!.some(h=>h.startsWith('tokenPath params.path.[0:20] ')));
+  assert.ok(hints(ei,'params.amountOutMinimum')!.some(h=>h.startsWith('tokenPath params.path.[-20:] ')));
+  assert.ok(hints(ux,'amount')!.some(h=>h.startsWith('tokenPath srcToken.[-20:] ')));
+  // Deadlines, ids, narrow integers and a packed token are never amounts.
+  for(const [sig,leaf] of [[ei,'params.deadline'],[ux,'srcToken'],[ux,'fee'],[ux,'v'],[ux,'orderId']]) assert.equal(hints(sig,leaf),undefined,`${sig} ${leaf}`);
+  dec.author='llm:test-model';
+  dec.functions[ux].decision='exclude';dec.functions[ux].excludeReason='Outside this test';
+  const f=dec.functions[ei].fields;
+  f['params.amountIn']={...f['params.amountIn'],label:'Amount to Send',format:'tokenAmount',params:{tokenPath:'params.path.[0:20]'}};
+  f['params.amountOutMinimum']={...f['params.amountOutMinimum'],label:'Minimum to Receive',format:'tokenAmount',params:{tokenPath:'params.path.[-20:]'}};
+  f['params.path']={...f['params.path'],show:false,hideReason:'Route; its ends are shown through the amounts.'};
+  dec.functions[ei].intent='Swap';
+  dec.registryName='bad/name';write(dfile,dec);
+  assert.equal(run(root,['apply','--decisions',created.created],2).diagnostics[0].code,'INVALID_DECISIONS');
+  dec.registryName='SwapRouter';write(dfile,dec);
+  run(root,['apply','--decisions',created.created]);
+  const dir=path.join(root,'clear-signing/descriptors'),descFile=path.join(dir,fs.readdirSync(dir)[0]),d=read(descFile);
+  d.context.contract.deployments=[{chainId:1,address:proxy}];write(descFile,d);
+  const a='0x'+'aa'.repeat(20),b='0x'+'bb'.repeat(20);
+  run(root,['fixture','--name','swap','--contract',id,'--function',ei,'--args',JSON.stringify([[a+'000bb8'+b.slice(2),impl,'1767225600','1000000','990000']]),'--chain-id','1','--to',proxy]);
+  const ff=path.join(root,'clear-signing/fixtures/swap.json'),fx=read(ff);fx.tokens={[a]:{name:'A',symbol:'AAA',decimals:6},[b]:{name:'B',symbol:'BBB',decimals:6}};write(ff,fx);
+  const shown=Object.fromEntries(run(root,['preview','--fixture','clear-signing/fixtures/swap.json']).result.fields.map((x:any)=>[x.label,x.value]));
+  assert.deepEqual([shown['Amount to Send'],shown['Minimum to Receive']],['1 AAA','0.99 BBB']);
+  run(root,['review','--accept']);run(root,['test','--update']);
+  // Renaming the export is not a reviewed change: no new review is needed.
+  dec.registryName='UniswapV3SwapRouter';write(dfile,dec);
+  run(root,['apply','--decisions',created.created]);
+  assert.match(fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8'),/registryName = "UniswapV3SwapRouter"/);
+  assert.equal(read(path.join(root,run(root,['decisions','--contract',id,'--out','clear-signing/decisions/again.json']).result.created)).registryName,'UniswapV3SwapRouter');
+  run(root,['export','--out','bundle','--no-lint']);
+  const reg=path.join(root,'bundle/registry/example');
+  assert.ok(fs.existsSync(path.join(reg,'calldata-UniswapV3SwapRouter.json')));
+  assert.equal(read(path.join(reg,'testsv2/calldata-UniswapV3SwapRouter.tests.json')).descriptor,'../calldata-UniswapV3SwapRouter.json');
+  assert.ok(read(path.join(root,'clear-signing/provenance.json'))[id].some((p:any)=>p.detail==='registryName: UniswapV3SwapRouter'&&p.source==='llm'));
+});

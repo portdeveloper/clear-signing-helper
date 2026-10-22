@@ -23,7 +23,10 @@ export type Descriptor = {
   display: {formats: Record<string, {intent?: string; interpolatedIntent?: string; fields: (Field | Group)[]; $id?: string}>; definitions?: Record<string, Field>};
 };
 // hidden: sighash -> normalized leaf path -> reason. Records a deliberate decision not to display an argument.
-export interface Selection {id: string; descriptor: string; exclusions: Record<string, string>; hidden?: Record<string, Record<string, string>>}
+// registryName: the <Name> in the exported registry/<entity>/calldata-<Name>.json; defaults to the contract name.
+export interface Selection {id: string; descriptor: string; exclusions: Record<string, string>; hidden?: Record<string, Record<string, string>>; registryName?: string}
+// What follows calldata- and precedes .json in a registry file name.
+export const REGISTRY_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
 
 // Formats the vendored renderer implements and this tool can exercise offline.
 // calldata (nested descriptor resolution) and interoperableAddressName are implemented upstream but not exercised here.
