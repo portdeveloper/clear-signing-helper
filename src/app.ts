@@ -8,7 +8,7 @@ import { priorsFor, summarizePrior, registryMatches, buildPriorsIndex, usePriors
 import { gatherEvidence } from './evidence.js';
 import { permitOf } from './permits.js';
 import { maybeAmount, slicedTokenCandidates } from './denominations.js';
-import { limitOf, LIMIT_HINT } from './limits.js';
+import { limitOf, LIMIT_HINT, EXACT_HINT, stopsEarly, STOPS_EARLY_HINT } from './limits.js';
 import {portabilityFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
 import { renderFixture, validateFixture, blockingWarnings, decodeCanonical, type Fixture, type Rendering } from './fixtures.js';
@@ -477,7 +477,10 @@ export async function exportBundle(state: State, out: string, strictPortability=
 // Decisions: the judgment slots the scaffold cannot fill, as a file any agent or person can edit.
 // `decisions` writes the template from the current descriptor plus every hint the tool has;
 // `apply` writes the descriptor, exclusions, hidden reasons and provenance from a filled file.
-export interface DecisionField {type: string; show: boolean; hideReason?: string | null; label: string; format: string; params?: Record<string, unknown> | null; author?: string | null; hints?: Record<string, unknown>}
+export interface DecisionField {type: string; show: boolean; hideReason?: string | null; label: string; format: string; params?: Record<string, unknown> | null; mustMatch?: unknown[] | null; author?: string | null; hints?: Record<string, unknown>}
+// A field's visible {mustMatch: [...]} rule: the wallet hides the field when the value is listed and refuses to
+// clear-sign otherwise. How a descriptor pins an argument that would switch off a check the screen states.
+const mustMatchRule = (visible: unknown): unknown[] | undefined => visible && typeof visible === 'object' && Array.isArray((visible as any).mustMatch) ? (visible as any).mustMatch : undefined;
 export interface DecisionFunction {signature: string; decision: 'describe' | 'exclude'; excludeReason?: string | null; intent: string; interpolatedIntent?: string | null; author?: string | null; fields: Record<string, DecisionField>; hints?: Record<string, unknown>}
 export interface Decisions {version: 1; contract: string; descriptor: string; author: string | null; generatedAt: string; owner: string; contractName?: string | null; registryName?: string | null; url: string | null; enums?: Record<string, Record<string, string>>; functions: Record<string, DecisionFunction>; guidance: string[]}
 const decisionsDir = 'clear-signing/decisions';
@@ -526,10 +529,13 @@ function buildDecisions(state: State, id: string): Decisions {
       hints.formatsForType = formatsForType;
       const limit = limitOf(leaf.path.split('.').pop() ?? leaf.path, leaf.type);
       if (limit) hints.limit = LIMIT_HINT[limit];
+      else if (maybeAmount(leaf.path.split('.').pop() ?? leaf.path, leaf.type)) hints.exact = EXACT_HINT;
+      if (stopsEarly(leaf.path.split('.').pop() ?? leaf.path)) hints.stopsEarly = STOPS_EARLY_HINT;
       if (grants.has(leaf.path)) hints.permit = `Part of what the permit in this call grants (${grants.get(leaf.path)}): keep it visible.`;
       else if (permit?.signature.includes(leaf.path)) hints.permit = 'Permit signature bytes: may be hidden with a reason.';
       if (formatsForType.includes('enum')) hints.enum = `params {"$ref": "$.metadata.enums.<name>"} naming an entry of the file's top-level enums (add one there)`;
-      fields[leaf.path] = {type: leaf.type, show: !!cur || !hidden, ...(hidden && !cur ? {hideReason: hidden} : {}), label: cur?.label ?? humanized, format: cur?.format ?? 'raw', params: cur?.params ?? null, hints};
+      const pinned = mustMatchRule(cur?.visible);
+      fields[leaf.path] = {type: leaf.type, show: !!cur || !hidden, ...(hidden && !cur ? {hideReason: hidden} : {}), label: cur?.label ?? humanized, format: cur?.format ?? 'raw', params: cur?.params ?? null, ...(pinned ? {mustMatch: pinned} : {}), hints};
     }
     if (f.stateMutability === 'payable' && !fields['@.value']) addValue();
     const priors = priorsFor(f.selector);
@@ -543,7 +549,7 @@ function buildDecisions(state: State, id: string): Decisions {
   if (c.special.includes('fallback()')) functions['fallback()'] = {signature: 'fallback()', decision: 'exclude', excludeReason: selection.exclusions['fallback()'] ?? null, intent: '', fields: {},
     hints: {note: 'fallback() cannot be described by a calldata descriptor. Keep decision "exclude" and write why signers will not reach it, or what it forwards.'}};
   return {version: 1, contract: id, descriptor: selection.descriptor, author: null, generatedAt: new Date().toISOString().slice(0, 10), owner: d.metadata.owner, contractName: d.metadata.contractName ?? null, registryName: registryNameOf(state, selection), url: d.metadata.info?.url ?? null, enums: d.metadata.enums ?? {}, functions,
-    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance for every value you change. Unchanged values keep their existing provenance.', 'A function or field may carry its own "author" that overrides the file author for that function (decision, intent, interpolatedIntent) or that field. Tag each value with whoever decided it.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml. fallback() can only be excluded; receive() needs no entry.', 'Per field: show true/false (hideReason required when false; a hidden field is written as visible "never" and its reason kept in clear-signing.toml), label (the registry linter warns above 20 characters), format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'interpolatedIntent is optional but recommended by the registry: a sentence embedding shown field values with {path}; set null to omit.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.', 'Field order: for a descriptor without groups, apply writes the fields in the order of the keys under fields.', 'registryName is the <Name> in the exported registry/<entity>/calldata-<Name>.json (default: the contract name); use one that is unambiguous next to the entity\'s other files, e.g. UniswapV3SwapRouter, not SwapRouter. owner (22 characters), contractName (30) and url (26) go to metadata; enums maps an enum name to {"value": "Label"} entries (labels up to 20 characters) and replaces metadata.enums.']};
+    guidance: ['Set author to "human" or "llm:<model>" before apply; it is recorded in provenance for every value you change. Unchanged values keep their existing provenance.', 'A function or field may carry its own "author" that overrides the file author for that function (decision, intent, interpolatedIntent) or that field. Tag each value with whoever decided it.', 'decision: "describe" or "exclude" (with excludeReason). Excluded functions are removed from the descriptor and listed in clear-signing.toml. fallback() can only be excluded; receive() needs no entry.', 'Per field: show true/false (hideReason required when false; a hidden field is written as visible "never" and its reason kept in clear-signing.toml), label (the registry linter warns above 20 characters), format (see hints.formatsForType), params (tokenAmount needs token or tokenPath; see hints.denominations), mustMatch (optional list of values: the wallet hides the field when its value is listed and refuses to clear-sign any other; use it to pin an argument that would switch off a check the screen states, see hints.exact and hints.stopsEarly; null removes it).', 'Intents are what a signer reads; keep them under 30 characters and never vaguer than the function.', 'interpolatedIntent is optional but recommended by the registry: a sentence embedding shown field values with {path}; set null to omit.', 'hints are read-only context: NatSpec, registry priors for the same selector, candidate denominations. They are ignored by apply.', 'Field order: for a descriptor without groups, apply writes the fields in the order of the keys under fields.', 'registryName is the <Name> in the exported registry/<entity>/calldata-<Name>.json (default: the contract name); use one that is unambiguous next to the entity\'s other files, e.g. UniswapV3SwapRouter, not SwapRouter. owner (22 characters), contractName (30) and url (26) go to metadata; enums maps an enum name to {"value": "Label"} entries (labels up to 20 characters) and replaces metadata.enums.']};
 }
 export function writeDecisions(state: State, id: string, out?: string) {
   const c = getContract(state.project, id), decisions = buildDecisions(state, id);
@@ -572,7 +578,22 @@ export function applyDecisions(state: State, file: string) {
   const baseline = buildDecisions(state, dec.contract).functions;
   const sameField = (a: DecisionField, b: DecisionField | undefined) => !!b && (a.show !== false) === b.show && (a.show === false
     ? (a.hideReason ?? '').trim() === (b.hideReason ?? '').trim()
-    : (a.label ?? '').trim() === b.label && (a.format ?? 'raw') === b.format && canonical(a.params && Object.keys(a.params).length ? a.params : null) === canonical(b.params && Object.keys(b.params).length ? b.params : null));
+    : (a.label ?? '').trim() === b.label && (a.format ?? 'raw') === b.format && canonical(a.params && Object.keys(a.params).length ? a.params : null) === canonical(b.params && Object.keys(b.params).length ? b.params : null)
+      && canonical(a.mustMatch?.length ? a.mustMatch : null) === canonical(b.mustMatch?.length ? b.mustMatch : null));
+  // undefined: leave the field's visibility as written; null or []: remove a mustMatch rule.
+  const pinOf = (decision: DecisionField, where: string): unknown[] | null | undefined => {
+    if (decision.mustMatch === undefined) return undefined;
+    if (decision.mustMatch === null || (Array.isArray(decision.mustMatch) && !decision.mustMatch.length)) return null;
+    if (!Array.isArray(decision.mustMatch) || decision.mustMatch.some(v => !['string', 'number', 'boolean'].includes(typeof v))) fail('INVALID_DECISIONS', `${where}: mustMatch must be a list of values (numbers, strings or booleans), e.g. [0].`, 2);
+    if (decision.show === false) fail('INVALID_DECISIONS', `${where}: mustMatch pins a shown field; remove it or set show true.`, 2);
+    return decision.mustMatch;
+  };
+  const pin = (field: Field, rule: unknown[] | null | undefined): Field => {
+    if (rule === undefined) return field;
+    const {visible, ...rest} = field;
+    if (rule) return {...rest, visible: {mustMatch: rule}};
+    return mustMatchRule(visible) ? rest : field;
+  };
   const c = getContract(state.project, dec.contract), current = state.descriptors.get(dec.contract)!;
   const d: Descriptor = structuredClone(current);
   if (typeof dec.owner === 'string' && dec.owner.trim()) d.metadata.owner = dec.owner.trim();
@@ -647,6 +668,7 @@ export function applyDecisions(state: State, file: string) {
       if (decision.show === false) {
         if (full === '@.value') fail('DECISIONS_NATIVE_VALUE', `${sig}: @.value must stay shown.`, 2);
         if (!decision.hideReason?.trim()) fail('DECISIONS_REASON', `${sig} ${full}: show=false needs a hideReason.`, 2);
+        pinOf(decision, `${sig} ${full}`);
         const reason = decision.hideReason!.trim();
         if (reason !== DESCRIPTOR_NEVER) hiddenHere[full] = reason;
         // Already hidden by the descriptor: keep it as written.
@@ -658,9 +680,10 @@ export function applyDecisions(state: State, file: string) {
       if (!(SUPPORTED_FORMATS as readonly string[]).includes(format)) fail('UNSUPPORTED_FORMAT', `${sig} ${full}: ${format} is not a supported format.`, 2);
       const label = decision.label?.trim() || merged.label;
       const params = decision.params && Object.keys(decision.params).length ? decision.params as Record<string, any> : undefined;
+      const rule = pinOf(decision, `${sig} ${full}`);
       // A $ref field may carry only path, $ref, params and visible. Unchanged, it stays as written; a
       // change the reference cannot express inlines the merged definition.
-      if (typeof item.$ref === 'string' && label === merged.label && format === merged.format && canonical(params ?? null) === canonical(merged.params ?? null)) {
+      if (typeof item.$ref === 'string' && label === merged.label && format === merged.format && canonical(params ?? null) === canonical(merged.params ?? null) && (rule === undefined || canonical(rule) === canonical(mustMatchRule(merged.visible) ?? null))) {
         if (item.visible !== 'never') return [item];
         const {visible: _, ...shown} = item; return [shown];
       }
@@ -668,7 +691,7 @@ export function applyDecisions(state: State, file: string) {
       const next: Field = {...base, label, format};
       if (next.visible === 'never') delete next.visible;
       if (params) next.params = params; else delete next.params;
-      return [next];
+      return [pin(next, rule)];
     });
     spec.fields = edit(spec.fields);
     const reorder = () => {
@@ -683,6 +706,7 @@ export function applyDecisions(state: State, file: string) {
       if (present.has(full)) continue;
       if (decision.show === false) {
         if (!decision.hideReason?.trim()) fail('DECISIONS_REASON', `${sig} ${full}: show=false needs a hideReason.`, 2);
+        pinOf(decision, `${sig} ${full}`);
         const reason = decision.hideReason!.trim();
         if (reason !== DESCRIPTOR_NEVER) hiddenHere[full] = reason;
         if (!never.has(full) && full !== '@.value') spec.fields.push({path: full, label: decision.label?.trim() || full, visible: 'never'});
@@ -690,12 +714,12 @@ export function applyDecisions(state: State, file: string) {
       }
       const format = decision.format ?? 'raw';
       if (!(SUPPORTED_FORMATS as readonly string[]).includes(format)) fail('UNSUPPORTED_FORMAT', `${sig} ${full}: ${format} is not a supported format.`, 2);
-      spec.fields.push({path: full, label: decision.label?.trim() || full, format, ...(decision.params && Object.keys(decision.params).length ? {params: decision.params as Record<string, any>} : {})});
+      spec.fields.push(pin({path: full, label: decision.label?.trim() || full, format, ...(decision.params && Object.keys(decision.params).length ? {params: decision.params as Record<string, any>} : {})}, pinOf(decision, `${sig} ${full}`)));
     }
     for (const [full, decision] of Object.entries(fd.fields ?? {})) {
       if (!flipped && sameField(decision, base.fields[full])) continue;
       const author = authorOf(decision.author, fnAuthor, `${sig} ${full}`);
-      if (decision.show !== false) record(author, {signature: sig, path: full, detail: `${decision.format ?? 'raw'}${decision.params ? ` ${JSON.stringify(decision.params)}` : ''}, label "${decision.label}"`});
+      if (decision.show !== false) record(author, {signature: sig, path: full, detail: `${decision.format ?? 'raw'}${decision.params ? ` ${JSON.stringify(decision.params)}` : ''}, label "${decision.label}"${decision.mustMatch?.length ? `, mustMatch ${JSON.stringify(decision.mustMatch)}` : ''}`});
       else if (hiddenHere[full]) record(author, {signature: sig, path: full, detail: `hidden: ${hiddenHere[full]}`});
     }
     reorder();

@@ -378,3 +378,45 @@ await test('decisions: sliced token candidates, no tokens offered for non-amount
   assert.equal(read(path.join(reg,'testsv2/calldata-UniswapV3SwapRouter.tests.json')).descriptor,'../calldata-UniswapV3SwapRouter.json');
   assert.ok(read(path.join(root,'clear-signing/provenance.json'))[id].some((p:any)=>p.detail==='registryName: UniswapV3SwapRouter'&&p.source==='llm'));
 });
+
+await test('decisions: mustMatch pins an argument that would switch off a check the screen states',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  // Uniswap V3 exactOutputSingle: amountOut is checked only when sqrtPriceLimitX96 is 0 (registry #3135).
+  const abi=[{type:'function',name:'exactOutputSingle',stateMutability:'payable',outputs:[],inputs:[{name:'params',type:'tuple',components:[{name:'tokenIn',type:'address'},{name:'tokenOut',type:'address'},{name:'recipient',type:'address'},{name:'amountOut',type:'uint256'},{name:'amountInMaximum',type:'uint256'},{name:'sqrtPriceLimitX96',type:'uint160'}]}]}];
+  fs.writeFileSync(path.join(root,'router.abi.json'),JSON.stringify(abi));
+  run(root,['init','--abi','router.abi.json','--name','SwapRouter','--owner','Example']);
+  const id='clear-signing/abi/SwapRouter.json:SwapRouter', sig='exactOutputSingle((address,address,address,uint256,uint256,uint160))';
+  const created=run(root,['decisions','--contract',id]).result,dfile=path.join(root,created.created),dec=read(dfile);
+  const f=dec.functions[sig].fields;
+  assert.ok(f['params.amountOut'].hints.exact,'an amount without limit wording asks what makes it exact');
+  assert.equal(f['params.amountInMaximum'].hints.exact,undefined,'a limit gets the limit hint instead');
+  assert.ok(f['params.sqrtPriceLimitX96'].hints.stopsEarly);
+  dec.author='llm:test-model';dec.functions[sig].intent='Swap';
+  f['params.amountOut']={...f['params.amountOut'],label:'Amount to Receive',format:'tokenAmount',params:{tokenPath:'params.tokenOut'}};
+  f['params.amountInMaximum']={...f['params.amountInMaximum'],label:'Maximum to Send',format:'tokenAmount',params:{tokenPath:'params.tokenIn'}};
+  for(const k of ['params.tokenIn','params.tokenOut']) f[k]={...f[k],show:false,hideReason:'Shown as the token of the amounts.'};
+  f['params.sqrtPriceLimitX96']={...f['params.sqrtPriceLimitX96'],show:false,hideReason:'x',mustMatch:[0]};write(dfile,dec);
+  assert.equal(run(root,['apply','--decisions',created.created],2).diagnostics[0].code,'INVALID_DECISIONS','a hidden field cannot be pinned');
+  f['params.sqrtPriceLimitX96']={...f['params.sqrtPriceLimitX96'],show:true,hideReason:undefined,label:'Price Limit',mustMatch:[0]};write(dfile,dec);
+  run(root,['apply','--decisions',created.created]);
+  const dir=path.join(root,'clear-signing/descriptors'),descFile=path.join(dir,fs.readdirSync(dir)[0]),d=read(descFile);
+  const field=d.display.formats[Object.keys(d.display.formats)[0]].fields.find((x:any)=>x.path==='params.sqrtPriceLimitX96');
+  assert.deepEqual(field.visible,{mustMatch:[0]});
+  assert.ok(read(path.join(root,'clear-signing/provenance.json'))[id].some((p:any)=>p.path==='params.sqrtPriceLimitX96'&&/mustMatch \[0\]/.test(p.detail)));
+  // The template reads the rule back, so an unchanged file round-trips.
+  const again=read(path.join(root,run(root,['decisions','--contract',id,'--out','clear-signing/decisions/again.json']).result.created));
+  assert.deepEqual(again.functions[sig].fields['params.sqrtPriceLimitX96'].mustMatch,[0]);
+  d.context.contract.deployments=[{chainId:1,address:proxy}];write(descFile,d);
+  const a='0x'+'aa'.repeat(20),b='0x'+'bb'.repeat(20);
+  const fixture=(name:string,limit:string)=>{run(root,['fixture','--name',name,'--contract',id,'--function',sig,'--args',JSON.stringify([[a,b,impl,'990000','1000000',limit]]),'--chain-id','1','--to',proxy]);
+    const ff=path.join(root,`clear-signing/fixtures/${name}.json`),fx=read(ff);fx.tokens={[a]:{name:'A',symbol:'AAA',decimals:6},[b]:{name:'B',symbol:'BBB',decimals:6}};write(ff,fx);return `clear-signing/fixtures/${name}.json`;};
+  const zero=run(root,['preview','--fixture',fixture('zero','0')]).result;
+  assert.ok(!zero.fields.some((x:any)=>x.label==='Price Limit'),'a matching value is hidden');
+  // Any other value does not render: wallets fall back instead of showing a screen the code does not enforce.
+  const set=run(root,['preview','--fixture',fixture('set','4295128740')],1).diagnostics[0];
+  assert.deepEqual([set.code,/MUSTMATCH_VIOLATION/.test(set.message)],['RENDER_FAILED',true]);
+  // null removes the rule.
+  again.author='llm:test-model';again.functions[sig].fields['params.sqrtPriceLimitX96'].mustMatch=null;write(path.join(root,'clear-signing/decisions/again.json'),again);
+  run(root,['apply','--decisions','clear-signing/decisions/again.json']);
+  assert.equal(read(descFile).display.formats[Object.keys(d.display.formats)[0]].fields.find((x:any)=>x.path==='params.sqrtPriceLimitX96').visible,undefined);
+});

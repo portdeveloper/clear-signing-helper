@@ -33,3 +33,10 @@ export const LIMIT_HINT: Record<LimitKind, string> = {
   maximum: 'By its name this is a maximum the contract may not fully use: label it "Maximum …" and write "up to" or "at most" before it in the sentence.',
   minimum: 'By its name this is a minimum the contract guarantees, not the amount moved: label it "Minimum …" and write "at least" before it in the sentence.'
 };
+// An amount shown without limit wording reads as exact, and whether it is exact can depend on another
+// argument: Uniswap V3's exactOutputSingle checks amountOut only when sqrtPriceLimitX96 is 0, so a nonzero
+// limit makes "for {amountOut}" false (registry #3135). Neither names nor the ABI show this, so the hints
+// send the author to the source and offer mustMatch, which makes wallets refuse other values.
+export const EXACT_HINT = 'Shown without "up to"/"at least", this reads as the exact amount. Find the require that makes it exact and any argument that switches that check off (a price limit, a partial-fill flag); pin that argument with mustMatch to the value that keeps the check, or word this amount as a limit.';
+export const stopsEarly = (name: string) => /price_?limit|limit_?price|sqrtPrice|partial|fill_?or_?kill/i.test(name);
+export const STOPS_EARLY_HINT = 'By its name this can end the call before its amounts complete. Read which checks still run when it is set; if one that the screen states is skipped, set mustMatch to the value that keeps it (e.g. [0]) instead of hiding it or showing it raw.';
