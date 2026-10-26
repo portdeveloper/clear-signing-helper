@@ -4,7 +4,7 @@ Create, preview, and regression-test ERC-7730 clear-signing descriptors alongsid
 
 Use it to turn compiled contract functions into editable ERC-7730 JSON drafts, inspect the fields a transaction would display, and catch changes to signing output in CI. Descriptors and fixtures stay in your contract repository.
 
-**Developer preview: `0.6.0-preview.4`.** Drafts are built from what the repository proves (ABI, NatSpec, compiler AST, broadcast records, verified source), accept every format the registry does, and export registry-shaped bundles checked by the registry's own linter. Works with Foundry projects or from a verified address. Generated labels, units and intent require developer review. Independent human review, protocol-maintainer assessment, physical-device testing and production wallet delivery remain pending. The CLI does not sign or send transactions.
+**Developer preview: `0.6.0-preview.5`.** Drafts are built from what the repository proves (ABI, NatSpec, compiler AST, broadcast records, verified source), accept every format the registry does, and export registry-shaped bundles checked by the registry's own linter. Works with Foundry projects or from a verified address. Generated labels, units and intent require developer review. Independent human review, protocol-maintainer assessment, physical-device testing and production wallet delivery remain pending. The CLI does not sign or send transactions.
 
 [Overview site](https://portdeveloper.github.io/clear-signing-helper/) · [How it compares](#how-it-compares) · [Install](#install-the-developer-preview) · [Try an example](#try-the-included-example) · [Use your own project](#add-clear-signing-to-your-foundry-repository) · [Commands](#files-and-commands)
 
@@ -27,7 +27,7 @@ All four made the same semantic calls. The tool made runs faster, cheaper and co
 
 ## Install the developer preview
 
-Requires Node.js 22+ and Foundry (or a verified contract address for [ABI mode](#use-without-foundry-abi-mode)). Install the [npm preview](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.4):
+Requires Node.js 22+ and Foundry (or a verified contract address for [ABI mode](#use-without-foundry-abi-mode)). Install the [npm preview](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.5):
 
 ```sh
 npm install --global --ignore-scripts clear-signing-helper@preview
@@ -40,9 +40,9 @@ Or try the CLI without a global installation:
 npx --yes --ignore-scripts --package=clear-signing-helper@preview clear-signing --help
 ```
 
-Pin `clear-signing-helper@0.6.0-preview.4` for reproducible installs. This is an experimental developer preview; specify the preview tag or exact version explicitly.
+Pin `clear-signing-helper@0.6.0-preview.5` for reproducible installs. This is an experimental developer preview; specify the preview tag or exact version explicitly.
 
-Expected version: `0.6.0-preview.4`. Installation is independent of your contract repository; it does not need a `package.json` or Node dependencies. Have `forge` available on your PATH.
+Expected version: `0.6.0-preview.5`. Installation is independent of your contract repository; it does not need a `package.json` or Node dependencies. Have `forge` available on your PATH.
 
 Continue with the example below or [your own Foundry project](#add-clear-signing-to-your-foundry-repository). Existing users should follow the [upgrade procedure](docs/DISTRIBUTION.md#upgrade-and-rollback). For other installation methods, see [building from source](#install-from-source) and [verified tarballs](docs/DISTRIBUTION.md#build-and-verify-a-release).
 
@@ -51,7 +51,7 @@ Continue with the example below or [your own Foundry project](#add-clear-signing
 After installing the CLI, clone the example from the matching release and build its contracts:
 
 ```sh
-git clone --depth 1 --branch v0.6.0-preview.4 \
+git clone --depth 1 --branch v0.6.0-preview.5 \
   https://github.com/portdeveloper/clear-signing-helper.git
 cd clear-signing-helper
 forge build --root examples/standard
@@ -391,7 +391,7 @@ Forge builds have a ten-minute timeout to accommodate large optimized protocol r
 
 ## Release status and evidence
 
-`0.6.0-preview.4` is published on [npm](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.4) under both the `preview` and `latest` tags, and as a [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.4) with its checksum and verification record. The npm tarball's integrity hash matches the GitHub asset byte for byte. The GitHub assets contain the package checksum and local, CI, GitHub-download and npm-install verification records. All four Linux/macOS Node 22/24 CI packages matched the released tarball. See the [release handoff](docs/RELEASE-HANDOFF.md) for exact inputs and remaining distribution work.
+`0.6.0-preview.5` is published on [npm](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.5) under both the `preview` and `latest` tags, and as a [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.5) with its checksum and verification record. The npm tarball's integrity hash matches the GitHub asset byte for byte. The GitHub assets contain the package checksum and local, CI, GitHub-download and npm-install verification records. All four Linux/macOS Node 22/24 CI packages matched the released tarball. See the [release handoff](docs/RELEASE-HANDOFF.md) for exact inputs and remaining distribution work.
 
 [Validation evidence](docs/VALIDATION.md) records automated tests, real-source exercises and emulator results. The [production readiness checklist](docs/PRODUCTION-READINESS.md) retains pending human and physical-device validation. Those results are not prerequisites for distributing this experimental CLI. Descriptors produced with the tool are under review in the registry: [#3003](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003) (PuddleSwap StakingRewards, exported unchanged) and [#2611](https://github.com/ethereum/clear-signing-erc7730-registry/pull/2611) (Permit2 on Monad).
 

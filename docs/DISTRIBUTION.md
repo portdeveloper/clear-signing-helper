@@ -33,7 +33,7 @@ For a local tarball install:
 ```sh
 npm run build
 npm pack --ignore-scripts
-npm install --ignore-scripts ./clear-signing-helper-0.6.0-preview.4.tgz
+npm install --ignore-scripts ./clear-signing-helper-0.6.0-preview.5.tgz
 ```
 
 `npm ci --ignore-scripts` is the supported clean checkout verification path.

@@ -1,3 +1,31 @@
+# Clear Signing Helper 0.6.0-preview.5 — developer preview
+
+Six changes that came out of writing the first top-contract descriptors with the registry team (Uniswap V2 Router02, merged as registry #3133, and Uniswap V3 SwapRouter, #3135). Each one moves a mistake that a reviewer caught into something the tool finds, offers or checks.
+
+## What changed
+
+- **`discover` finds real transactions for fixtures.** `discover --contract <id> --rpc-url <url>` finds successful direct calls to the bound deployment for every described function, and creates fixtures through the same checks as `fixture --tx`. With `ENVIO_API_TOKEN` set, it searches the chain's whole history through Envio HyperSync. Without it, it scans recent blocks over the RPC (`--max-blocks`) and reports the functions it did not reach.
+- **`PERMIT_GRANT_HIDDEN`.** `check` warns when a descriptor hides what a permit inside the call grants (amount or unlimited flag, spender, token, expiry). Only the signature, its nonce and its deadline may be hidden. The decisions file marks these functions under `hints.permit`.
+- **`LIMIT_WORDING`.** `check` warns when an argument named as a maximum or minimum (`amountADesired`, `amountOutMin`) is shown without limit wording in its label or sentence. Measured on the registry at `2c2ddeb`: 14 warnings, all real by inspection.
+- **`TAIL_SLICE_TOKEN`.** `check` warns when a token is read from the end of variable-length `bytes` (`params.path.[-20:]`). A Uniswap V3 router ignores bytes after the last hop, so the caller can append any address and the wallet shows it (registry #3136).
+- **Better decisions hints, and `registryName`.** Packed paths get the byte-slice token hint (`[0:20]` only). Deadlines, nonces, ids, basis points and narrow integers no longer get token hints. `registryName` sets the exported file name (`calldata-<registryName>.json`) without a new review.
+- **`mustMatch` in decisions.** A shown field can carry `"mustMatch": [0]`. `apply` writes `visible: {"mustMatch": [0]}`: wallets hide the field when its value is listed and refuse to clear-sign any other value. Use it for an argument that would switch off a check the screen states (Uniswap V3's `exactOutputSingle` checks `amountOut` only when `sqrtPriceLimitX96` is 0). New hints: `hints.exact` on every amount shown as exact, and `hints.stopsEarly` on price-limit and partial-fill arguments.
+- Registry priors refreshed at `b70998c` (587 descriptors, 904 selectors). The validator accepts 556 of the registry's 587 merged calldata descriptors. The 31 it rejects are the same two classes as before: the `calldata` format (nested calls) and one encrypted field. Pins unchanged; `registry:drift` matches master on all 7 checks.
+
+## Upgrade from 0.6.0-preview.4
+
+The engine fingerprint is unchanged, so existing configs, reviews and expectations stay valid. The new checks are warnings.
+
+## Install
+
+```sh
+sha256sum --check clear-signing-helper-0.6.0-preview.5.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.6.0-preview.5.tgz
+clear-signing --version
+```
+
+Expected version: `0.6.0-preview.5`. Network access, scope and validation are otherwise as described for 0.6.0-preview.1 below.
+
 # Clear Signing Helper 0.6.0-preview.4 — developer preview
 
 Follows registry CI again after four registry changes on 2026-10-21, and accepts two descriptor shapes the registry has merged since 0.6.0-preview.3.
