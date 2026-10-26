@@ -27,6 +27,9 @@ const pack = (cwd, destination) => {
 const cli = (consumer, ...args) => run(process.execPath, [path.join(consumer, 'node_modules', 'clear-signing-helper', 'dist', 'cli.js'), ...args], consumer);
 
 try {
+  // A release candidate must pass the whole suite on the source it packs. CI runs npm test in its own step;
+  // a local release run (the one that publishes) did not, and 0.6.0-preview.5 shipped with three stale tests.
+  if (!process.env.CI) run(npm, ['test'], root);
   const copies = [path.join(temp, 'source-a'), path.join(temp, 'source with spaces')];
   const builds = copies.map(destination => {
     copySource(destination);

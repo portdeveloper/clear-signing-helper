@@ -121,13 +121,14 @@ await test('init names the registry descriptor a Uniswap V2 router ABI already m
   const abi=sigs.map((s,i)=>{const [name,args]=[s.slice(0,s.indexOf('(')),s.slice(s.indexOf('(')+1,-1)];return {type:'function',name,stateMutability:name.includes('ETHFor')?'payable':'nonpayable',outputs:[],inputs:args.split(',').map((type,j)=>({name:`a${i}_${j}`,type}))};});
   fs.writeFileSync(path.join(root,'router.abi.json'),JSON.stringify(abi));
   const created=run(root,['init','--abi','router.abi.json','--name','Router','--owner','Example']).result;
-  assert.equal(created.registryMatches.length,1);
-  assert.deepEqual([created.registryMatches[0].file,created.registryMatches[0].shared.length,created.registryMatches[0].contained],['registry/quickswap/calldata-QuickSwap.json',7,false]); // QuickSwap does not describe swapETHForExactTokens
+  // Uniswap's own V2 file (registry #3133) shares all 8, the QuickSwap fork 7 (it does not describe swapETHForExactTokens);
+  // neither is contained, because both describe more functions than this ABI has.
+  assert.deepEqual(created.registryMatches.map((m:any)=>[m.file,m.shared.length,m.contained]),[['registry/uniswap/calldata-UniswapV2Router02.json',8,false],['registry/quickswap/calldata-QuickSwap.json',7,false]]);
   // A suggestion only: the draft is still written and carries no deployment.
   const d=read(path.join(root,created.contracts[0].descriptor));
   assert.deepEqual(d.context.contract.deployments,[]);
   const human=spawnSync(process.execPath,[cli,'--root',root,'init','--abi','router.abi.json','--name','Router2','--owner','Example'],{encoding:'utf8'});
-  assert.match(human.stdout,/Already in the registry\?[\s\S]*registry\/quickswap\/calldata-QuickSwap\.json[\s\S]*registry add-deployment/);
+  assert.match(human.stdout,/Already in the registry\?[\s\S]*registry\/uniswap\/calldata-UniswapV2Router02\.json[\s\S]*registry add-deployment/);
 });
 
 await test('--registry names the registry clone on export as on the registry commands; the former --ci-pins still works',t=>{

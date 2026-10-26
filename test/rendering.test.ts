@@ -97,7 +97,8 @@ await test('registry-style swap descriptor: typed addressName, tokenPath into pa
   const fields=d.display.formats[key].fields;
   d.display.formats[key].fields=fields.filter((f:any)=>f.path!=='deadline');
   const diagnostics=validateDescriptor(d,c,{...selection,hidden:{}});
-  assert.deepEqual(diagnostics.map(x=>[x.code,x.severity,x.remedy]),[['UNDISPLAYED_ARGUMENT','warning','Display the argument, or record a reason under hidden in clear-signing.toml if leaving it out is deliberate.']]);
+  // Uniswap and QuickSwap both show deadline, so dropping it also disagrees with the registry priors.
+  assert.deepEqual(diagnostics.map(x=>[x.code,x.severity,x.remedy]),[['UNDISPLAYED_ARGUMENT','warning','Display the argument, or record a reason under hidden in clear-signing.toml if leaving it out is deliberate.'],['CORPUS_DISAGREEMENT','warning','Compare with the registry priors init lists; keep the difference if it is deliberate.']]);
   d.display.formats[key].fields=fields;
   const iface=new Interface(c.abi);
   const r=await renderFixture({contract:c.id,chainId:10143,to:address,data:iface.encodeFunctionData('swapExactETHForTokens',[990000n,[address,other],'0x000000000000000000000000000000000000dEaD',1790000000n]),value:'2000000000000000000',localBinding:true,

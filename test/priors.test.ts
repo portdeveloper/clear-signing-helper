@@ -63,10 +63,9 @@ test('ERC-20 conventions never scaffold an interpolatedIntent their own check fl
 const selectorsOf=(...sigs:string[])=>sigs.map(s=>FunctionFragment.from(`function ${s}`).selector);
 const V2_ROUTER=['addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256)','addLiquidityETH(address,uint256,uint256,uint256,address,uint256)','removeLiquidity(address,address,uint256,uint256,uint256,address,uint256)','removeLiquidityETH(address,uint256,uint256,uint256,address,uint256)','removeLiquidityWithPermit(address,address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)','removeLiquidityETHWithPermit(address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)','removeLiquidityETHSupportingFeeOnTransferTokens(address,uint256,uint256,uint256,address,uint256)','removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)','swapExactTokensForTokens(uint256,uint256,address[],address,uint256)','swapTokensForExactTokens(uint256,uint256,address[],address,uint256)','swapExactETHForTokens(uint256,address[],address,uint256)','swapTokensForExactETH(uint256,uint256,address[],address,uint256)','swapExactTokensForETH(uint256,uint256,address[],address,uint256)','swapETHForExactTokens(uint256,address[],address,uint256)','swapExactTokensForTokensSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)','swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256)','swapExactTokensForETHSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)'];
 test('a Uniswap V2 router ABI finds the registry\'s V2 router descriptor, contained in the ABI',()=>{
-  const [m,...rest]=registryMatches(selectorsOf(...V2_ROUTER));
-  assert.equal(m.file,'registry/quickswap/calldata-QuickSwap.json');
-  assert.deepEqual([m.shared.length,m.distinctive,m.contained],[15,17,true]);
-  assert.deepEqual(rest,[]);
+  // Uniswap's own file (registry #3133) first, with every function; the QuickSwap fork second.
+  assert.deepEqual(registryMatches(selectorsOf(...V2_ROUTER)).map(m=>[m.file,m.shared.length,m.distinctive,m.contained]),
+    [['registry/uniswap/calldata-UniswapV2Router02.json',17,17,true],['registry/quickswap/calldata-QuickSwap.json',15,17,true]]);
 });
 test('a contract with many more functions than the registry describes still matches when the file is contained in it',()=>{
   // SwapRouter02: the registry file describes six swaps; the contract also has permits, sweeps and multicalls.
