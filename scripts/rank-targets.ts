@@ -3,8 +3,10 @@
 // Usage: npx tsx scripts/rank-targets.ts [--registry <clone>] [--top 1000] [--window 7d] [--senders 40] [--show 60] [--json <file>]
 // Without --registry, a shallow clone of master is made in a temporary directory. With ENVIO_API_TOKEN set, the
 // --senders best survivors get distinct and one-time sender counts per function from HyperSync over the window.
-// Keep/drop decisions a person made are read from the "Decisions" table in docs/TARGETS.md; survivors without one
-// are flagged NEW. Prints markdown to stdout.
+// Keep/drop decisions a person made are read from the "Decisions" table in docs/TARGETS.md, with a judgment of how much
+// a screen can say (full or partial). Kept contracts are ranked by usefulness: human-side activity (distinct senders when
+// measured, else transactions outside bot functions) times 1 for a full screen and 0.5 for a partial one. Survivors
+// without a decision are listed separately by activity and flagged NEW. Prints markdown to stdout.
 import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
@@ -59,7 +61,9 @@ interface Row {toAddress: string; sourcifyName: string | null; entity: string | 
 interface Senders {senders: number; oneTime: number; txs: number; partial: boolean; byFunction: Record<string, {senders: number; txs: number}>}
 interface Target {address: string; name: string; tx: number; humanTx: number; botTx: number; tokenTx: number; functions: Selector[]; bots: string[]; eip712Only: boolean;
   decision?: Decision; senders?: Senders}
-interface Decision {decision: 'keep' | 'drop'; name: string; reason: string}
+interface Decision {decision: 'keep' | 'drop'; screen?: 'full' | 'partial'; name: string; reason: string}
+// How much of what matters a screen can state: full, or only what is paid in (the output is off-chain or opaque).
+const SCREEN_WEIGHT = {full: 1, partial: 0.5};
 
 // 1. The ranking: the API returns up to 1000 rows per request.
 const top = Number(args.top);
@@ -97,12 +101,12 @@ const calldata = new Map<string, string>(), eip712 = new Map<string, string>();
 })(path.join(clone, 'registry'));
 if (temp) fs.rmSync(temp, {recursive: true, force: true});
 
-// 3. Decisions a person made, from docs/TARGETS.md: | `0x…` | keep/drop | name | reason |
+// 3. Decisions a person made, from docs/TARGETS.md: | `0x…` | keep/drop | full/partial/- | name | reason |
 const decisions = new Map<string, Decision>();
 const targetsDoc = path.join(repo, 'docs', 'TARGETS.md');
 for (const line of fs.readFileSync(targetsDoc, 'utf8').split('\n')) {
-  const m = /^\|\s*`(0x[0-9a-fA-F]{40})`\s*\|\s*(keep|drop)\s*\|([^|]*)\|([^|]*)\|/.exec(line);
-  if (m) decisions.set(m[1].toLowerCase(), {decision: m[2] as 'keep' | 'drop', name: m[3].trim(), reason: m[4].trim()});
+  const m = /^\|\s*`(0x[0-9a-fA-F]{40})`\s*\|\s*(keep|drop)\s*\|\s*(full|partial|-)\s*\|([^|]*)\|([^|]*)\|/.exec(line);
+  if (m) decisions.set(m[1].toLowerCase(), {decision: m[2] as 'keep' | 'drop', ...(m[3] !== '-' ? {screen: m[3] as 'full' | 'partial'} : {}), name: m[4].trim(), reason: m[5].trim()});
 }
 
 // 4. Automatic drops, then manual ones.
@@ -127,13 +131,13 @@ targets.sort((a, b) => b.humanTx - a.humanTx);
 
 // 5. Senders per function from HyperSync: distinct `from` over the window, and how many sent exactly one transaction.
 // A contract most people use once is human-heavy; a few addresses sending thousands is a bot, whatever the function.
-const token = process.env.ENVIO_API_TOKEN, sendersFor = Math.min(Number(args.senders), targets.length);
+const token = process.env.ENVIO_API_TOKEN, measure = [...targets.filter(t => t.decision), ...targets.filter(t => !t.decision).slice(0, Number(args.senders))], sendersFor = measure.length;
 let senderNote = token ? '' : 'ENVIO_API_TOKEN is not set, so no sender counts; ranked by transactions outside bot functions.';
 if (token && sendersFor) {
   const probe = await hypersyncQuery(1, token, {from_block: 0, to_block: 1, transactions: [{to: [targets[0].address]}], field_selection: {transaction: ['hash']}, max_num_transactions: 1});
   const tip = Number(probe?.archive_height), from = Math.max(0, tip - WINDOW_BLOCKS[args.window!]);
-  senderNote = `Senders from HyperSync, blocks ${from}–${tip} (successful transactions only), for the first ${sendersFor} by transactions.`;
-  for (const t of targets.slice(0, sendersFor)) {
+  senderNote = `Senders from HyperSync, blocks ${from}–${tip} (successful transactions only), for the ${sendersFor} kept or most active undecided contracts.`;
+  for (const t of measure) {
     const perSender = new Map<string, number>(), byFunction: Record<string, {senders: Set<string>; txs: number}> = {};
     let next = from, pages = 0, txs = 0;
     for (; next <= tip && pages < 50; pages++) {
@@ -154,9 +158,6 @@ if (token && sendersFor) {
       byFunction: Object.fromEntries(Object.entries(byFunction).map(([s, f]) => [s, {senders: f.senders.size, txs: f.txs}]))};
     console.error(`senders ${t.name} ${t.address}: ${t.senders.senders} distinct, ${t.senders.oneTime} one-time${t.senders.partial ? ' (partial: page limit)' : ''}`);
   }
-  // Rank by human senders where measured; the rest keep their transaction order below them.
-  const measured = targets.filter(t => t.senders).sort((a, b) => b.senders!.senders - a.senders!.senders);
-  targets.splice(0, measured.length, ...measured);
 }
 
 // 6. Report.
@@ -167,15 +168,21 @@ out.push(`# Target ranking, ${window.fromIso.slice(0, 10)} to ${window.toIso.sli
 out.push(`Source: ${RANKING}?window=${args.window}, top ${rows.length} Ethereum mainnet contracts by transactions. Registry ${head || clone}.`);
 out.push(`Dropped: ${Object.entries(dropped).map(([why, list]) => `${list.length} ${why}`).join(', ')}. ${targets.length} left.`);
 if (senderNote) out.push(senderNote);
-out.push('', '| # | Contract | Address | 7d tx | Human-side tx | Senders | One-time | Top functions (tx, or senders when measured) | Decision |', '|---|---|---|---|---|---|---|---|---|');
-targets.slice(0, Number(args.show)).forEach((t, i) => {
+const activity = (t: Target) => t.senders?.senders ?? t.humanTx;
+const row = (t: Target, i: number, lead: string) => {
   const s = t.senders;
   const fns = t.functions.slice(0, 4).map(f => `${fname(f)} ${s ? `${k(s.byFunction[f.selector]?.senders ?? 0)}s` : k(f.txCount)}`).join(', ');
   const notes = [t.bots.length ? `bots: ${t.bots.join(', ')}` : '', t.tokenTx ? `${Math.round(100 * t.tokenTx / t.tx)}% token calls` : '', t.eip712Only ? 'EIP-712 file exists' : ''].filter(Boolean);
-  out.push(`| ${i + 1} | ${t.decision?.name || t.name} | \`${t.address}\` | ${k(t.tx)} | ${k(t.humanTx)} | ${s ? `${k(s.senders)}${s.partial ? '+' : ''}` : ''} | ${s && s.senders ? `${Math.round(100 * s.oneTime / s.senders)}%` : ''} | ${fns}${notes.length ? ` (${notes.join('; ')})` : ''} | ${t.decision ? `keep: ${t.decision.reason}` : '**NEW**'} |`);
-});
-const shown = targets.slice(0, Number(args.show)), fresh = shown.filter(t => !t.decision);
-out.push('', `Showing ${shown.length} of ${targets.length}; ${fresh.length} of those without a decision. Add a row to the Decisions table in docs/TARGETS.md for each one you look at.`);
+  return `| ${i + 1} | ${lead}${t.decision?.name || t.name} | \`${t.address}\` | ${k(t.tx)} | ${k(t.humanTx)} | ${s ? `${k(s.senders)}${s.partial ? '+' : ''}` : ''} | ${s && s.senders ? `${Math.round(100 * s.oneTime / s.senders)}%` : ''} | ${fns}${notes.length ? ` (${notes.join('; ')})` : ''} |`;
+};
+const head_ = '| # | Contract | Address | 7d tx | Human-side tx | Senders | One-time | Top functions (tx, or senders when measured) |';
+const kept = targets.filter(t => t.decision).map(t => ({t, score: activity(t) * (t.decision!.screen ? SCREEN_WEIGHT[t.decision!.screen] : 1)})).sort((a, b) => b.score - a.score);
+out.push('', `## Kept, by usefulness (${kept.length})`, '', `Score: ${token ? 'distinct human senders' : 'human-side transactions'} times 1 for a full screen, 0.5 for a partial one.`, '',
+  '| # | Score | Screen | Contract | Address | 7d tx | Human-side tx | Senders | One-time | Top functions | Why |', '|---|---|---|---|---|---|---|---|---|---|---|',
+  ...kept.map(({t, score}, i) => row(t, i, '').replace(/^\| (\d+) \| /, `| $1 | ${k(Math.round(score))} | ${t.decision!.screen ?? '?'} | `) + ` ${t.decision!.reason} |`));
+const fresh = targets.filter(t => !t.decision).sort((a, b) => activity(b) - activity(a)), shown = fresh.slice(0, Number(args.show));
+out.push('', `## Undecided, by activity (${shown.length} of ${fresh.length})`, '', head_, '|---|---|---|---|---|---|---|---|', ...shown.map((t, i) => row(t, i, '**NEW** ')));
+out.push('', 'For each undecided contract you look at, add a row to the Decisions table in docs/TARGETS.md: keep or drop, and whether a screen can say everything that matters (full) or only what is paid in (partial).');
 if (disagreements.length) out.push('', '## Dashboard and registry disagree', '', ...disagreements.map(d => `- ${d}`));
 const unseen = [...decisions].filter(([a]) => !rows.some(r => r.toAddress.toLowerCase() === a));
 if (unseen.length) out.push('', '## Decided, but not in this ranking', '', ...unseen.map(([a, d]) => `- \`${a}\` ${d.name} (${d.decision})`));
