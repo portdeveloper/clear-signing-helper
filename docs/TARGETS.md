@@ -34,7 +34,7 @@ Read by the script: one row per address, `keep` or `drop`, the screen (`full`: a
 | `0xba3cb449bd2b4adddbc894d8697f5170800eadec` | keep | full | CoW EthFlow | `createOrder` |
 | `0xac4c6e212a361c968f1725b4d055b47e63f80b75` | keep | full | Sushi RedSnwapper | `snwap`, `snwapMultiple`; in, out and minimum are plain arguments |
 | `0x45312ea0eff7e09c83cbe249fa1d7598c4c8cd4e` | drop | - | Curve Router v1.2 | cannot name the output: the route is 11 addresses padded with zeros, so the output token sits at a different index in each call, and no path can say "last nonzero" (2026-10-27) |
-| `0x0ec68c5b10f21effb74f2a5c61dfe6b08c0db6cb` | keep | partial | OP Mainnet portal | prove/finalize withdrawal; people and relayers mixed |
+| `0x0ec68c5b10f21effb74f2a5c61dfe6b08c0db6cb` | keep | partial | OP-stack portal (chain to identify) | prove/finalize withdrawal; people and relayers mixed. Not OP Mainnet's portal (that is `0xbEb5Fc579115071764c7423A4f12eDde41f106Ed`, 820 tx/7d): OptimismPortal 1.10.0, systemConfig `0x5531DcfF39EC1ec727C4c5D2fc49835368F805a9` |
 | `0x49048044d57e1c92a77f79988d21fa8faf74e97e` | keep | partial | Base portal | prove/finalize withdrawal; people and relayers mixed |
 | `0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401` | drop | - | ENS NameWrapper | bot-led: 8 of 13 direct calls in 3,000 blocks came from one address (2026-10-27) |
 | `0x881d40237659c251811cec9c364ef91dc08d300c` | drop | - | MetaMask MetaSwap | partial screen: output inside opaque adapter data |
