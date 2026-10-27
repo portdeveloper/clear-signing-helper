@@ -13,9 +13,9 @@ Who does which of the 20 top contracts (CLAUDE.md phase 5, `docs/TARGETS.md`). W
 | Disperse | [#3151](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3151) (draft) |
 | ENS ETHRegistrarController | [#3152](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3152) (draft) |
 | THORChain Router | [#3153](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3153) (draft) |
-| CoW EthFlow | in progress |
-| Sushi RedSnwapper | in progress |
-| Maya Router | in progress |
+| CoW EthFlow | [#3154](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3154) (draft) |
+| Sushi RedSnwapper | [#3156](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3156) (draft) |
+| Harbor Router (listed as "Maya Router" until 2026-10-27; it is Harbor's) | [#3155](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3155) (draft) |
 
 ## Do not do (dropped, reasons in `docs/TARGETS.md`)
 
@@ -94,7 +94,7 @@ The rule that matters most: a dapp fills the arguments, so every sentence and am
 
 Steps (run each command from a new project directory):
 1. clear-signing init --address <address> --chain-id 1 --owner "<protocol>" --registry <registry clone>
-2. clear-signing decisions --contract <id>; fill the decisions file (set "author": "llm:<your model>"; intents and sentence templates <= 30 characters, labels <= 20 including hidden ones); clear-signing apply --decisions <file>. Do not hand-edit descriptor JSON except to wrap paired arrays in a {"iteration": "bundled"} group, which the decisions file cannot express.
+2. clear-signing decisions --contract <id>; fill the decisions file (set "author": "llm:<your model>"; intents <= 30 characters and labels <= 20 including hidden ones; an interpolatedIntent sentence template may run longer when that is what it takes to say the amounts that matter, e.g. "Sell {amount} for at least {minimum}" (the linter warns, as it does for about half of the merged sentences)); clear-signing apply --decisions <file>. Do not hand-edit descriptor JSON except to wrap paired arrays in a {"iteration": "bundled"} group, which the decisions file cannot express.
 3. clear-signing discover --contract <id> --rpc-url https://ethereum-rpc.publicnode.com (set ENVIO_API_TOKEN from envio.dev to search the whole chain); encode with clear-signing fixture --function only what has no real call, using a realistic sender.
 4. clear-signing preview --fixture <file> for each fixture; read every screen as a signer would.
 5. clear-signing claims --contract <id> --rpc-url <an endpoint with historical state, e.g. https://mainnet.gateway.tenderly.co or https://eth.drpc.org>: it replays the real transactions on a fork and varies hidden or raw arguments; read every finding against the source and fix the wording, pin with mustMatch, or exclude.

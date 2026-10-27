@@ -23,16 +23,16 @@ Read by the script: one row per address, `keep` or `drop`, the screen (`full`: a
 | `0x00005ea00ac477b1030ce78506496e8c2de24bf5` | keep | full | SeaDrop | #3150 (draft); `mintPublic`, `mintSigned` |
 | `0x5c7bcd6e7de5423a257d81b442095a1a6ced35c5` | keep | partial | Across SpokePool | `depositV3`, `deposit` (~8k); `fillRelay` is relayers |
 | `0x97ccdbea4632140639ad5ea9b944aa034eb15fd4` | drop | - | Across SpokePoolPeriphery | partial screen: `swapAndBridge` carries opaque swap calldata; `depositWithAuthorization` is mostly relayed (the user signs typed data, not the transaction); `depositNative` is better covered by the SpokePool (2026-10-27) |
-| `0xd37bbe5744d730a1d98d8dc97c42f0ca46ad7146` | keep | full | THORChain Router | `depositWithExpiry` (~5k); `transferOut` is the vault |
+| `0xd37bbe5744d730a1d98d8dc97c42f0ca46ad7146` | keep | full | THORChain Router | #3153 (draft); `depositWithExpiry` (~5k); `transferOut` is the vault |
 | `0xc36442b4a4522e871399cd717abdd847ab11fe88` | keep | partial | Uniswap V3 NonfungiblePositionManager | `mint`, `increaseLiquidity`, `decreaseLiquidity`, `collect`; `multicall` stays blind |
 | `0xc1d13492285eb664951e201bf7c80c7c6318a1b5` | keep | partial | SwftSwap | `swap`, `swapEth`; `withdraw` looks operator-side |
 | `0x888888888889758f76e7103c6cbf23abbf58f946` | keep | partial | Pendle RouterV4 | 27 functions, large, high value |
 | `0xd152f549545093347a162dce210e7293f1452150` | keep | full | Disperse | #3151 (draft); `disperseEther`, `disperseToken` |
 | `0x59e16fccd424cc24e280be16e11bcd56fb0ce547` | keep | full | ENS ETHRegistrarController | #3152 (draft); `register`, `renew`, `commit` |
 | `0x07964f135f276412b3182a3b2407b8dd45000000` | drop | - | TransitSwap RouterV5 | partial screen: `aggregate` (3.4k of 5.3k) is opaque; only the small `exactInputV2Swap`/`exactInputV3Swap` share would be clear (2026-10-27) |
-| `0x1f21d09c65bc8af92634dcd5a100b6d04f0c81c3` | keep | full | Maya Router (Harbor_RouterV5) | `depositWithExpiry` |
-| `0xba3cb449bd2b4adddbc894d8697f5170800eadec` | keep | full | CoW EthFlow | `createOrder` |
-| `0xac4c6e212a361c968f1725b4d055b47e63f80b75` | keep | full | Sushi RedSnwapper | `snwap`, `snwapMultiple`; in, out and minimum are plain arguments |
+| `0x1f21d09c65bc8af92634dcd5a100b6d04f0c81c3` | keep | full | Harbor Router | #3155 (draft). Not Maya Protocol's router: the verified source is `Harbor_RouterV5` ("managed by XNode Vaults"), and Maya's own API lists `0xe3985E6b61b814F7Cdb188766562ba71b446B46d` (MAYAChain_Router, ~1.1k tx/7d) as its Ethereum router |
+| `0xba3cb449bd2b4adddbc894d8697f5170800eadec` | keep | full | CoW EthFlow | #3154 (draft); `createOrder` |
+| `0xac4c6e212a361c968f1725b4d055b47e63f80b75` | keep | full | Sushi RedSnwapper | #3156 (draft); `snwap`, `snwapMultiple`; in, out and minimum are plain arguments |
 | `0x45312ea0eff7e09c83cbe249fa1d7598c4c8cd4e` | drop | - | Curve Router v1.2 | cannot name the output: the route is 11 addresses padded with zeros, so the output token sits at a different index in each call, and no path can say "last nonzero" (2026-10-27) |
 | `0x0ec68c5b10f21effb74f2a5c61dfe6b08c0db6cb` | keep | partial | OP-stack portal (chain to identify) | prove/finalize withdrawal; people and relayers mixed. Not OP Mainnet's portal (that is `0xbEb5Fc579115071764c7423A4f12eDde41f106Ed`, 820 tx/7d): OptimismPortal 1.10.0, systemConfig `0x5531DcfF39EC1ec727C4c5D2fc49835368F805a9` |
 | `0x49048044d57e1c92a77f79988d21fa8faf74e97e` | keep | partial | Base portal | prove/finalize withdrawal; people and relayers mixed |
