@@ -16,6 +16,7 @@ import { Contract } from './foundry.js';
 import { Fixture, decodeCanonical } from './fixtures.js';
 import { fetchTransaction, rpcBatch, redactUrl } from './fetch.js';
 import { fail, Failure } from './io.js';
+import { limitOf } from './limits.js';
 
 const TRANSFER = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const APPROVAL = '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925';
@@ -31,9 +32,10 @@ const QUALIFIED = /before (fees?|tax)/i;
 
 export type ClaimKind = 'exact' | 'maximum' | 'minimum';
 export interface Claim {path: string; label: string; kind: ClaimKind; asset: string; amount: bigint; recipients: string[]}
-interface Effects {delta: Map<string, Map<string, bigint>>; wrapped: Set<string>; approvals: Map<string, bigint>}
+// state: logs and the storage, balance and code writes of the run (prestateTracer diff), when asked for.
+interface Effects {delta: Map<string, Map<string, bigint>>; wrapped: Set<string>; approvals: Map<string, bigint>; state?: string}
 interface Run {ok: boolean; effects?: Effects; error?: string}
-export interface ClaimFinding {fixture: string; signature: string; claim: string; kind: 'baseline' | 'argument' | 'limit' | 'exact' | 'path-tail' | 'retained'; argument?: string; value?: string; message: string}
+export interface ClaimFinding {fixture: string; signature: string; claim: string; kind: 'baseline' | 'argument' | 'limit' | 'exact' | 'path-tail' | 'retained' | 'ignored'; argument?: string; value?: string; message: string}
 
 // ---- calldata as a tree: tuples keyed by component name, so descriptor paths read and write it.
 type Tree = any;
@@ -177,7 +179,7 @@ async function startFork(rpcUrl: string, block: number): Promise<Fork> {
 }
 const hex = (n: bigint | number) => '0x' + n.toString(16);
 
-async function execute(fork: Fork, tx: {from: string; to: string; data: string; value: bigint}, timestamp: number, watch: string[]): Promise<Run> {
+async function execute(fork: Fork, tx: {from: string; to: string; data: string; value: bigint}, timestamp: number, watch: string[], traced = false): Promise<Run> {
   const snapshot = await rpc(fork.url, 'evm_snapshot');
   try {
     await rpc(fork.url, 'evm_setNextBlockTimestamp', [timestamp]);
@@ -208,7 +210,14 @@ async function execute(fork: Fork, tx: {from: string; to: string; data: string; 
       if (topics[0] === APPROVAL && topics.length === 3 && '0x' + topics[1].slice(26) === tx.from.toLowerCase() && log.data?.length >= 66)
         approvals.set(`${token}:0x${topics[2].slice(26)}`, BigInt(log.data.slice(0, 66)));
     }
-    return {ok: true, effects: {delta, wrapped, approvals}};
+    let state: string | undefined;
+    if (traced) {
+      // Everything the call changed. The coinbase and the sender's nonce change the same way in every run.
+      const diff = await rpc(fork.url, 'debug_traceTransaction', [hash, {tracer: 'prestateTracer', tracerConfig: {diffMode: true}}]);
+      const strip = (side: Record<string, any> = {}) => Object.fromEntries(Object.entries(side).filter(([a]) => a !== receipt.from && !/^0x0{40}$/.test(a)).sort().map(([a, v]) => [a, {balance: v.balance, code: v.code, storage: v.storage}]));
+      state = JSON.stringify({logs: (receipt.logs ?? []).map((l: any) => [l.address, l.topics, l.data]), pre: strip(diff?.pre), post: strip(diff?.post)});
+    }
+    return {ok: true, effects: {delta, wrapped, approvals, state}};
   } finally { await rpc(fork.url, 'evm_revert', [snapshot]); }
 }
 
@@ -246,10 +255,10 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
   const addressesIn = (r: Tree) => leavesOf(r).filter(l => l.type === 'address').map(l => asAddress(valueAt(r, l.path, ctx(r)))).filter((a): a is string => !!a);
   const fork = await startFork(o.rpcUrl, tx.blockNumber - 1);
   try {
-    const run = async (r: Tree, v = value) => {
+    const run = async (r: Tree, v = value, traced = false) => {
       result.runs++;
       const watch = [...new Set([sender, to, ...addressesIn(r)])];
-      return execute(fork, {from: sender, to, data: encode(r), value: v}, timestamp, watch);
+      return execute(fork, {from: sender, to, data: encode(r), value: v}, timestamp, watch, traced);
     };
     const base = await run(root);
     if (!base.ok) return {...result, status: `skipped: the transaction reverts when replayed at block ${tx.blockNumber - 1} (another transaction earlier in its block may set it up): ${base.error}`};
@@ -290,12 +299,13 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
     // What the screen explains: shown fields that are not raw, and the leaves their token parameters read.
     const key = Object.keys(d.display.formats).find(k => parseSignature(k).format('sighash') === signature)!;
     const fields = resolveFields(expandNestedFields(d.display.formats[key].fields, fn, decoded as any), d.display.definitions ?? {});
-    const explained = new Set<string>(), pinned = new Set<string>();
+    const explained = new Set<string>(), pinned = new Set<string>(), shown = new Set<string>();
     for (const {field, hidden} of fields) {
       if (typeof field.path !== 'string') continue;
       const p = stripRoot(field.path);
       if (field.visible && typeof field.visible === 'object' && Array.isArray((field.visible as any).mustMatch)) pinned.add(p);
       if (!hidden && field.format !== 'raw') explained.add(p);
+      if (!hidden && !p.startsWith('@.')) shown.add(p);
       for (const ref of [field.params?.tokenPath, field.params?.collectionPath]) if (typeof ref === 'string' && !ref.startsWith('@.')) explained.add(stripRoot(ref).replace(/\.\[-?\d*:-?\d*\]$/, ''));
     }
     const leaves = leavesOf(root);
@@ -371,6 +381,27 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
         const r = setAt(root, leaf, v);
         if (compare(r, await run(r), 'exact', leaf, String(v))) break;
       }
+    }
+    // 5. Shown arguments the call ignores: every extreme value succeeds and changes exactly what the real
+    // transaction changed (CoW EthFlow's invalidateOrder shows order.validTo, which the order hash leaves out,
+    // registry #3154). A check-only argument such as a deadline or a minimum reverts at one extreme.
+    // Limits are left to probe 3: Uniswap V2's addLiquidity checks amountAMin on one branch of the reserve ratio
+    // and neither minimum on a new pool, so a replay that skips the branch made 3 false findings on Router02.
+    const limits = new Set(baseClaims.filter(c => c.kind !== 'exact').map(c => stripRoot(c.path)));
+    const reference = shown.size && budgetLeft() ? await run(root, value, true) : undefined;
+    for (const leaf of reference?.ok ? leaves : []) {
+      if (!shown.has(leaf.path) || pinned.has(leaf.path) || limits.has(leaf.path) || limitOf(leaf.path.split('.').pop() ?? leaf.path, leaf.type) || !budgetLeft()) continue;
+      const current = valueAt(root, leaf.path, ctx(root));
+      const tries = leaf.type === 'bool' ? [!current] : leaf.type === 'address' ? [OTHER, sender, '0x0000000000000000000000000000000000000000'].filter(a => a !== asAddress(current)).map(a => getAddress(a))
+        : /^u?int\d*$/.test(leaf.type) && typeof current === 'bigint' ? [...new Set(ladder(leaf.type, current).filter(v => v !== current))].filter((v, i, all) => i === 0 || i === all.length - 1 || v === 1n || v === current * 2n) : [];
+      if (!tries.length) continue;
+      let ignored = true;
+      for (const v of tries) {
+        if (!budgetLeft()) { ignored = false; break; }
+        const outcome = await run(setAt(root, leaf.path, v as any), value, true);
+        if (!outcome.ok || outcome.effects!.state !== reference!.effects!.state) { ignored = false; break; }
+      }
+      if (ignored) result.findings.push({fixture: file, signature, claim: `${leaf.path} is shown`, kind: 'ignored', argument: leaf.path, value: tries.map(String).join(', '), message: `With ${tries.map(String).join(', ')} the call succeeds and changes exactly what the real transaction changed: the contract ignores it, so the screen shows a value that does nothing. Hide it with that reason.`});
     }
     if (!budgetLeft()) result.status = `checked, stopped at the ${o.budget}-run budget`;
     return result;

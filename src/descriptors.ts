@@ -7,6 +7,7 @@ import type { Evidence } from './evidence.js';
 import { disagreements, priorsFor, summarizePrior } from './priors.js';
 import { permitOf } from './permits.js';
 import { limitOf, saysLimit, sentenceSaysLimit, weakLimitName } from './limits.js';
+import { nativeAmountWithoutValue, pinnedToZero, sentenceOmits } from './screens.js';
 import { assertKeys, assertTreeBudget, Diagnostic, fail, Failure, hash } from './io.js';
 
 export const SCHEMA_URL = 'https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json';
@@ -255,12 +256,14 @@ export const errorsOf = (list: Diagnostic[]) => list.filter(d => d.severity !== 
 // reports, then advice. Each code carries its own remedy; a code missing here sorts last.
 export const WARNING_REMEDY: Record<string, string> = {
   TAIL_SLICE_TOKEN: 'Read the address from the start of the value, or exclude the function: a contract that decodes packed bytes from the front (a Uniswap V3 path) ignores bytes after the last hop, so the caller can append any address and the wallet shows it.',
+  NATIVE_AMOUNT_UNPAID: 'Drop nativeCurrencyAddress from this amount: with @.value pinned to 0 no ETH is sent, so the native address can only render as an ETH payment that does not happen.',
   LIMIT_WORDING: 'Say it is a limit: "Maximum" in the label and "up to" or "at most" in the sentence for a cap the contract may not fully use; "Minimum" and "at least" for a floor.',
   PERMIT_GRANT_HIDDEN: 'Show what the permit grants (amount or unlimited flag, token, spender, how long the approval lasts); only the signature, its nonce and its deadline may be hidden.',
   UNDISPLAYED_ARGUMENT: 'Display the argument, or record a reason under hidden in clear-signing.toml if leaving it out is deliberate.',
   TOKEN_MAPPING: 'Set token or tokenPath so the amount renders with its symbol and decimals.',
   FORMAT_TYPE: 'Use a format that matches the argument type, or raw.',
   INVALID_INTERPOLATION: 'Reference only displayed fields in interpolatedIntent.',
+  SENTENCE_OMITS: 'Name the amount or recipient in interpolatedIntent too: a wallet shows the sentence first, and one that says what happens but not how much or to whom reads as complete. A complete template often passes 30 characters: the registry linter only warns on length, while the registry AI review flags the omission.',
   INTENT_LENGTH: `Shorten it to ${MAX_INTENT} characters or fewer; the registry linter warns above that and Ledger devices truncate.`,
   LABEL_LENGTH: `Shorten the label to ${MAX_LABEL} characters or fewer; the registry linter warns above that and Ledger devices truncate.`,
   METADATA_LENGTH: 'Shorten it; the registry linter warns above the Ledger limit and devices truncate.',
@@ -409,6 +412,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
             if (!params.token && !params.tokenPath) add('TOKEN_MAPPING', `tokenAmount on ${field.path} has neither token nor tokenPath; it will render as a raw integer with a warning.`, key, 'warning');
             else addressReference(params.token ?? params.tokenPath, params.token ? 'token' : 'tokenPath');
             if (params.nativeCurrencyAddress !== undefined) for (const v of Array.isArray(params.nativeCurrencyAddress) ? params.nativeCurrencyAddress : [params.nativeCurrencyAddress]) addressReference(v, 'nativeCurrencyAddress');
+            if (nativeAmountWithoutValue(leaf!, field.format, params, resolved.some(r => r.key === '@.value' && pinnedToZero(r.field.visible)))) add('NATIVE_AMOUNT_UNPAID', `${sig} maps ${field.path} to the native currency, but @.value is pinned to 0; for the native address it shows an ETH amount the signer does not send.`, key, 'warning');
           }
           if (field.format === 'nftName') {
             if (!!params.collection === !!params.collectionPath) fail('TOKEN_MAPPING', `nftName on ${field.path} requires exactly one of collection or collectionPath.`);
@@ -440,6 +444,8 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           if (typeof spec.interpolatedIntent !== 'string' || !spec.interpolatedIntent.trim()) fail('INVALID_INTERPOLATION', `${sig} interpolatedIntent must be a nonempty string.`);
           // The registry linter applies its 30-character rule to the template text as well.
           if (spec.interpolatedIntent.length > MAX_INTENT) add('INTENT_LENGTH', `${sig} interpolatedIntent "${spec.interpolatedIntent}" is ${spec.interpolatedIntent.length} characters; the registry linter warns above ${MAX_INTENT}.`, key, 'warning');
+          const omitted = sentenceOmits(spec.interpolatedIntent, resolved.filter(r => !r.hidden && r.key && typeof r.field.path === 'string' && r.field.visible !== 'never').map(r => ({path: r.key!, format: r.field.format})));
+          if (omitted.length) add('SENTENCE_OMITS', `${sig} interpolatedIntent "${spec.interpolatedIntent}" leaves out ${omitted.join(', ')}, shown only as a field.`, key, 'warning');
           // Every {placeholder} must name a displayed field, else the renderer falls back and warns.
           for (const ph of placeholders(spec.interpolatedIntent)) {
             const target = stripRoot(ph);

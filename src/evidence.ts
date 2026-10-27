@@ -18,7 +18,12 @@ export function gatherEvidence(project: Project, c: Contract): Evidence {
   const notices: Evidence['notices'] = {}, paramDocs: Evidence['paramDocs'] = {}, enums: Evidence['enums'] = {}, constants: Evidence['constants'] = {};
   for (const [sig, doc] of Object.entries<any>(c.userdoc?.methods ?? {})) if (typeof doc?.notice === 'string' && doc.notice.trim()) notices[sig] = doc.notice.trim();
   for (const [sig, doc] of Object.entries<any>(c.devdoc?.methods ?? {})) {
-    const params = Object.fromEntries(Object.entries<any>(doc?.params ?? {}).filter(([, v]) => typeof v === 'string' && v.trim()).map(([k, v]) => [k, String(v).trim()]));
+    // solc keeps one entry per parameter name, so "@param registration.referrer The referrer" lines collapse into
+    // registration: ".referrer The referrer" (the last member wins). That text belongs to the member, not the struct.
+    const params = Object.fromEntries(Object.entries<any>(doc?.params ?? {}).filter(([, v]) => typeof v === 'string' && v.trim()).map(([k, v]) => {
+      const text = String(v).trim(), member = /^\.([A-Za-z0-9_$]+)\s+(.*)$/s.exec(text);
+      return member ? [`${k}.${member[1]}`, member[2].trim()] : [k, text];
+    }));
     if (Object.keys(params).length) paramDocs[sig] = params;
   }
   const index = indexAsts(project.contracts.map(x => x.ast).filter(Boolean));

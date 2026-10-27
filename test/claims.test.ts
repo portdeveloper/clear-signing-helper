@@ -31,10 +31,10 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
   await (await tokenIn.mint(await signer.getAddress(), 1000n)).wait();
   await (await tokenOut.mint(await swap.getAddress(), 1000n)).wait();
   await (await tokenIn.approve(await swap.getAddress(), 1000n)).wait();
-  const receipt = await (await swap.buy(100n, 100n, 0n, recipient)).wait();
+  const receipt = await (await swap.buy(100n, 100n, 0n, recipient, 4_000_000_000n, 4_000_000_000n)).wait();
   const tx = (await rpc.getTransaction(receipt.hash))!;
 
-  const write = (stopAt: Record<string, unknown>) => {
+  const write = (stopAt: Record<string, unknown>, expires: Record<string, unknown> = {format: 'date', params: {encoding: 'timestamp'}}) => {
     const state = loadState({root}), selection = state.config.contracts[0], d = state.descriptors.get(selection.id)!;
     d.context.contract.deployments = [{chainId: 31337, address: String(swap.target)}];
     const key = Object.keys(d.display.formats).find(k => k.startsWith('buy('))!;
@@ -42,7 +42,9 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
       {path: 'amountOut', label: 'Amount to Receive', format: 'tokenAmount', params: {token: String(tokenOut.target)}},
       {path: 'amountInMaximum', label: 'Maximum to Pay', format: 'tokenAmount', params: {token: String(tokenIn.target)}},
       {path: 'stopAt', label: 'Stop At', ...stopAt},
-      {path: 'recipient', label: 'Recipient', format: 'addressName', params: {sources: ['local']}}]} as any;
+      {path: 'recipient', label: 'Recipient', format: 'addressName', params: {sources: ['local']}},
+      {path: 'deadline', label: 'Deadline', format: 'date', params: {encoding: 'timestamp'}},
+      {path: 'expires', label: 'Expires', ...expires}]} as any;
     writeJson(path.join(root, selection.descriptor), d);
     return selection.id;
   };
@@ -59,8 +61,10 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
   assert.match(finding.claim, /^"Amount to Receive"/);
   // The limit itself is a true maximum, so it never produces a finding.
   assert.ok(!hidden.findings.some(f => f.claim.startsWith('"Maximum to Pay"')));
+  // A shown argument the contract ignores is found; a checked deadline (it reverts at 0) is not.
+  assert.deepEqual(hidden.findings.filter(f => f.kind === 'ignored').map(f => f.argument), ['expires']);
 
-  write({format: 'raw', visible: {mustMatch: [0]}});
+  write({format: 'raw', visible: {mustMatch: [0]}}, {format: 'raw', visible: 'never'});
   const pinned = await checkClaims(loadState({root}), {contract: id, rpcUrl: url, budget: 100, log: () => {}});
   assert.deepEqual(pinned.findings, []);
 });

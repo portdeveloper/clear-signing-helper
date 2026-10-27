@@ -9,6 +9,7 @@ import { gatherEvidence } from './evidence.js';
 import { permitOf } from './permits.js';
 import { maybeAmount, slicedTokenCandidates } from './denominations.js';
 import { limitOf, LIMIT_HINT, EXACT_HINT, stopsEarly, STOPS_EARLY_HINT } from './limits.js';
+import { NATIVE_AMOUNT_HINT } from './screens.js';
 import {portabilityFindings, displayedFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
 import { renderFixture, validateFixture, blockingWarnings, decodeCanonical, type Fixture, type Rendering } from './fixtures.js';
@@ -551,13 +552,16 @@ function buildDecisions(state: State, id: string): Decisions {
       if (maybeAmount(leaf.path.split('.').pop() ?? leaf.path, leaf.type)) hints.denominations = ['@.to (the contract itself is the token)', ...constants.map(k => `$.metadata.constants.${k}`), ...addressLeaves.map(a => `tokenPath ${a}`), ...sliced.filter(c => !c.startsWith(`tokenPath ${leaf.path}.`)), 'token <literal address>'];
       // A struct member has no @param of its own; the parent's text is labelled as such.
       const top = leaf.path.split('.')[0], doc = evidence.paramDocs[sig]?.[top];
-      if (doc) { if (top === leaf.path) hints.natspec = doc; else hints.natspecOfParent = `@param ${top}: ${doc}`; }
+      const own = evidence.paramDocs[sig]?.[leaf.path];
+      if (own) hints.natspec = own;
+      else if (doc) { if (top === leaf.path) hints.natspec = doc; else hints.natspecOfParent = `@param ${top}: ${doc}`; }
       const formatsForType = leaf.type === 'address' ? ['addressName', 'tokenTicker', 'raw'] : /^u?int\d*$/.test(leaf.type) ? ['tokenAmount', 'amount', 'date', 'duration', 'unit', 'enum', 'chainId', 'nftName', 'raw'] : leaf.type === 'bool' ? ['enum', 'raw'] : ['raw'];
       hints.formatsForType = formatsForType;
       const limit = limitOf(leaf.path.split('.').pop() ?? leaf.path, leaf.type);
       if (limit) hints.limit = LIMIT_HINT[limit];
       else if (maybeAmount(leaf.path.split('.').pop() ?? leaf.path, leaf.type)) hints.exact = EXACT_HINT;
       if (stopsEarly(leaf.path.split('.').pop() ?? leaf.path)) hints.stopsEarly = STOPS_EARLY_HINT;
+      if (f.stateMutability === 'payable' && limit !== 'minimum' && maybeAmount(leaf.path.split('.').pop() ?? leaf.path, leaf.type) && addressLeaves.length) hints.native = NATIVE_AMOUNT_HINT;
       if (grants.has(leaf.path)) hints.permit = `Part of what the permit in this call grants (${grants.get(leaf.path)}): keep it visible.`;
       else if (permit?.signature.includes(leaf.path)) hints.permit = 'Permit signature bytes: may be hidden with a reason.';
       if (formatsForType.includes('enum')) hints.enum = `params {"$ref": "$.metadata.enums.<name>"} naming an entry of the file's top-level enums (add one there)`;
