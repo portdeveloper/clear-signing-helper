@@ -36,12 +36,16 @@ export function portabilityFindings(contract:string, descriptor:Descriptor):Port
 // renderer carries a signed-integer fix and lowers nested arrays before rendering; the pinned registry runners
 // do neither. Only leaves a format actually displays matter; a hidden argument renders nothing to disagree on.
 export const RUNNER_DIVERGENCE = new Set(['SIGNED_INTEGER_PORTABILITY', 'NESTED_ARRAY_PORTABILITY']);
-export function runnerDivergence(contract:string, descriptor:Descriptor, signatures?:Set<string>):PortabilityFinding[] {
+// The findings on leaves a format displays. The report lists every finding; gates (--strict-portability, the
+// runner requirement) use only these, since a hidden argument (CoW EthFlow's int64 quoteId) renders nothing.
+export function displayedFindings(contract:string, descriptor:Descriptor):PortabilityFinding[] {
   const shown=new Map<string,string[]>();
   for(const [key,spec] of Object.entries(descriptor.display.formats)) {
     const sig=parseSignature(key).format('sighash');
     shown.set(sig,resolveFields(spec.fields??[],descriptor.display.definitions??{}).filter(r=>r.key&&!r.hidden).map(r=>r.key!));
   }
-  return portabilityFindings(contract,descriptor).filter(f=>RUNNER_DIVERGENCE.has(f.code) && (!signatures || signatures.has(f.signature))
-    && (shown.get(f.signature)??[]).some(k=>k===f.path||k.startsWith(f.path+'.')));
+  return portabilityFindings(contract,descriptor).filter(f=>(shown.get(f.signature)??[]).some(k=>k===f.path||k.startsWith(f.path+'.')));
+}
+export function runnerDivergence(contract:string, descriptor:Descriptor, signatures?:Set<string>):PortabilityFinding[] {
+  return displayedFindings(contract,descriptor).filter(f=>RUNNER_DIVERGENCE.has(f.code) && (!signatures || signatures.has(f.signature)));
 }

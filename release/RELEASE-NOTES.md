@@ -1,3 +1,29 @@
+# Clear Signing Helper 0.6.0-preview.6 — developer preview
+
+Adds `claims`, a check that runs each fixture on a local fork and tests what the screen says against what the transaction actually does. Every finding the reviewers made on the first two top-contract descriptors (registry #3133 and #3135) was a screen that is false for some argument values. The tool's other checks read names and the ABI, so none of them could catch those.
+
+## What changed
+
+- **`claims --contract <id> --rpc-url <url>`.** For each fixture with a real `txHash`, it starts `anvil --fork-url <url>` at the block before the transaction, on a loopback port, and replays the transaction as its sender. It records token transfers, approvals, WETH wraps and native balances. Then it checks each shown amount: a label or sentence that says "maximum", "minimum" or neither makes the claim a cap, a floor or an exact amount. Next it changes the arguments the screen does not explain (hidden, raw, not displayed, and not pinned with `mustMatch`), appends bytes after a packed path's last hop, pushes shown limits to where the call reverts, and doubles and halves shown exact amounts. It reports every change that still succeeds but makes a shown claim false, or leaves funds in the contract. The fork sends nothing to the real chain. The RPC must serve historical state (an archive node); `--budget` caps the runs per fixture (default 300).
+- Measured on the pre-review and merged versions of #3133 and #3135: it finds 5 of the 9 changes the reviewers asked for (`addLiquidity`'s "Amount to Add", the two spoofable path tails of registry #3136, and the `sqrtPriceLimitX96` cases in both single swaps). The other 4 were wording and permit-display changes, which are out of its scope, plus a fee-on-transfer minimum that the fixture's untaxed token cannot show. On the merged files it reports nothing for V2 Router02 (18 fixtures). For SwapRouter it reports one real case: ETH sent beyond `amountIn` stays in the router.
+- **`apply` relabels a hidden field.** A new label on a field that was already hidden used to be ignored.
+- **`--strict-portability` gates on displayed fields only.** A hidden signed integer (CoW's `quoteId`) no longer fails the export. The review report still lists it.
+- **RPC rate limits are retried** (4 attempts, exponential backoff) in `fixture --rpc-url`, `discover` and `claims`.
+
+## Upgrade from 0.6.0-preview.5
+
+The engine fingerprint is unchanged, so existing configs, reviews and expectations stay valid. `claims` needs Foundry's `anvil` on the PATH.
+
+## Install
+
+```sh
+sha256sum --check clear-signing-helper-0.6.0-preview.6.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.6.0-preview.6.tgz
+clear-signing --version
+```
+
+Expected version: `0.6.0-preview.6`. Network access, scope and validation are otherwise as described for 0.6.0-preview.1 below, plus the `claims` reads and local fork described above.
+
 # Clear Signing Helper 0.6.0-preview.5 — developer preview
 
 Six changes that came out of writing the first top-contract descriptors with the registry team (Uniswap V2 Router02, merged as registry #3133, and Uniswap V3 SwapRouter, #3135). Each one moves a mistake that a reviewer caught into something the tool finds, offers or checks.

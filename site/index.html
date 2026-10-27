@@ -34,7 +34,7 @@
 <header>
   <h1>Clear Signing Helper</h1>
   <p class="lead">Turns a deployed contract into an <a href="https://eips.ethereum.org/EIPS/eip-7730">ERC-7730</a> descriptor and test file for the <a href="https://github.com/ethereum/clear-signing-erc7730-registry">clear-signing registry</a>, so wallets show your transactions as readable text instead of hex. It computes everything with one right answer, asks you only what the contract cannot answer, and runs the registry's own checks before you open the pull request.</p>
-  <p><span class="pill">0.6.0-preview.5</span><span class="pill">MIT</span> <a href="https://github.com/portdeveloper/clear-signing-helper">GitHub and README</a> · <a href="https://www.npmjs.com/package/clear-signing-helper">npm</a></p>
+  <p><span class="pill">0.6.0-preview.6</span><span class="pill">MIT</span> <a href="https://github.com/portdeveloper/clear-signing-helper">GitHub and README</a> · <a href="https://www.npmjs.com/package/clear-signing-helper">npm</a></p>
 </header>
 
 <h2>Use it</h2>
@@ -52,7 +52,7 @@
     <li>Otherwise run <code>clear-signing init</code>, then <code>decisions</code>, fill the decisions file, and <code>apply</code>. Do not write descriptor JSON by hand.</li>
     <li>Ask the user for intent wording, which token an amount is in, and what to hide whenever the hints do not settle it. Do not guess.</li>
     <li>Set <code>"author": "llm:&lt;your model&gt;"</code>. Put <code>"author": "human"</code> only on the values the user decided.</li>
-    <li>Run <code>fixture</code> (real transactions with <code>--tx &lt;hash&gt; --rpc-url &lt;url&gt;</code> where they exist), <code>preview</code>, <code>check</code>, and <code>export --registry-runners</code>. Let the user look at the preview before <code>review --accept</code>.</li>
+    <li>Run <code>fixture</code> (real transactions with <code>--tx &lt;hash&gt; --rpc-url &lt;url&gt;</code> where they exist), <code>preview</code>, <code>check</code>, <code>claims</code> (replays real transactions on a fork and reports argument values that make the screen false), and <code>export --registry-runners</code>. Let the user look at the preview before <code>review --accept</code>.</li>
     <li>Stop at the exported bundle and show the user the diff and the <code>git</code> commands. Open the PR only if the user explicitly asks, from an account tied to the contract owner.</li>
   </ol>
 </div>

@@ -52,6 +52,11 @@ function formatHumanOutput(data: any): string {
     ...(data.registryRunners?data.registryRunners.map((r:any)=>`Registry ${r.name} runner (${r.implementation??r.ref.slice(0,8)}) on ${r.testsFile}: ${r.passed?'all cases pass':'FAILED'} ${JSON.stringify(r.cases)}`):[]),
     ...(data.registryRunnersSkipped?[`Registry runners skipped (${data.registryRunnersSkipped.reason}); ${data.registryRunnersSkipped.divergence.length} displayed field(s) may render differently in registry CI.`]:[]),
     ...portability,'See review/portability.json. Wallet/deployment verification and registry publication have not been performed.'].join('\n');
+  if (data.claimsChecked !== undefined) return [
+    ...data.results.flatMap((r:any)=>[`${r.fixture} (${r.signature}): ${r.status}${r.runs?`, ${r.runs} run(s)`:''}`,
+      ...r.claims.map((c:any)=>`  ${c.claim}: ${c.baseline}`),
+      ...r.findings.map((f:any)=>`  FINDING ${f.kind}${f.argument?` ${f.argument}`:''}: ${f.claim}. ${f.message}`)]),
+    `\n${data.findings.length} finding(s) in ${data.claimsChecked} fixture(s).`, data.note].join('\n');
   if (data.passed !== undefined) return `${data.passed} signing test(s) passed.${data.updated ? ` ${data.updated} expectation(s) updated.` : ''}`;
   if (data.alreadyCovered !== undefined && Array.isArray(data.missing)) return [
     ...(data.searched ? [`Searched: ${data.searched}`] : []),

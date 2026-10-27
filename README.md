@@ -4,7 +4,7 @@ Create, preview, and regression-test ERC-7730 clear-signing descriptors alongsid
 
 Use it to turn compiled contract functions into editable ERC-7730 JSON drafts, inspect the fields a transaction would display, and catch changes to signing output in CI. Descriptors and fixtures stay in your contract repository.
 
-**Developer preview: `0.6.0-preview.5`.** Drafts are built from what the repository proves (ABI, NatSpec, compiler AST, broadcast records, verified source), accept every format the registry does, and export registry-shaped bundles checked by the registry's own linter. Works with Foundry projects or from a verified address. Generated labels, units and intent require developer review. Independent human review, protocol-maintainer assessment, physical-device testing and production wallet delivery remain pending. The CLI does not sign or send transactions.
+**Developer preview: `0.6.0-preview.6`.** Drafts are built from what the repository proves (ABI, NatSpec, compiler AST, broadcast records, verified source), accept every format the registry does, and export registry-shaped bundles checked by the registry's own linter. Works with Foundry projects or from a verified address. Generated labels, units and intent require developer review. Independent human review, protocol-maintainer assessment, physical-device testing and production wallet delivery remain pending. The CLI does not sign or send transactions.
 
 [Overview site](https://portdeveloper.github.io/clear-signing-helper/) · [How it compares](#how-it-compares) · [Install](#install-the-developer-preview) · [Try an example](#try-the-included-example) · [Use your own project](#add-clear-signing-to-your-foundry-repository) · [Commands](#files-and-commands)
 
@@ -27,7 +27,7 @@ All four made the same semantic calls. The tool made runs faster, cheaper and co
 
 ## Install the developer preview
 
-Requires Node.js 22+ and Foundry (or a verified contract address for [ABI mode](#use-without-foundry-abi-mode)). Install the [npm preview](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.5):
+Requires Node.js 22+ and Foundry (or a verified contract address for [ABI mode](#use-without-foundry-abi-mode)). Install the [npm preview](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.6):
 
 ```sh
 npm install --global --ignore-scripts clear-signing-helper@preview
@@ -40,9 +40,9 @@ Or try the CLI without a global installation:
 npx --yes --ignore-scripts --package=clear-signing-helper@preview clear-signing --help
 ```
 
-Pin `clear-signing-helper@0.6.0-preview.5` for reproducible installs. This is an experimental developer preview; specify the preview tag or exact version explicitly.
+Pin `clear-signing-helper@0.6.0-preview.6` for reproducible installs. This is an experimental developer preview; specify the preview tag or exact version explicitly.
 
-Expected version: `0.6.0-preview.5`. Installation is independent of your contract repository; it does not need a `package.json` or Node dependencies. Have `forge` available on your PATH.
+Expected version: `0.6.0-preview.6`. Installation is independent of your contract repository; it does not need a `package.json` or Node dependencies. Have `forge` available on your PATH.
 
 Continue with the example below or [your own Foundry project](#add-clear-signing-to-your-foundry-repository). Existing users should follow the [upgrade procedure](docs/DISTRIBUTION.md#upgrade-and-rollback). For other installation methods, see [building from source](#install-from-source) and [verified tarballs](docs/DISTRIBUTION.md#build-and-verify-a-release).
 
@@ -51,7 +51,7 @@ Continue with the example below or [your own Foundry project](#add-clear-signing
 After installing the CLI, clone the example from the matching release and build its contracts:
 
 ```sh
-git clone --depth 1 --branch v0.6.0-preview.5 \
+git clone --depth 1 --branch v0.6.0-preview.6 \
   https://github.com/portdeveloper/clear-signing-helper.git
 cd clear-signing-helper
 forge build --root examples/standard
@@ -254,6 +254,7 @@ Commit the TOML file and `clear-signing/`. Ignore `.clear-signing-cache/` and yo
 | `sync` | Add missing function formats; report obsolete references without deleting them |
 | `fixture` | Encode a sample call using the compiled ABI, or copy a real transaction: `--broadcast-tx <hash>` from a broadcast record, `--tx <hash> --rpc-url <url>` from the chain; `--rpc-url` also fills missing token metadata |
 | `discover` | Find real transactions sent to the deployment and make fixtures from them, for each described function without one: Envio HyperSync with `ENVIO_API_TOKEN`, else a scan of recent blocks over `--rpc-url` |
+| `claims` | Replay each real-transaction fixture on a local anvil fork of `--rpc-url` and test what the screen says (each amount exact, a maximum or a minimum by its wording; the recipient) against what moved; then vary the arguments the screen does not explain and report any run that succeeds but makes the screen false. Needs Foundry's `anvil` and an endpoint with state at the fixtures' blocks |
 | `preview --fixture <path>` | Render in the terminal; `--open` / `--serve` enables a browser preview |
 | `review --accept` | Record review for all selections; `--contract` narrows it |
 | `check` | Validate schema, supported features, ABI coverage, and review freshness; `--contract` narrows it |
@@ -362,7 +363,7 @@ Human previews escape terminal controls and bidirectional overrides as visible t
 
 Missing token metadata is visible as warnings and raw fallback in preview, and blocks test acceptance/export. Empty-array notices and unnamed `addressName` values are informational: the address renders in full, as wallets show it, and the warning remains in expectations. Dates beyond the renderer's supported range fail instead of being silently accepted. Registry test runners use their own chain tables; an `amount` field on a chain they do not know will render raw there.
 
-Unsupported features fail explicitly: EIP-712 authoring (adding a chain to an existing EIP-712 descriptor is supported), nested transaction decoding (the `calldata` format), external includes/references, encryption, factory bindings, and automatic registry access. Apart from `init --address`, `registry add-deployment` (including the read-only RPC calls behind `--rpc-url`), `fixture --rpc-url` (read-only RPC: the transaction for `--tx`, token metadata), `discover` (Envio HyperSync with `ENVIO_API_TOKEN`, and read-only RPC: block scan, transactions, receipts, token metadata), the upstream lint and format run on export and add-deployment, and the one-time runner build behind `--registry-runners`, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. The tool neither simulates transaction effects nor establishes semantic correctness of descriptions.
+Unsupported features fail explicitly: EIP-712 authoring (adding a chain to an existing EIP-712 descriptor is supported), nested transaction decoding (the `calldata` format), external includes/references, encryption, factory bindings, and automatic registry access. Apart from `init --address`, `registry add-deployment` (including the read-only RPC calls behind `--rpc-url`), `fixture --rpc-url` (read-only RPC: the transaction for `--tx`, token metadata), `discover` (Envio HyperSync with `ENVIO_API_TOKEN`, and read-only RPC: block scan, transactions, receipts, token metadata), `claims` (a local anvil fork of the `--rpc-url` you name, which reads that endpoint), the upstream lint and format run on export and add-deployment, and the one-time runner build behind `--registry-runners`, nothing touches the network. This is not a universal ERC-7730 validator or wallet emulator. `claims` simulates real-transaction fixtures and variations of their arguments, which finds screens that are false for some values; it cannot prove a screen true for all values or judge wording it cannot measure.
 
 ## Use with an agent
 
@@ -391,7 +392,7 @@ Forge builds have a ten-minute timeout to accommodate large optimized protocol r
 
 ## Release status and evidence
 
-`0.6.0-preview.5` is published on [npm](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.5) under both the `preview` and `latest` tags, and as a [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.5) with its checksum and verification record. The npm tarball's integrity hash matches the GitHub asset byte for byte. The GitHub assets contain the package checksum and local, CI, GitHub-download and npm-install verification records. All four Linux/macOS Node 22/24 CI packages matched the released tarball. See the [release handoff](docs/RELEASE-HANDOFF.md) for exact inputs and remaining distribution work.
+`0.6.0-preview.6` is published on [npm](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.6) under both the `preview` and `latest` tags, and as a [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.6) with its checksum and verification record. The npm tarball's integrity hash matches the GitHub asset byte for byte. The GitHub assets contain the package checksum and local, CI, GitHub-download and npm-install verification records. All four Linux/macOS Node 22/24 CI packages matched the released tarball. See the [release handoff](docs/RELEASE-HANDOFF.md) for exact inputs and remaining distribution work.
 
 [Validation evidence](docs/VALIDATION.md) records automated tests, real-source exercises and emulator results. The [production readiness checklist](docs/PRODUCTION-READINESS.md) retains pending human and physical-device validation. Those results are not prerequisites for distributing this experimental CLI. Descriptors produced with the tool are under review in the registry: [#3003](https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003) (PuddleSwap StakingRewards, exported unchanged) and [#2611](https://github.com/ethereum/clear-signing-erc7730-registry/pull/2611) (Permit2 on Monad).
 

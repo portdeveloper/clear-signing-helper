@@ -383,6 +383,10 @@ await test('decisions template exposes the judgment slots with hints, and apply 
   run(root,['review','--accept']);const checked=run(root,['check']).result;assert.deepEqual(checked.warnings,[]);
   const again=read(path.join(root,run(root,['decisions','--contract',router,'--out','clear-signing/decisions/again.json']).result.created));
   assert.equal(again.functions[swap].intent,'Swap');assert.equal(again.functions[swap].interpolatedIntent,'Swap {amountIn}');assert.equal(again.functions[swap].fields['path.[]'].show,false);assert.equal(again.functions[swap].fields['amountIn'].params.tokenPath,'path.[0]');
+  // A field that is already hidden still takes a new label (the linter checks hidden labels' length too).
+  fn.fields['path.[]'].label='Route';write(dfile,dec);run(root,['apply','--decisions',created.created]);
+  const relabelled=Object.values<any>(read(path.join(root,'clear-signing/descriptors',fs.readdirSync(path.join(root,'clear-signing/descriptors'))[0])).display.formats)[0];
+  assert.deepEqual(relabelled.fields.find((f:any)=>f.path==='path.[]'),{path:'path.[]',label:'Route',visible:'never'});
   // A bad decision writes nothing.
   dec.functions[swap].fields['deadline'].format='addressName';write(dfile,dec);
   assert.ok(['FORMAT_TYPE','SCHEMA_INVALID'].includes(run(root,['apply','--decisions',created.created],1).diagnostics[0].code));

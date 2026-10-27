@@ -9,7 +9,7 @@ import { gatherEvidence } from './evidence.js';
 import { permitOf } from './permits.js';
 import { maybeAmount, slicedTokenCandidates } from './denominations.js';
 import { limitOf, LIMIT_HINT, EXACT_HINT, stopsEarly, STOPS_EARLY_HINT } from './limits.js';
-import {portabilityFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
+import {portabilityFindings, displayedFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
 import { renderFixture, validateFixture, blockingWarnings, decodeCanonical, type Fixture, type Rendering } from './fixtures.js';
 import { registryTests } from './registry.js';
@@ -18,6 +18,7 @@ import { setupRunners, runRegistryRunners, pinsFromRegistry, DEFAULT_PINS, parse
 import { loadAbiProject, importAbiFile, importVerified, ABI_DIR } from './abi-project.js';
 import { fetchVerifiedContract, fetchTokenMetadata, fetchTransaction, rpcCall, redactUrl, type ChainTransaction } from './fetch.js';
 import { discoverCalls } from './discover.js';
+import { checkFixtureClaims } from './claims.js';
 import packageJson from '../package.json' with {type: 'json'};
 
 export interface Config {version: number; profile: string; engine: string; mode?: 'foundry' | 'abi'; contracts: Selection[]}
@@ -189,7 +190,8 @@ export function check(state: State, strictPortability=false, ids?: string[]) {
   const all = diagnostics(state, true, selections);
   throwDiagnostics(errorsOf(all));
   const findings=selections.flatMap(s=>portabilityFindings(s.id,state.descriptors.get(s.id)!));
-  if(strictPortability && findings.length)throw new Failure('PORTABILITY_REVIEW', 'Known consumer compatibility issues require target-wallet validation.',1,findings.map(f=>({code:f.code,signature:f.signature,message:`${f.contract} ${f.path}: ${f.message}`,remedy:'Inspect the compatibility report and validate the target wallet. Ordinary check/export remains available for authoring drafts.'})));
+  const gated=strictPortability?selections.flatMap(s=>displayedFindings(s.id,state.descriptors.get(s.id)!)):[];
+  if(gated.length)throw new Failure('PORTABILITY_REVIEW', 'Known consumer compatibility issues require target-wallet validation.',1,gated.map(f=>({code:f.code,signature:f.signature,message:`${f.contract} ${f.path}: ${f.message}`,remedy:'Inspect the compatibility report and validate the target wallet. Ordinary check/export remains available for authoring drafts.'})));
   return {contracts: selections.map(s => ({contract:s.id, covered:Object.keys(state.descriptors.get(s.id)!.display.formats).length, excluded:Object.entries(s.exclusions).map(([signature,reason])=>({signature,reason})), hidden:Object.entries(s.hidden??{}).flatMap(([signature,paths])=>Object.entries(paths).map(([path,reason])=>({signature,path,reason})))})), review:'current', warnings:warningsOf(all), deploymentVerification:'not performed',portability:{walletVerification:'not performed',reference:PORTABILITY_REFERENCE,findings}};
 }
 export function review(state: State, ids: string[] | undefined, accept: boolean) {
@@ -336,6 +338,31 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
   const widen = token ? 'HyperSync searched the whole chain, so these were never called directly' : 'set ENVIO_API_TOKEN to search the whole chain, or raise --max-blocks';
   return {source: found.source, searched: found.searched, created, missing, refused, alreadyCovered,
     next: missing.length ? `No successful direct call found for ${missing.join(', ')}: ${widen}; encode an example with fixture --function.` : 'Preview the new fixtures, then run review --accept and test --update.'};
+}
+// The claims check (claims.ts): replay each real-transaction fixture of a contract on a local fork of the
+// user's endpoint and test what its screen says against what the call does, also for argument values the
+// screen does not explain. Evidence for a human; nothing is written.
+export async function checkClaims(state: State, o: {contract: string; rpcUrl: string; fixtures?: string[]; budget: number; log: (line: string) => void}) {
+  if (!Number.isInteger(o.budget) || o.budget < 1 || o.budget > 10_000) fail('USAGE_ERROR', '--budget must be an integer from 1 to 10000.', 2);
+  const c = getContract(state.project, o.contract);
+  const selection = state.config.contracts.find(s => s.id === c.id);
+  if (!selection) fail('CONTRACT_NOT_SELECTED', 'Run init --contract for this contract first.', 2);
+  const d = state.descriptors.get(c.id)!;
+  throwDiagnostics(errorsOf(validateDescriptor(d, c, selection)));
+  const files = o.fixtures?.length ? o.fixtures : fixtureFiles(state, [c.id]);
+  if (!files.length) fail('NO_FIXTURES', `No fixtures for ${c.id}. Use fixture --tx or discover to copy real transactions.`, 2);
+  const results = [];
+  for (const file of files) {
+    const f = readJson<Fixture>(safePath(state.project.root, file));
+    validateFixture(f);
+    if (f.contract !== c.id) fail('FIXTURE_CONTRACT', `${file} is a fixture of ${f.contract}, not ${c.id}.`, 2);
+    o.log(`claims: ${file}`);
+    const r = await checkFixtureClaims(file, f, d, c, {rpcUrl: o.rpcUrl, budget: o.budget, log: o.log});
+    o.log(`  ${r.status}; ${r.runs} run(s), ${r.findings.length} finding(s)`);
+    results.push(r);
+  }
+  return {claimsChecked: results.length, results, findings: results.flatMap(r => r.findings),
+    note: 'A finding is a run of the real transaction, or of a variation of it, where the call succeeds and a shown amount, limit or recipient is false. Read each against the source: fix the wording, pin the argument with mustMatch, or exclude the function. Fixtures without a txHash are not replayed.'};
 }
 export function fixtureFiles(state: State, ids?: string[]) {
   const files = walk(safePath(state.project.root,'clear-signing/fixtures'),'.json').map(file=>path.relative(state.project.root,file));
@@ -671,8 +698,9 @@ export function applyDecisions(state: State, file: string) {
         pinOf(decision, `${sig} ${full}`);
         const reason = decision.hideReason!.trim();
         if (reason !== DESCRIPTOR_NEVER) hiddenHere[full] = reason;
-        // Already hidden by the descriptor: keep it as written.
-        if (merged.visible === 'never') return [item];
+        // Already hidden by the descriptor: keep it as written, apart from a changed label (the linter checks
+        // hidden labels' length too).
+        if (merged.visible === 'never') return [typeof item.$ref !== 'string' && decision.label?.trim() && decision.label.trim() !== item.label ? {...item, label: decision.label.trim()} : item];
         if (typeof item.$ref === 'string') return [{...item, visible: 'never'}];
         return [{path: item.path, label: decision.label?.trim() || merged.label, visible: 'never'}];
       }

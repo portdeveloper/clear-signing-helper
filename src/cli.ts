@@ -1,5 +1,5 @@
 import { Command, CommanderError, Option } from 'commander';
-import { init, loadState, check, review, sync, preview, createFixture, fillTokenMetadata, discoverFixtures, runTests, exportBundle, upgrade, writeDecisions, applyDecisions } from './app.js';
+import { init, loadState, check, review, sync, preview, createFixture, fillTokenMetadata, discoverFixtures, runTests, checkClaims, exportBundle, upgrade, writeDecisions, applyDecisions } from './app.js';
 import { Failure } from './io.js';
 import { servePreview } from './preview.js';
 import { displayText, humanOutput } from './output.js';
@@ -96,6 +96,12 @@ program.command('test').description('Compare fixture renderings against checked-
   .option('--contract <path:name>','Test only fixtures of this selected contract (repeatable)',select,[])
   .option('--update','Explicitly accept current renderings as expectations')
   .action(async options=>{const r=await runTests(state(),options.update===true,options.contract);output({passed:r.passed,updated:r.updated});});
+program.command('claims').description('Replay real-transaction fixtures on a local anvil fork and test each shown amount, limit and recipient against what the call does, also with hidden or raw arguments varied; writes nothing')
+  .requiredOption('--contract <path:name>','Selected contract identity')
+  .requiredOption('--rpc-url <url>','Endpoint for the fork; it must serve state at each fixture\'s block (an archive node for older transactions)')
+  .option('--fixture <path>','Only this fixture (repeatable)',select,[])
+  .option('--budget <n>','Most calls to simulate per fixture','300')
+  .action(async options=>output(await checkClaims(state(),{contract:options.contract,rpcUrl:options.rpcUrl,fixtures:options.fixture,budget:Number(options.budget),log:progress})));
 program.command('export').description('Validate and write a submission bundle; does not publish')
   .requiredOption('--out <directory>','New output directory inside the project')
   .option('--contract <path:name>','Export only this selected contract and its fixtures (repeatable)',select,[])

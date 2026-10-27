@@ -76,7 +76,19 @@ export async function fetchVerifiedContract(chainId: number, address: string): P
 // A read-only JSON-RPC call against an endpoint the user named. Never signs or sends.
 type ReadMethod = 'eth_chainId' | 'eth_getCode' | 'eth_call' | 'eth_getTransactionByHash' | 'eth_getTransactionReceipt';
 const redact = (url: string) => url.replace(/\/\/[^/]*@/, '//***@').replace(/([?&][^=]*key[^=]*=)[^&]*/gi, '$1***');
+// Public endpoints throttle (drpc and Tenderly's gateway did during the claims runs of 2026-10-27), so a rate
+// limit is retried a few times with backoff before it fails the command.
+const RATE_LIMITED = /rate.?limit|too many requests|429/i;
 async function rpcRequest(url: string, method: ReadMethod, params: unknown[], timeoutMs = 30_000): Promise<unknown> {
+  for (let attempt = 0; ; attempt++) {
+    try { return await rpcRequestOnce(url, method, params, timeoutMs); }
+    catch (e) {
+      if (!(e instanceof Failure) || !RATE_LIMITED.test(e.message) || attempt >= 4) throw e;
+      await new Promise(r => setTimeout(r, 1000 * 2 ** attempt));
+    }
+  }
+}
+async function rpcRequestOnce(url: string, method: ReadMethod, params: unknown[], timeoutMs: number): Promise<unknown> {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs);
   const shown = redact(url);
   try {
