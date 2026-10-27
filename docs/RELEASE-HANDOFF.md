@@ -5,6 +5,15 @@
 - Refresh the advisory registry prior: `npm run priors:snapshot -- <fresh registry clone>` and commit `src/data/registry-priors.json`; its `commit` and `generatedAt` fields are shown to users.
 - Run `npm run registry:acceptance -- <fresh registry clone>` and record the accepted count in CLAUDE.md. Any new rejection class other than the `calldata` format is a regression against what the registry accepts.
 
+## 0.6.0-preview.6 (2026-10-27)
+
+Roadmap item 31: `claims`, plus `apply` relabelling hidden fields, `--strict-portability` gating on displayed fields only, and RPC rate-limit retries. Engine fingerprint unchanged, so users run no `upgrade`. Priors and pins unchanged from 0.6.0-preview.5 (registry `b70998c`).
+
+- [x] `npm test` 88/88 and `npm run release:verify` (which now runs the suite outside CI) produced `clear-signing-helper-0.6.0-preview.6.tgz`, SHA-256 `1ede2ef4ee36f493bd32235eae535dac52c5f5ddaaa75a3717bd1b1f6bae5ba1`.
+- [x] Published that tarball to npm as [`clear-signing-helper@0.6.0-preview.6`](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.6) with `--tag preview --ignore-scripts --access public`, then moved `latest` to it. The registry tarball has the same SHA-256; integrity `sha512-SJJEuffUnZ5HJ1mNSD0MVlodL/fS7DnWyq4+vFvmL6IlhzxSORxWfDEoIlmpXmxJMQeRiea7NRstBjktB3Zc2w==`. Both `preview` and `latest` point to it, and `npx --package=clear-signing-helper@0.6.0-preview.6 clear-signing --version` reported `0.6.0-preview.6`. The token came from `~/.config/clear-signing-helper/npmrc-release` via `--userconfig`; it appears in no output.
+- [x] Tagged `v0.6.0-preview.6` at `fc82ea9`; CI runs 40495713731 (push) and 40496023313 passed; [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.6) with the tarball and checksum.
+- [ ] Revoke the npm token used for this release (valid 2026-10-27 only, pasted into the session transcript) and delete `~/.config/clear-signing-helper/npmrc-release`.
+
 ## 0.6.0-preview.5 (2026-10-26)
 
 Items 25–30 of the roadmap: `discover`, `PERMIT_GRANT_HIDDEN`, `LIMIT_WORDING`, decisions hints and `registryName`, `TAIL_SLICE_TOKEN`, and `mustMatch` in decisions. Engine fingerprint unchanged, so users run no `upgrade`.
