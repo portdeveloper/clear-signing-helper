@@ -51,7 +51,7 @@ Read by the script: one row per address, `keep` or `drop`, the screen (`full`: a
 | `0x4c82d1fbfe28c977cbb58d8c7ff8fcf9f70a2cca` | drop | - | Uniswap Universal Router | needs custom encoding (ERCs#1925) |
 | `0x000000000004444c5dc75cb358380d2e3de08a90` | drop | - | Uniswap V4 PoolManager | callback (`unlock`), packed actions |
 | `0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e` | drop | - | Uniswap V4 PositionManager | packed actions (`modifyLiquidities`) |
-| `0x0000000000000068f116a894984e2db1123eb395` | drop | - | Seaport | later: complex orders, much of it EIP-712 |
+| `0x0000000000000068f116a894984e2db1123eb395` | keep | partial | Seaport 1.6 | #3177 (draft, 2026-10-29): buying listings (basic orders, `fulfillOrder`, `fulfillAdvancedOrder`, pinned to the buy direction with `mustMatch`), `cancel`, `incrementCounter`; accepting offers, sweeps and matches stay blind |
 | `0xab830fcccb4f20bad23b7669d58cb35a96d57d5a` | drop | - | ERC1967Proxy (`rebalance`) | bot: 141 tx from 2 senders in 600 blocks; implementation `0xcdDb…1339` unverified on Sourcify (2026-10-29) |
 | `0x3328f7f4a1d1c57c35df56bbf0c9dcafca309c49` | drop | - | TransparentUpgradeableProxy (`swapETHForExactTokens`) | human traffic (55 tx, 51 senders in 600 blocks) but implementation `0x35fC…B34E` is unverified on Sourcify and Blockscout, so the enforcing code cannot be read and lint `--require-verified` cannot pass (2026-10-29) |
 | `0xda7afeed021eafc1c1af9c362de477dad0396b81` | drop | - | PrioUpdateRegistry | bot: `updateState` pushes, 224 tx from 12 senders in 600 blocks (2026-10-29) |

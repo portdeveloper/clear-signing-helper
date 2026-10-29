@@ -39,13 +39,15 @@ export interface ClaimFinding {fixture: string; signature: string; claim: string
 
 // ---- calldata as a tree: tuples keyed by component name, so descriptor paths read and write it.
 type Tree = any;
+// Unnamed parameters and members are arg<i>, as the descriptor names them (descriptors.ts, expansion.ts).
+const nameOf = (p: ParamType, i: number) => p.name || `arg${i}`;
 function toTree(type: ParamType, value: any): Tree {
-  if (type.isTuple()) return Object.fromEntries(type.components.map((c, i) => [c.name || String(i), toTree(c, value[i])]));
+  if (type.isTuple()) return Object.fromEntries(type.components.map((c, i) => [nameOf(c, i), toTree(c, value[i])]));
   if (type.isArray()) return Array.from(value, (v: any) => toTree(type.arrayChildren, v));
   return value;
 }
 function fromTree(type: ParamType, value: Tree): any {
-  if (type.isTuple()) return type.components.map((c, i) => fromTree(c, value[c.name || String(i)]));
+  if (type.isTuple()) return type.components.map((c, i) => fromTree(c, value[nameOf(c, i)]));
   if (type.isArray()) return value.map((v: Tree) => fromTree(type.arrayChildren, v));
   return value;
 }
@@ -95,7 +97,7 @@ export function claimsOf(d: Descriptor, fn: FunctionFragment, root: Tree, tx: {f
   const key = Object.keys(d.display.formats).find(k => parseSignature(k).format('sighash') === fn.format('sighash'));
   if (!key) return [];
   const format = d.display.formats[key], sentence = typeof format.interpolatedIntent === 'string' ? format.interpolatedIntent : '';
-  const decoded = fn.inputs.map(p => fromTree(p, root[p.name]));
+  const decoded = fn.inputs.map((p, i) => fromTree(p, root[nameOf(p, i)]));
   const fields = resolveFields(expandNestedFields(format.fields, fn, decoded as any), d.display.definitions ?? {}).filter(f => !f.hidden && typeof f.field.path === 'string');
   const recipients = fields.filter(f => f.field.format === 'addressName' && RECIPIENT.test(segments(f.field.path!).pop() ?? ''))
     .map(f => asAddress(valueAt(root, f.field.path!, tx))).filter((a): a is string => !!a);
@@ -224,7 +226,7 @@ async function execute(fork: Fork, tx: {from: string; to: string; data: string; 
 // ---- argument variations
 interface Leaf {path: string; type: string}
 function concreteLeaves(type: ParamType, value: Tree, path: string, out: Leaf[] = []): Leaf[] {
-  if (type.isTuple()) type.components.forEach((c, i) => concreteLeaves(c, value?.[c.name || String(i)], `${path}.${c.name || i}`, out));
+  if (type.isTuple()) type.components.forEach((c, i) => concreteLeaves(c, value?.[nameOf(c, i)], `${path}.${nameOf(c, i)}`, out));
   else if (type.isArray()) (value ?? []).slice(0, 4).forEach((v: Tree, i: number) => concreteLeaves(type.arrayChildren, v, `${path}.[${i}]`, out));
   else out.push({path, type: type.type});
   return out;
@@ -247,11 +249,11 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
   const [block] = await rpcBatch(o.rpcUrl, [{method: 'eth_getBlockByNumber', params: [hex(tx.blockNumber), false]}]) as any[];
   const timestamp = Number(BigInt(block?.timestamp ?? 0));
   if (!timestamp) fail('RPC_FAILED', `${redactUrl(o.rpcUrl)} returned no block ${tx.blockNumber}.`, 2);
-  const decoded = iface.decodeFunctionData(fn, f.data), root: Tree = Object.fromEntries(fn.inputs.map((p, i) => [p.name, toTree(p, decoded[i])]));
+  const decoded = iface.decodeFunctionData(fn, f.data), root: Tree = Object.fromEntries(fn.inputs.map((p, i) => [nameOf(p, i), toTree(p, decoded[i])]));
   const sender = tx.from.toLowerCase(), to = tx.to.toLowerCase(), value = BigInt(f.value);
   const ctx = (r: Tree, v = value) => ({from: sender, to, value: v, root: r});
-  const encode = (r: Tree) => iface.encodeFunctionData(fn, fn.inputs.map(p => fromTree(p, r[p.name])));
-  const leavesOf = (r: Tree) => fn.inputs.flatMap(p => concreteLeaves(p, r[p.name], p.name));
+  const encode = (r: Tree) => iface.encodeFunctionData(fn, fn.inputs.map((p, i) => fromTree(p, r[nameOf(p, i)])));
+  const leavesOf = (r: Tree) => fn.inputs.flatMap((p, i) => concreteLeaves(p, r[nameOf(p, i)], nameOf(p, i)));
   const addressesIn = (r: Tree) => leavesOf(r).filter(l => l.type === 'address').map(l => asAddress(valueAt(r, l.path, ctx(r)))).filter((a): a is string => !!a);
   const fork = await startFork(o.rpcUrl, tx.blockNumber - 1);
   try {

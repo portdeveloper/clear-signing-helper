@@ -380,6 +380,31 @@ await test('decisions: sliced token candidates, no tokens offered for non-amount
   assert.ok(read(path.join(root,'clear-signing/provenance.json'))[id].some((p:any)=>p.detail==='registryName: UniswapV3SwapRouter'&&p.source==='llm'));
 });
 
+await test('decisions: ifNotIn hides a field at listed values and round-trips; it excludes mustMatch',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const abi=[{type:'function',name:'buy',stateMutability:'nonpayable',outputs:[],inputs:[{name:'collection',type:'address'},{name:'id',type:'uint256'},{name:'quantity',type:'uint256'}]}];
+  fs.writeFileSync(path.join(root,'market.abi.json'),JSON.stringify(abi));
+  run(root,['init','--abi','market.abi.json','--name','Market','--owner','Example']);
+  const id='clear-signing/abi/Market.json:Market', sig='buy(address,uint256,uint256)';
+  const created=run(root,['decisions','--contract',id]).result,dfile=path.join(root,created.created),dec=read(dfile);
+  const f=dec.functions[sig].fields;dec.author='llm:test-model';dec.functions[sig].intent='Buy';
+  f.quantity={...f.quantity,label:'Quantity',ifNotIn:[1],mustMatch:[1]};write(dfile,dec);
+  assert.equal(run(root,['apply','--decisions',created.created],2).diagnostics[0].code,'INVALID_DECISIONS','one visibility rule per field');
+  f.quantity={...f.quantity,mustMatch:undefined,show:false,hideReason:'x'};write(dfile,dec);
+  assert.equal(run(root,['apply','--decisions',created.created],2).diagnostics[0].code,'INVALID_DECISIONS','a hidden field takes no rule');
+  f.quantity={...f.quantity,show:true,hideReason:undefined};write(dfile,dec);
+  run(root,['apply','--decisions',created.created]);
+  const dir=path.join(root,'clear-signing/descriptors'),descFile=path.join(dir,fs.readdirSync(dir)[0]);
+  const field=()=>Object.values(read(descFile).display.formats as any).flatMap((x:any)=>x.fields).find((x:any)=>x.path==='quantity');
+  assert.deepEqual(field().visible,{ifNotIn:[1]});
+  assert.ok(read(path.join(root,'clear-signing/provenance.json'))[id].some((p:any)=>p.path==='quantity'&&/ifNotIn \[1\]/.test(p.detail)));
+  const again=read(path.join(root,run(root,['decisions','--contract',id,'--out','clear-signing/decisions/again.json']).result.created));
+  assert.deepEqual(again.functions[sig].fields.quantity.ifNotIn,[1]);
+  again.author='llm:test-model';again.functions[sig].fields.quantity.ifNotIn=null;write(path.join(root,'clear-signing/decisions/again.json'),again);
+  run(root,['apply','--decisions','clear-signing/decisions/again.json']);
+  assert.equal(field().visible,undefined);
+});
+
 await test('decisions: mustMatch pins an argument that would switch off a check the screen states',t=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
   // Uniswap V3 exactOutputSingle: amountOut is checked only when sqrtPriceLimitX96 is 0 (registry #3135).
