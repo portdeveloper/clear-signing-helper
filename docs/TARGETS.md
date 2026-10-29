@@ -41,7 +41,7 @@ Read by the script: one row per address, `keep` or `drop`, the screen (`full`: a
 | `0x0439e60f02a8900a951603950d8d4527f400c3f1` | drop | - | MetaMask MetaBridge | partial screen: output inside opaque adapter data |
 | `0xccc88a9d1b4ed6b0eaba998850414b24f1c315be` | drop | - | Relay ApprovalProxyV3 | partial screen: transfers then an opaque multicall |
 | `0x0000000000001ff3684f28c67538d4d072c22734` | drop | - | 0x AllowanceHolder | partial screen: `exec` forwards opaque data |
-| `0x8feab81d36e7576107d5de0758c1b839be31b4f6` | drop | - | OKX DexRouter | partial screen: packed bytes routes |
+| `0x8feab81d36e7576107d5de0758c1b839be31b4f6` | drop | - | OKX DexRouter v1.0.10 | owner's own PR: OKX opened registry #2887 for this address (2026-08, still open); its v1.0.7/v1.0.8 files are merged. Not ours to author. Earlier reason (packed routes) was wrong for `dagSwapTo`/`smartSwapTo`, whose `baseRequest` names `toToken` and `minReturnAmount` (2026-10-29) |
 | `0x89c6340b1a1f4b25d36cd8b063d49045caf3f818` | drop | - | LI.FI Permit2Proxy | partial screen: opaque diamond calldata |
 | `0x69460570c93f9de5e2edbc3052bf10125f0ca22d` | drop | - | Rango | partial screen: generic bridge/swap payloads |
 | `0x337685fdab40d39bd02028545a4ffa7d287cc3e2` | drop | - | Mayan Forwarder2 | partial screen: opaque protocol data |
@@ -52,6 +52,11 @@ Read by the script: one row per address, `keep` or `drop`, the screen (`full`: a
 | `0x000000000004444c5dc75cb358380d2e3de08a90` | drop | - | Uniswap V4 PoolManager | callback (`unlock`), packed actions |
 | `0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e` | drop | - | Uniswap V4 PositionManager | packed actions (`modifyLiquidities`) |
 | `0x0000000000000068f116a894984e2db1123eb395` | drop | - | Seaport | later: complex orders, much of it EIP-712 |
+| `0xab830fcccb4f20bad23b7669d58cb35a96d57d5a` | drop | - | ERC1967Proxy (`rebalance`) | bot: 141 tx from 2 senders in 600 blocks; implementation `0xcdDb…1339` unverified on Sourcify (2026-10-29) |
+| `0x3328f7f4a1d1c57c35df56bbf0c9dcafca309c49` | drop | - | TransparentUpgradeableProxy (`swapETHForExactTokens`) | human traffic (55 tx, 51 senders in 600 blocks) but implementation `0x35fC…B34E` is unverified on Sourcify and Blockscout, so the enforcing code cannot be read and lint `--require-verified` cannot pass (2026-10-29) |
+| `0xda7afeed021eafc1c1af9c362de477dad0396b81` | drop | - | PrioUpdateRegistry | bot: `updateState` pushes, 224 tx from 12 senders in 600 blocks (2026-10-29) |
+| `0x0729e2a4716d9f7dd17858d5d504426d228697f7` | drop | - | Relay RelayRouter | partial screen: `multicall` of arbitrary calls (2026-10-29) |
+| `0x5567954cd026cebfe486062cb75848e0f1c12e58` | drop | - | Relay ApprovalProxy | partial screen: transfers then an opaque multicall, as `0xccc8…15be` (2026-10-29) |
 | `0x1111113ccf1426a8e30e2bff5e005d929bf6a90a` | drop | - | 1inch AquaRouter | later: semantics unknown |
 | `0xca11bde05977b3631167028862be2a173976ca11` | drop | - | Multicall3 | not signed by people as a screen: arbitrary calls |
 | `0x3a5cc8689d1b0cef2c317bc5c0ad6ce88b27d597` | drop | - | BitGo WalletSimple | custody infrastructure |
