@@ -309,11 +309,13 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
       for (const ref of [field.params?.tokenPath, field.params?.collectionPath]) if (typeof ref === 'string' && !ref.startsWith('@.')) explained.add(stripRoot(ref).replace(/\.\[-?\d*:-?\d*\]$/, ''));
     }
     const leaves = leavesOf(root);
+    // A one-level array field ("recipients.[]") is not expanded, so it covers each element leaf ("recipients.[0]").
+    const covers = (set: Set<string>, p: string) => set.has(p) || set.has(p.replace(/\.\[\d+\]/g, '.[]'));
 
     // 1. Unexplained arguments (hidden, raw or not displayed; never one pinned with mustMatch).
     for (const leaf of leaves) {
       if (!budgetLeft()) break;
-      if (explained.has(leaf.path) || pinned.has(leaf.path) || /^bytes\d+$/.test(leaf.type)) continue;
+      if (covers(explained, leaf.path) || covers(pinned, leaf.path) || /^bytes\d+$/.test(leaf.type)) continue;
       const current = valueAt(root, leaf.path, ctx(root));
       if (leaf.type === 'bool') { const r = setAt(root, leaf.path, !current); compare(r, await run(r), 'argument', leaf.path, String(!current)); continue; }
       if (leaf.type === 'address') {
@@ -390,7 +392,7 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
     const limits = new Set(baseClaims.filter(c => c.kind !== 'exact').map(c => stripRoot(c.path)));
     const reference = shown.size && budgetLeft() ? await run(root, value, true) : undefined;
     for (const leaf of reference?.ok ? leaves : []) {
-      if (!shown.has(leaf.path) || pinned.has(leaf.path) || limits.has(leaf.path) || limitOf(leaf.path.split('.').pop() ?? leaf.path, leaf.type) || !budgetLeft()) continue;
+      if (!covers(shown, leaf.path) || covers(pinned, leaf.path) || covers(limits, leaf.path) || limitOf(leaf.path.split('.').pop() ?? leaf.path, leaf.type) || !budgetLeft()) continue;
       const current = valueAt(root, leaf.path, ctx(root));
       const tries = leaf.type === 'bool' ? [!current] : leaf.type === 'address' ? [OTHER, sender, '0x0000000000000000000000000000000000000000'].filter(a => a !== asAddress(current)).map(a => getAddress(a))
         : /^u?int\d*$/.test(leaf.type) && typeof current === 'bigint' ? [...new Set(ladder(leaf.type, current).filter(v => v !== current))].filter((v, i, all) => i === 0 || i === all.length - 1 || v === 1n || v === current * 2n) : [];

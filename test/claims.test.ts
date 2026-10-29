@@ -33,6 +33,7 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
   await (await tokenIn.approve(await swap.getAddress(), 1000n)).wait();
   const receipt = await (await swap.buy(100n, 100n, 0n, recipient, 4_000_000_000n, 4_000_000_000n)).wait();
   const tx = (await rpc.getTransaction(receipt.hash))!;
+  const paid = (await rpc.getTransaction((await (await swap.pay([recipient, await signer.getAddress()], [10n, 20n])).wait()).hash))!;
 
   const write = (stopAt: Record<string, unknown>, expires: Record<string, unknown> = {format: 'date', params: {encoding: 'timestamp'}}) => {
     const state = loadState({root}), selection = state.config.contracts[0], d = state.descriptors.get(selection.id)!;
@@ -45,14 +46,18 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
       {path: 'recipient', label: 'Recipient', format: 'addressName', params: {sources: ['local']}},
       {path: 'deadline', label: 'Deadline', format: 'date', params: {encoding: 'timestamp'}},
       {path: 'expires', label: 'Expires', ...expires}]} as any;
+    d.display.formats[Object.keys(d.display.formats).find(k => k.startsWith('pay('))!] = {intent: 'Pay', fields: [{iteration: 'bundled', fields: [
+      {path: 'recipients.[]', label: 'To', format: 'addressName', params: {sources: ['local']}},
+      {path: 'values.[]', label: 'Amount', format: 'tokenAmount', params: {token: String(tokenIn.target)}}]}]} as any;
     writeJson(path.join(root, selection.descriptor), d);
     return selection.id;
   };
   const id = write({format: 'raw', visible: 'never'});
   writeJson(path.join(root, 'clear-signing/fixtures/buy.json'), {contract: id, chainId: 31337, to: tx.to, data: tx.data, value: '0', from: tx.from, txHash: tx.hash});
+  writeJson(path.join(root, 'clear-signing/fixtures/pay.json'), {contract: id, chainId: 31337, to: paid.to, data: paid.data, value: '0', from: paid.from, txHash: paid.hash});
   const lines: string[] = [];
   const hidden = await checkClaims(loadState({root}), {contract: id, rpcUrl: url, budget: 100, log: line => lines.push(line)});
-  const r = hidden.results[0];
+  const r = hidden.results.find(x => x.fixture.endsWith('buy.json'))!;
   assert.equal(r.status, 'checked');
   assert.match(r.claims.find(c => c.claim.startsWith('"Amount to Receive"'))!.baseline, /^holds/);
   const finding = hidden.findings.find(f => f.argument === 'stopAt');
@@ -63,6 +68,9 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
   assert.ok(!hidden.findings.some(f => f.claim.startsWith('"Maximum to Pay"')));
   // A shown argument the contract ignores is found; a checked deadline (it reverts at 0) is not.
   assert.deepEqual(hidden.findings.filter(f => f.kind === 'ignored').map(f => f.argument), ['expires']);
+  // A shown array element is explained by its "recipients.[]" field: sending to the swap itself is on screen,
+  // not funds the contract keeps (Disperse, registry #3151, gave 8 such findings before).
+  assert.deepEqual(hidden.findings.filter(f => f.fixture.endsWith('pay.json')), []);
 
   write({format: 'raw', visible: {mustMatch: [0]}}, {format: 'raw', visible: 'never'});
   const pinned = await checkClaims(loadState({root}), {contract: id, rpcUrl: url, budget: 100, log: () => {}});

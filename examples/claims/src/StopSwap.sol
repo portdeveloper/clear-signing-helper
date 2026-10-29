@@ -41,6 +41,7 @@ contract PlainToken {
 /// @notice Sells `tokenOut` for `tokenIn` one for one. A nonzero `stopAt` caps the output and skips the check
 /// that the full `amountOut` was delivered, the way Uniswap V3's sqrtPriceLimitX96 does in exactOutputSingle.
 /// `deadline` is checked; `expires` is accepted and ignored, the way CoW EthFlow's invalidateOrder ignores validTo.
+/// `pay` sends `tokenIn` to a list, the way Disperse does; any recipient, the swap itself included, is on screen.
 contract StopSwap {
     PlainToken public immutable tokenIn;
     PlainToken public immutable tokenOut;
@@ -58,5 +59,9 @@ contract StopSwap {
         require(delivered <= amountInMaximum, "too much");
         tokenIn.transferFrom(msg.sender, address(this), delivered);
         tokenOut.transfer(recipient, delivered);
+    }
+
+    function pay(address[] calldata recipients, uint256[] calldata values) external {
+        for (uint256 i = 0; i < recipients.length; i++) tokenIn.transferFrom(msg.sender, recipients[i], values[i]);
     }
 }
