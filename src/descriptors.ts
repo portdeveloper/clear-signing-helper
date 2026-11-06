@@ -444,7 +444,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           if (typeof spec.interpolatedIntent !== 'string' || !spec.interpolatedIntent.trim()) fail('INVALID_INTERPOLATION', `${sig} interpolatedIntent must be a nonempty string.`);
           // The registry linter applies its 30-character rule to the template text as well.
           if (spec.interpolatedIntent.length > MAX_INTENT) add('INTENT_LENGTH', `${sig} interpolatedIntent "${spec.interpolatedIntent}" is ${spec.interpolatedIntent.length} characters; the registry linter warns above ${MAX_INTENT}.`, key, 'warning');
-          const omitted = sentenceOmits(spec.interpolatedIntent, resolved.filter(r => !r.hidden && r.key && typeof r.field.path === 'string' && r.field.visible !== 'never').map(r => ({path: r.key!, format: r.field.format})));
+          const omitted = sentenceOmits(spec.interpolatedIntent, resolved.filter(r => !r.hidden && r.key && typeof r.field.path === 'string' && r.field.visible !== 'never').map(r => ({path: r.key!, field: r.field.path as string, format: r.field.format})));
           if (omitted.length) add('SENTENCE_OMITS', `${sig} interpolatedIntent "${spec.interpolatedIntent}" leaves out ${omitted.join(', ')}, shown only as a field.`, key, 'warning');
           // Every {placeholder} must name a displayed field, else the renderer falls back and warns.
           for (const ph of placeholders(spec.interpolatedIntent)) {

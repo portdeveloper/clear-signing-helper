@@ -22,10 +22,12 @@ const RECIPIENT = /^_?(to|recipient|receiver|beneficiary|owner|depositor|onBehal
 export const isRecipientName = (name: string) => RECIPIENT.test(name) && !FEE.test(name);
 // @.value is left out: owner-only payable functions show "Value Sent" as a field, and a sentence about 0 ETH
 // is noise. An amount or recipient shown as a field but missing from the sentence is the case.
-export function sentenceOmits(sentence: string, shown: {path: string; format?: string}[]): string[] {
+// path is the field's leaf key; field is its path as written, which a sentence names when it shows a byte
+// slice of the leaf ({data.[96:128]} for the field data.[96:128], whose leaf key is data).
+export function sentenceOmits(sentence: string, shown: {path: string; field?: string; format?: string}[]): string[] {
   const named = new Set([...sentence.matchAll(/\{([^}]+)\}/g)].map(m => m[1].replace(/^#\./, '')));
   // An array element cannot be one value in a sentence.
-  return shown.filter(f => !f.path.startsWith('@.') && !f.path.includes('[') && !named.has(f.path) && (
+  return shown.filter(f => !f.path.startsWith('@.') && !f.path.includes('[') && !named.has(f.path) && !(f.field && named.has(f.field.replace(/^#\./, ''))) && (
     f.format === 'tokenAmount' || f.format === 'amount' ||
     (f.format === 'addressName' && isRecipientName(f.path.split('.').pop() ?? f.path)))).map(f => f.path);
 }

@@ -34,6 +34,18 @@ await test('Relay deposit: a sentence without the credited address warns; naming
   assert.deepEqual(warnings(c,d,'SENTENCE_OMITS'),[]);
 });
 
+await test('MetaSwap: a sentence naming a byte slice of data covers that field',()=>{
+  const c=contract('swap(string aggregatorId,address tokenFrom,uint256 amount,bytes data) payable');
+  const d=scaffold(c,'Example'), key=Object.keys(d.display.formats)[0];
+  const format=(sentence:string)=>({intent:'Swap',interpolatedIntent:sentence,fields:[{path:'amount',label:'Send',format:'tokenAmount',params:{tokenPath:'tokenFrom'}},
+    {path:'data.[96:128]',label:'Receive at least',format:'tokenAmount',params:{tokenPath:'data.[44:64]'}},{path:'@.value',label:'Native paid',format:'amount'},
+    {path:'aggregatorId',label:'Via',visible:'never'},{path:'tokenFrom',label:'Token',visible:'never'}]});
+  d.display.formats[key]=format('Swap {amount} for at least {data.[96:128]}') as any;
+  assert.deepEqual(warnings(c,d,'SENTENCE_OMITS'),[]);
+  d.display.formats[key]=format('Swap {amount}') as any;
+  assert.deepEqual(warnings(c,d,'SENTENCE_OMITS'),['swap(string,address,uint256,bytes) interpolatedIntent "Swap {amount}" leaves out data, shown only as a field.']);
+});
+
 await test('RedSnwapper: amountIn mapped to ETH with @.value pinned to 0 warns; the minimum may stay native',()=>{
   const c=contract('snwap(address tokenIn,uint256 amountIn,address recipient,address tokenOut,uint256 amountOutMin,address executor,bytes executorData) payable');
   const d=scaffold(c,'Example'), key=Object.keys(d.display.formats)[0], native={nativeCurrencyAddress:'0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'};
