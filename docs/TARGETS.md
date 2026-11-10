@@ -18,26 +18,26 @@ Read by the script: one row per address, `keep` or `drop`, the screen (`full`: a
 
 | Address | Decision | Screen | Name | Reason |
 |---|---|---|---|---|
-| `0xe592427a0aece92de3edee1f18e0157c05861564` | keep | full | Uniswap V3 SwapRouter | #3135 in review; `exactInputSingle`, `exactOutputSingle` |
-| `0x4cd00e387622c35bddb9b4c962c136462338bc31` | keep | partial | Relay Depository | #3149 (draft); `depositNative`, `depositErc20` (~55k); `execute` (21.9k) likely solver-side |
-| `0x00005ea00ac477b1030ce78506496e8c2de24bf5` | keep | full | SeaDrop | #3150 (draft); `mintPublic`, `mintSigned` |
-| `0x5c7bcd6e7de5423a257d81b442095a1a6ced35c5` | keep | partial | Across SpokePool | `depositV3`, `deposit` (~8k); `fillRelay` is relayers |
+| `0xe592427a0aece92de3edee1f18e0157c05861564` | keep | full | Uniswap V3 SwapRouter | #3135 (merged); `exactInputSingle`, `exactOutputSingle` |
+| `0x4cd00e387622c35bddb9b4c962c136462338bc31` | keep | partial | Relay Depository | #3149 (merged); `depositNative`, `depositErc20` (~55k); `execute` (21.9k) likely solver-side |
+| `0x00005ea00ac477b1030ce78506496e8c2de24bf5` | keep | full | SeaDrop | #3150 (merged); `mintPublic`, `mintSigned` |
+| `0x5c7bcd6e7de5423a257d81b442095a1a6ced35c5` | keep | partial | Across SpokePool | Manuel's #3173 (merged); `depositV3`, `deposit` (~8k); `fillRelay` is relayers |
 | `0x97ccdbea4632140639ad5ea9b944aa034eb15fd4` | drop | - | Across SpokePoolPeriphery | partial screen: `swapAndBridge` carries opaque swap calldata; `depositWithAuthorization` is mostly relayed (the user signs typed data, not the transaction); `depositNative` is better covered by the SpokePool (2026-10-27) |
-| `0xd37bbe5744d730a1d98d8dc97c42f0ca46ad7146` | keep | full | THORChain Router | #3153 (draft); `depositWithExpiry` (~5k); `transferOut` is the vault |
-| `0xc36442b4a4522e871399cd717abdd847ab11fe88` | keep | partial | Uniswap V3 NonfungiblePositionManager | `mint`, `increaseLiquidity`, `decreaseLiquidity`, `collect`; `multicall` stays blind |
-| `0xc1d13492285eb664951e201bf7c80c7c6318a1b5` | keep | partial | SwftSwap | `swap`, `swapEth`; `withdraw` looks operator-side |
-| `0x888888888889758f76e7103c6cbf23abbf58f946` | keep | partial | Pendle RouterV4 | 27 functions, large, high value |
-| `0xd152f549545093347a162dce210e7293f1452150` | keep | full | Disperse | #3151 (draft); `disperseEther`, `disperseToken` |
-| `0x59e16fccd424cc24e280be16e11bcd56fb0ce547` | keep | full | ENS ETHRegistrarController | #3152 (draft); `register`, `renew`, `commit` |
+| `0xd37bbe5744d730a1d98d8dc97c42f0ca46ad7146` | keep | full | THORChain Router | #3153 (merged); `depositWithExpiry` (~5k); `transferOut` is the vault |
+| `0xc36442b4a4522e871399cd717abdd847ab11fe88` | keep | partial | Uniswap V3 NonfungiblePositionManager | Manuel's #3175 (merged); `mint`, `increaseLiquidity`, `decreaseLiquidity`, `collect`; `multicall` stays blind |
+| `0xc1d13492285eb664951e201bf7c80c7c6318a1b5` | keep | partial | SwftSwap | Manuel's #3171 (merged); `swap`, `swapEth`; `withdraw` looks operator-side |
+| `0x888888888889758f76e7103c6cbf23abbf58f946` | keep | partial | Pendle RouterV4 | Manuel's #3176 (merged); 27 functions, large, high value |
+| `0xd152f549545093347a162dce210e7293f1452150` | keep | full | Disperse | #3151 (merged); `disperseEther`, `disperseToken` |
+| `0x59e16fccd424cc24e280be16e11bcd56fb0ce547` | keep | full | ENS ETHRegistrarController | #3152 (merged); `register`, `renew`, `commit` |
 | `0x07964f135f276412b3182a3b2407b8dd45000000` | drop | - | TransitSwap RouterV5 | partial screen: `aggregate` (3.4k of 5.3k) is opaque; only the small `exactInputV2Swap`/`exactInputV3Swap` share would be clear (2026-10-27) |
-| `0x1f21d09c65bc8af92634dcd5a100b6d04f0c81c3` | keep | full | Harbor Router | #3155 (draft). Not Maya Protocol's router: the verified source is `Harbor_RouterV5` ("managed by XNode Vaults"), and Maya's own API lists `0xe3985E6b61b814F7Cdb188766562ba71b446B46d` (MAYAChain_Router, ~1.1k tx/7d) as its Ethereum router |
-| `0xba3cb449bd2b4adddbc894d8697f5170800eadec` | keep | full | CoW EthFlow | #3154 (draft); `createOrder` |
-| `0xac4c6e212a361c968f1725b4d055b47e63f80b75` | keep | full | Sushi RedSnwapper | #3156 (draft); `snwap`, `snwapMultiple`; in, out and minimum are plain arguments |
+| `0x1f21d09c65bc8af92634dcd5a100b6d04f0c81c3` | keep | full | Harbor Router | #3155 (merged). Not Maya Protocol's router: the verified source is `Harbor_RouterV5` ("managed by XNode Vaults"), and Maya's own API lists `0xe3985E6b61b814F7Cdb188766562ba71b446B46d` (MAYAChain_Router, ~1.1k tx/7d) as its Ethereum router |
+| `0xba3cb449bd2b4adddbc894d8697f5170800eadec` | keep | full | CoW EthFlow | #3154 (merged); `createOrder` |
+| `0xac4c6e212a361c968f1725b4d055b47e63f80b75` | keep | full | Sushi RedSnwapper | #3156 (merged); `snwap`, `snwapMultiple`; in, out and minimum are plain arguments |
 | `0x45312ea0eff7e09c83cbe249fa1d7598c4c8cd4e` | drop | - | Curve Router v1.2 | cannot name the output: the route is 11 addresses padded with zeros, so the output token sits at a different index in each call, and no path can say "last nonzero" (2026-10-27) |
-| `0x0ec68c5b10f21effb74f2a5c61dfe6b08c0db6cb` | keep | partial | OP-stack portal (chain to identify) | prove/finalize withdrawal; people and relayers mixed. Not OP Mainnet's portal (that is `0xbEb5Fc579115071764c7423A4f12eDde41f106Ed`, 820 tx/7d): OptimismPortal 1.10.0, systemConfig `0x5531DcfF39EC1ec727C4c5D2fc49835368F805a9` |
-| `0x49048044d57e1c92a77f79988d21fa8faf74e97e` | keep | partial | Base portal | prove/finalize withdrawal; people and relayers mixed |
+| `0x0ec68c5b10f21effb74f2a5c61dfe6b08c0db6cb` | keep | partial | Blast OptimismPortal | Manuel's #3172 (merged); prove/finalize withdrawal; people and relayers mixed. Not OP Mainnet's portal (that is `0xbEb5Fc579115071764c7423A4f12eDde41f106Ed`, 820 tx/7d): OptimismPortal 1.10.0, systemConfig `0x5531DcfF39EC1ec727C4c5D2fc49835368F805a9` |
+| `0x49048044d57e1c92a77f79988d21fa8faf74e97e` | keep | partial | Base portal | Manuel's #3174 (merged); prove/finalize withdrawal; people and relayers mixed |
 | `0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401` | drop | - | ENS NameWrapper | bot-led: 8 of 13 direct calls in 3,000 blocks came from one address (2026-10-27) |
-| `0x881d40237659c251811cec9c364ef91dc08d300c` | keep | full | MetaMask MetaSwap | earlier drop reason was wrong: `tokenTo` and `amountTo` sit at fixed offsets of `data` (slices `[44:64]`, `[96:128]`) and every tested adapter enforces both. Covered only with `feeOnTop` pinned to 0 (with fee-on-output the minimum is checked before an uncapped, calldata-set fee) and 4 pinned `aggregatorId`s ("0xV2" cannot be pinned, Mayan is a bridge): 330 of 924 swaps, 283 senders (2026-11-06). ETH input ignores `amount`; `@.value` shows the real payment |
+| `0x881d40237659c251811cec9c364ef91dc08d300c` | keep | full | MetaMask MetaSwap | #3205 (draft); earlier drop reason was wrong: `tokenTo` and `amountTo` sit at fixed offsets of `data` (slices `[44:64]`, `[96:128]`) and every tested adapter enforces both. Covered only with `feeOnTop` pinned to 0 (with fee-on-output the minimum is checked before an uncapped, calldata-set fee) and 4 pinned `aggregatorId`s ("0xV2" cannot be pinned, Mayan is a bridge): 330 of 924 swaps, 283 senders (2026-11-06). ETH input ignores `amount`; `@.value` shows the real payment |
 | `0x0439e60f02a8900a951603950d8d4527f400c3f1` | drop | - | MetaMask MetaBridge | partial screen: output inside opaque adapter data |
 | `0xccc88a9d1b4ed6b0eaba998850414b24f1c315be` | drop | - | Relay ApprovalProxyV3 | partial screen: transfers then an opaque multicall |
 | `0x0000000000001ff3684f28c67538d4d072c22734` | drop | - | 0x AllowanceHolder | partial screen: `exec` forwards opaque data |
@@ -51,12 +51,13 @@ Read by the script: one row per address, `keep` or `drop`, the screen (`full`: a
 | `0x4c82d1fbfe28c977cbb58d8c7ff8fcf9f70a2cca` | drop | - | Uniswap Universal Router | needs custom encoding (ERCs#1925) |
 | `0x000000000004444c5dc75cb358380d2e3de08a90` | drop | - | Uniswap V4 PoolManager | callback (`unlock`), packed actions |
 | `0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e` | drop | - | Uniswap V4 PositionManager | packed actions (`modifyLiquidities`) |
-| `0x0000000000000068f116a894984e2db1123eb395` | keep | partial | Seaport 1.6 | #3177 (draft, 2026-10-29): buying listings (basic orders, `fulfillOrder`, `fulfillAdvancedOrder`, pinned to the buy direction with `mustMatch`), `cancel`, `incrementCounter`; accepting offers, sweeps and matches stay blind |
+| `0x0000000000000068f116a894984e2db1123eb395` | keep | partial | Seaport 1.6 | #3177 (merged): buying listings (basic orders, `fulfillOrder`, `fulfillAdvancedOrder`, pinned to the buy direction with `mustMatch`), `cancel`, `incrementCounter`; accepting offers, sweeps and matches stay blind |
 | `0xab830fcccb4f20bad23b7669d58cb35a96d57d5a` | drop | - | ERC1967Proxy (`rebalance`) | bot: 141 tx from 2 senders in 600 blocks; implementation `0xcdDb…1339` unverified on Sourcify (2026-10-29) |
 | `0x3328f7f4a1d1c57c35df56bbf0c9dcafca309c49` | drop | - | TransparentUpgradeableProxy (`swapETHForExactTokens`) | human traffic (55 tx, 51 senders in 600 blocks) but implementation `0x35fC…B34E` is unverified on Sourcify and Blockscout, so the enforcing code cannot be read and lint `--require-verified` cannot pass (2026-10-29) |
 | `0xda7afeed021eafc1c1af9c362de477dad0396b81` | drop | - | PrioUpdateRegistry | bot: `updateState` pushes, 224 tx from 12 senders in 600 blocks (2026-10-29) |
 | `0x0729e2a4716d9f7dd17858d5d504426d228697f7` | drop | - | Relay RelayRouter | partial screen: `multicall` of arbitrary calls (2026-10-29) |
 | `0x5567954cd026cebfe486062cb75848e0f1c12e58` | drop | - | Relay ApprovalProxy | partial screen: transfers then an opaque multicall, as `0xccc8…15be` (2026-10-29) |
+| `0xb300000b72deaeb607a12d5f54773d1c19c7028d` | drop | - | Diamond (`0x810c705b`) | human traffic (2,253 tx/24h, 365 senders in the dashboard sample) but the facet serving its one selector, `0xf4351fe8260d9a4dd58f687379e9ae1ebc68f277`, is unverified on Sourcify (2026-11-10) |
 | `0x1111113ccf1426a8e30e2bff5e005d929bf6a90a` | drop | - | 1inch AquaRouter | later: semantics unknown |
 | `0xca11bde05977b3631167028862be2a173976ca11` | drop | - | Multicall3 | not signed by people as a screen: arbitrary calls |
 | `0x3a5cc8689d1b0cef2c317bc5c0ad6ce88b27d597` | drop | - | BitGo WalletSimple | custody infrastructure |

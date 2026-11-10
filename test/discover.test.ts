@@ -38,12 +38,16 @@ const txs:Record<string,{to:string;input:string;block:number;status:string}>={
   [h(1)]:{to:token,input:transfer,block:900,status:'0x1'}, [h(2)]:{to:token,input:transfer+'00',block:950,status:'0x1'},
   [h(3)]:{to:token,input:transfer,block:960,status:'0x0'}, [h(4)]:{to:other,input:transfer,block:970,status:'0x1'}};
 
+// Blocks the mock node refuses inside a batch, as a throttling public endpoint does.
+const unreadable=new Set<number>();
 function project() {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-discover-'));
   fs.writeFileSync(path.join(root,'token.abi.json'),JSON.stringify(tokenAbi));
   const created=run(root,['init','--abi','token.abi.json','--name','ClearToken','--owner','Example']).result;
   const dfile=path.join(root,created.contracts[0].descriptor), d=read(dfile);
   d.context.contract.deployments=[{chainId:10143,address:token}];
+  // A constant no field references, as init leaves behind when an immutable turns out not to be needed.
+  d.metadata.constants={spare:other};
   for(const key of Object.keys(d.display.formats)) if(!key.startsWith('transfer(')) delete d.display.formats[key];
   write(dfile,d);
   const toml=path.join(root,'clear-signing.toml');
@@ -69,7 +73,7 @@ async function mockChain(t:any) {
       const ok=(result:unknown)=>({jsonrpc:'2.0',id,result});
       if(method==='eth_chainId') return ok('0x279f');
       if(method==='eth_blockNumber') return ok('0x3e8');
-      if(method==='eth_getBlockByNumber') { const n=Number(BigInt(params[0])); return ok({number:params[0],transactions:Object.entries(txs).filter(([,x])=>x.block===n).map(([hash,x])=>({hash,to:x.to,input:x.input,blockNumber:params[0]}))}); }
+      if(method==='eth_getBlockByNumber') { const n=Number(BigInt(params[0])); if(unreadable.has(n)) return {jsonrpc:'2.0',id,error:{code:-32005,message:'limit exceeded'}}; return ok({number:params[0],transactions:Object.entries(txs).filter(([,x])=>x.block===n).map(([hash,x])=>({hash,to:x.to,input:x.input,blockNumber:params[0]}))}); }
       const x=txs[params?.[0]];
       if(method==='eth_getTransactionByHash') return ok(x?{hash:params[0],from:sender,to:x.to,input:x.input,value:'0x0',blockNumber:'0x'+x.block.toString(16),chainId:'0x279f'}:null);
       if(method==='eth_getTransactionReceipt') return ok(x?{status:x.status}:null);
@@ -109,13 +113,31 @@ await test('discover with ENVIO_API_TOKEN: HyperSync nominates, the RPC re-check
   assert.deepEqual([again.searched,again.created.length,again.alreadyCovered],[null,0,['transfer(address,uint256)']]);
   // --function searches again and does not overwrite the existing fixture.
   const more=(await runAsync(root,['discover','--contract',id,'--rpc-url',rpc,'--function','transfer'],0,env)).result;
-  assert.deepEqual(more.created.map((x:any)=>x.file),['clear-signing/fixtures/transfer-2.json']);
+  // h(1) is the only usable call and it is a fixture already: it is named, not copied a second time.
+  assert.deepEqual([more.created.length,more.alreadyFixtures,more.missing],[0,[{function:'transfer(address,uint256)',txHash:h(1)}],[]]);
+  assert.ok(!fs.existsSync(path.join(root,'clear-signing/fixtures/transfer-2.json')));
+  assert.match(more.notes.join(' '),/fixtures already/);
+  // A new call appears: it is taken, under a free name, and the existing fixture is left alone.
+  txs[h(5)]={to:token,input:transfer,block:980,status:'0x1'};t.after(()=>{delete txs[h(5)];});
+  const newer=(await runAsync(root,['discover','--contract',id,'--rpc-url',rpc,'--function','transfer'],0,env)).result;
+  assert.deepEqual(newer.created.map((x:any)=>[x.file,x.txHash]),[['clear-signing/fixtures/transfer-2.json',h(5)]]);
+  delete txs[h(5)];
+  // tokens: metadata a fixture lacks (made before its amounts were typed, or rate-limited) is filled afterwards.
+  const ffile=path.join(root,'clear-signing/fixtures/transfer.json'), bare=read(ffile);delete bare.tokens;write(ffile,bare);
+  const filled=(await runAsync(root,['tokens','--rpc-url',rpc,'--fixture','clear-signing/fixtures/transfer.json'])).result;
+  assert.deepEqual([filled.fixtures,filled.filled,filled.unresolved],[1,1,0]);
+  assert.equal(Object.values<any>(read(ffile).tokens)[0].symbol,'CLR');
+  assert.equal((await runAsync(root,['tokens','--rpc-url',rpc])).result.filled,0,'a second run finds nothing to fill');
+  fs.rmSync(path.join(root,'clear-signing/fixtures/transfer-2.json'));
   assert.equal((await runAsync(root,['discover','--contract',id,'--rpc-url',rpc,'--function','approve'],2,env)).diagnostics[0].code,'USAGE_ERROR');
   assert.equal((await runAsync(root,['discover','--contract',id,'--rpc-url',rpc,'--function','transfer'],2,{...env,ENVIO_API_TOKEN:'99999999-0000-0000-0000-000000000000'})).diagnostics[0].code,'ENVIO_TOKEN_REJECTED');
   // The fixtures test and export like hand-made ones, with the hash in the registry test case.
   run(root,['review','--accept']);run(root,['test','--update']);
   const exported=run(root,['export','--out','bundle','--no-lint']).result;
   assert.equal(read(path.join(root,exported.registryPath,'testsv2/calldata-ClearToken.tests.json')).tests[0].txHash,h(1));
+  // The unreferenced constant stays in the working copy and is left out of the registry file, by name.
+  assert.deepEqual(exported.unusedConstantsOmitted,[{contract:id,constant:'spare'}]);
+  assert.equal(read(path.join(root,exported.registryPath,'calldata-ClearToken.json')).metadata.constants,undefined);
 });
 
 await test('discover without a token scans recent blocks over the RPC and reports what it did not reach',async t=>{
@@ -131,4 +153,13 @@ await test('discover without a token scans recent blocks over the RPC and report
   const shallow=(await runAsync(root2,['discover','--contract',id2,'--rpc-url',rpc,'--max-blocks','20'])).result;
   assert.deepEqual([shallow.created.length,shallow.missing],[0,['transfer(address,uint256)']]);
   assert.match(shallow.next,/ENVIO_API_TOKEN/);
+  // Blocks the endpoint will not return are counted and named: "not found" never hides "not read".
+  const {root:root3,id:id3}=project();t.after(()=>fs.rmSync(root3,{recursive:true,force:true}));
+  unreadable.add(900);unreadable.add(899);t.after(()=>unreadable.clear());
+  const partial=(await runAsync(root3,['discover','--contract',id3,'--rpc-url',rpc,'--max-blocks','200'])).result;
+  assert.deepEqual([partial.created.length,partial.missing],[0,['transfer(address,uint256)']]);
+  assert.match(partial.searched,/2 of them unreadable/);
+  assert.match(partial.notes.join(' '),/2 block\(s\) could not be read/);
+  assert.match(partial.next,/unreadable/);
+  unreadable.clear();
 });

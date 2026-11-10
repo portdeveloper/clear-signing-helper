@@ -290,6 +290,17 @@ export async function fillTokenMetadata(state: State, file: string, rpcUrl: stri
   if (Object.keys(added).length) { f.tokens = {...(f.tokens ?? {}), ...added}; validateFixture(f); writeJson(target, f); }
   return {tokens: added, ...(unresolved.length ? {unresolvedTokens: unresolved} : {})};
 }
+// Token metadata for fixtures that already exist: a fixture made before its amounts were typed as tokenAmount
+// (discover before apply), or whose lookup was rate-limited, has none. Same read-only calls as fixture --rpc-url.
+export async function fillTokens(state: State, o: {rpcUrl: string; contracts?: string[]; fixtures?: string[]}) {
+  const files = o.fixtures?.length ? o.fixtures : fixtureFiles(state, o.contracts?.length ? o.contracts.map(id => getContract(state.project, id).id) : undefined);
+  if (!files.length) fail('NO_FIXTURES', 'No fixtures to fill. Create one with fixture or discover first.', 2);
+  const results = [];
+  for (const file of files) results.push({file, ...await fillTokenMetadata(state, file, o.rpcUrl)});
+  const filled = results.filter(r => Object.keys(r.tokens).length).length, unresolved = results.filter(r => r.unresolvedTokens?.length).length;
+  return {fixtures: results.length, filled, unresolved, results: results.filter(r => Object.keys(r.tokens).length || r.unresolvedTokens?.length),
+    next: unresolved ? 'Some addresses did not answer as ERC-20 tokens (see unresolvedTokens): try another endpoint, or add them under "tokens" in the fixture by hand.' : filled ? 'Run test --update: the renderings of the filled fixtures changed.' : 'Every token the fixtures render is already known.'};
+}
 // Fixtures from real transactions without hashes in hand: for each described function of a contract that has
 // no fixture yet, nominate successful direct calls to its deployment (discover.ts), then take each nominee
 // through the --tx path (re-read over the user's RPC, every refusal applies) and fill its token metadata.
@@ -311,39 +322,59 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
   const wanted = o.functions?.length ? described.filter(f => o.functions!.some(w => w === f.name || w === f.format('sighash') || w === f.format('full').replace(/^function /, ''))) : described;
   if (o.functions?.length && wanted.length !== new Set(o.functions).size) fail('USAGE_ERROR', `--function names a function the descriptor does not describe. Described: ${described.map(f => f.format('sighash')).join(', ')}.`, 2);
   // Without --function, functions that already have a fixture for this contract are left alone.
-  const covered = new Set(fixtureFiles(state, [c.id]).map(file => readJson<Fixture>(safePath(state.project.root, file)).data.slice(0, 10).toLowerCase()));
+  const existing = fixtureFiles(state, [c.id]).map(file => readJson<Fixture>(safePath(state.project.root, file)));
+  const covered = new Set(existing.map(f => f.data.slice(0, 10).toLowerCase()));
+  // A transaction that is already a fixture is not copied again (discover --function on a function with fixtures).
+  const haveTx = new Set(existing.flatMap(f => f.txHash ? [f.txHash.toLowerCase()] : []));
   const targets = o.functions?.length ? wanted : wanted.filter(f => !covered.has(f.selector));
   const alreadyCovered = wanted.filter(f => !targets.includes(f)).map(f => f.format('sighash'));
   if (!targets.length) return {searched: null, created: [], missing: [], refused: [], alreadyCovered, next: 'Every described function already has a fixture; pass --function to add more.'};
   const token = process.env.ENVIO_API_TOKEN?.trim() || undefined;
   // A few spare nominees per function, since a nominee can still be refused (non-canonical calldata).
-  const found = await discoverCalls({chainId, addresses, selectors: targets.map(f => f.selector.toLowerCase()), target: o.perFunction + 2, rpcUrl: o.rpcUrl, token, maxBlocks: o.maxBlocks, log: o.log});
+  const found = await discoverCalls({chainId, addresses, selectors: targets.map(f => f.selector.toLowerCase()), target: o.perFunction + 2 + haveTx.size, rpcUrl: o.rpcUrl, token, maxBlocks: o.maxBlocks, log: o.log});
   const created: Record<string, unknown>[] = [], refused: {function: string; txHash: string; code: string; message: string}[] = [], missing: string[] = [];
+  const duplicates: {function: string; txHash: string}[] = [], unresolved: string[] = [], onlyKnown: string[] = [];
   const freeName = (base: string) => { for (let i = 1; ; i++) { const name = i === 1 ? base : `${base}-${i}`; if (!fs.existsSync(safePath(state.project.root, `clear-signing/fixtures/${name}.json`))) return name; } };
   for (const f of targets) {
     let made = 0;
     for (const n of found.nominees[f.selector.toLowerCase()] ?? []) {
       if (made >= o.perFunction) break;
+      if (haveTx.has(n.hash.toLowerCase())) { duplicates.push({function: f.format('sighash'), txHash: n.hash}); continue; }
       try {
         const transaction = await fetchTransaction(o.rpcUrl, n.hash);
         const r = createFixture(state, {name: freeName(f.name), contract: c.id, args: '[]', value: '0', local: false, transaction});
-        created.push({function: f.format('sighash'), file: r.created, txHash: n.hash, blockNumber: n.blockNumber, ...await fillTokenMetadata(state, r.created, o.rpcUrl)});
+        const metadata = await fillTokenMetadata(state, r.created, o.rpcUrl);
+        if (metadata.unresolvedTokens?.length) unresolved.push(r.created);
+        created.push({function: f.format('sighash'), file: r.created, txHash: n.hash, blockNumber: n.blockNumber, ...metadata});
+        haveTx.add(n.hash.toLowerCase());
         made++;
       } catch (e) {
         if (!(e instanceof Failure)) throw e;
         refused.push({function: f.format('sighash'), txHash: n.hash, code: e.code, message: e.message});
       }
     }
-    if (!made) missing.push(f.format('sighash'));
+    // Found, but only transactions that are fixtures already: not "never called".
+    if (!made && duplicates.some(x => x.function === f.format('sighash'))) onlyKnown.push(f.format('sighash'));
+    else if (!made) missing.push(f.format('sighash'));
   }
   const widen = token ? 'HyperSync searched the whole chain, so these were never called directly' : 'set ENVIO_API_TOKEN to search the whole chain, or raise --max-blocks';
-  return {source: found.source, searched: found.searched, created, missing, refused, alreadyCovered,
-    next: missing.length ? `No successful direct call found for ${missing.join(', ')}: ${widen}; encode an example with fixture --function.` : 'Preview the new fixtures, then run review --accept and test --update.'};
+  // What the search could not read is said, never left to look like "no such call".
+  const notes = [
+    ...(onlyKnown.length ? [`The only usable calls found for ${onlyKnown.join(', ')} are fixtures already (alreadyFixtures); nothing was copied twice.`] : []),
+    ...(found.unread ? [`${found.unread} block(s) could not be read from ${redactUrl(o.rpcUrl)} (rate limit or node error) and were not searched; run discover again, or use another endpoint.`] : []),
+    ...(unresolved.length ? [`Token metadata is incomplete in ${unresolved.join(', ')} (see unresolvedTokens); run tokens --rpc-url <url> to try again, or add the token under "tokens" in the fixture by hand.`] : []),
+    ...(created.length && !created.some(x => Object.keys((x as {tokens?: object}).tokens ?? {}).length) ? ['No token metadata was needed for these fixtures as the descriptor stands. If their amounts are still raw (discover run before apply), run tokens --rpc-url <url> once they are tokenAmount.'] : [])];
+  return {source: found.source, searched: found.searched, created, missing, refused, alreadyCovered, ...(duplicates.length ? {alreadyFixtures: duplicates} : {}), ...(notes.length ? {notes} : {}),
+    next: missing.length ? `No successful direct call found for ${missing.join(', ')}: ${found.unread ? 'part of the range was unreadable (see notes); ' : ''}${widen}; encode an example with fixture --function.` : created.length ? 'Preview the new fixtures, then run review --accept and test --update.' : 'Nothing new was found; the existing fixtures stand.'};
 }
 // The claims check (claims.ts): replay each real-transaction fixture of a contract on a local fork of the
 // user's endpoint and test what its screen says against what the call does, also for argument values the
 // screen does not explain. Evidence for a human; nothing is written.
-export async function checkClaims(state: State, o: {contract: string; rpcUrl: string; fixtures?: string[]; budget: number; log: (line: string) => void}) {
+// rpcUrls: tried in order for each fixture. Public archive endpoints throttle or time out mid-run, so a fixture whose
+// fork cannot read state from one endpoint is replayed from the start on the next; a finding never mixes endpoints.
+const ENDPOINT_FAILURES = new Set(['FORK_UNAVAILABLE', 'FETCH_TIMEOUT', 'FETCH_FAILED', 'RPC_FAILED']);
+export async function checkClaims(state: State, o: {contract: string; rpcUrls: string[]; fixtures?: string[]; budget: number; log: (line: string) => void}) {
+  if (!o.rpcUrls.length) fail('USAGE_ERROR', 'claims needs --rpc-url (repeat it to name fallback endpoints).', 2);
   if (!Number.isInteger(o.budget) || o.budget < 1 || o.budget > 10_000) fail('USAGE_ERROR', '--budget must be an integer from 1 to 10000.', 2);
   const c = getContract(state.project, o.contract);
   const selection = state.config.contracts.find(s => s.id === c.id);
@@ -358,7 +389,15 @@ export async function checkClaims(state: State, o: {contract: string; rpcUrl: st
     validateFixture(f);
     if (f.contract !== c.id) fail('FIXTURE_CONTRACT', `${file} is a fixture of ${f.contract}, not ${c.id}.`, 2);
     o.log(`claims: ${file}`);
-    const r = await checkFixtureClaims(file, f, d, c, {rpcUrl: o.rpcUrl, budget: o.budget, log: o.log});
+    let r: Awaited<ReturnType<typeof checkFixtureClaims>> | undefined;
+    for (const [i, rpcUrl] of o.rpcUrls.entries()) {
+      try { r = {...await checkFixtureClaims(file, f, d, c, {rpcUrl, budget: o.budget, log: o.log}), ...(o.rpcUrls.length > 1 ? {endpoint: redactUrl(rpcUrl)} : {})}; break; }
+      catch (e) {
+        if (!(e instanceof Failure) || !ENDPOINT_FAILURES.has(e.code) || i === o.rpcUrls.length - 1) throw e;
+        o.log(`  ${redactUrl(rpcUrl)} failed (${e.code}); replaying on ${redactUrl(o.rpcUrls[i + 1])}`);
+      }
+    }
+    if (!r) continue;
     o.log(`  ${r.status}; ${r.runs} run(s), ${r.findings.length} finding(s)`);
     results.push(r);
   }
@@ -442,6 +481,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
   fs.mkdirSync(stage,{recursive:true});
   let lint: LintResult;
   const runnerResults:(RunnerResult&{testsFile:string})[]=[];
+  const removedConstants:{contract:string;constant:string}[]=[];
   const registryDir=path.join(stage,'registry',entity), descriptorFiles:string[]=[], testsFiles:string[]=[];
   try {
     const names=new Set<string>();
@@ -453,6 +493,11 @@ export async function exportBundle(state: State, out: string, strictPortability=
       names.add(name);
       const descriptor=structuredClone(source);
       descriptor.$schema=REGISTRY_SCHEMA;
+      // Constants init found (immutables, constructor arguments) that no field ended up referencing are left in
+      // the working copy but not sent to the registry: an unused address in a descriptor is a question for a reviewer.
+      const constantsOf=descriptor.metadata.constants, rest=JSON.stringify({...descriptor,metadata:{...descriptor.metadata,constants:undefined}});
+      for(const key of Object.keys(constantsOf??{})) if(!new RegExp(`\\$\\.metadata\\.constants\\.${key}(?![A-Za-z0-9_])`).test(rest)) { delete constantsOf![key]; removedConstants.push({contract:s.id,constant:key}); }
+      if(constantsOf && !Object.keys(constantsOf).length) delete descriptor.metadata.constants;
       if(descriptor.context.contract.abi!==undefined) fail('DEPRECATED_FIELD',`${s.descriptor} sets context.contract.abi, which registry lint rejects since ethereum/clear-signing-erc7730-registry#3128. Remove it; lint reads the ABI from the verified deployment.`);
       writeJson(path.join(registryDir,name),descriptor); descriptorFiles.push(path.join('registry',entity,name));
       const fixtures = tests.renders.filter(r=>r.rendering.contract===s.id).map(r=>({name:r.file,fixture:readJson<Fixture>(safePath(state.project.root,r.file)),rendering:r.rendering}));
@@ -498,7 +543,7 @@ export async function exportBundle(state: State, out: string, strictPortability=
       'Verify deployed code and proxy mappings independently. Open the pull request from an account tied to the contract owner; registry review, attestations and wallet availability are separate steps: https://clearsigning.org/build/',''].join('\n'));
     fs.renameSync(stage,target);
   } catch(e) {fs.rmSync(stage,{recursive:true,force:true});throw e;}
-  return {exported:out,entity,registryPath:`${out}/registry/${entity}`,descriptors:selections.length,fixtures:tests.passed,lint,registryRunners:options.registryRunners?runnerResults:null,...(skipReason?{registryRunnersSkipped:{reason:skipReason,divergence}}:{}),deploymentVerification:'not performed',publication:'not submitted',portability};
+  return {exported:out,entity,registryPath:`${out}/registry/${entity}`,descriptors:selections.length,fixtures:tests.passed,...(removedConstants.length?{unusedConstantsOmitted:removedConstants}:{}),lint,registryRunners:options.registryRunners?runnerResults:null,...(skipReason?{registryRunnersSkipped:{reason:skipReason,divergence}}:{}),deploymentVerification:'not performed',publication:'not submitted',portability};
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -10,9 +10,9 @@ export interface LintPin {requirement: string; flags: string[]; source: string}
 // Registry CI since ethereum/clear-signing-erc7730-registry#3128 (merged 2026-10-21): a v2 descriptor with the deprecated
 // context.contract.abi or context.eip712.schemas is a lint error; EIP-55 checksum check since #3083; Sourcify verification required since #3038.
 export const DEFAULT_LINT_PIN: LintPin = {
-  requirement: 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@964176e28918299dfecb269e20a267a652ada475',
+  requirement: 'erc7730 @ git+https://github.com/sourcifyeth/python-erc7730@ccd51ad544e6625d89564a79258fa4e8d0846cce',
   flags: ['--require-verified'],
-  source: 'built-in (registry master since ethereum/clear-signing-erc7730-registry#3128, merged 2026-10-21)'
+  source: 'built-in (registry master at b021a8d, 2026-11-10: chainId in calldata params, map references)'
 };
 // The pull-request lint lived in pull_request.yml, then registry-checks.yml (#3046, 2026-09-24), then descriptor-lint.yml
 // (by 2026-10-15). Known names are tried first, then any workflow; a file is used only if it actually runs `erc7730 lint`,

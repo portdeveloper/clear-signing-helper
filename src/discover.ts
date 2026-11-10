@@ -7,7 +7,8 @@ import { hypersyncQuery, rpcBatch, redactUrl } from './fetch.js';
 // Sources, in order: Envio HyperSync when ENVIO_API_TOKEN is set (server-side filter by target, selector and
 // status over the whole chain), else a bounded scan of recent blocks over the user's RPC.
 export interface Nominee {hash: string; blockNumber: number}
-export interface Discovery {source: 'hypersync' | 'rpc-scan'; searched: string; nominees: Record<string, Nominee[]>}
+// unread: blocks of the RPC scan the endpoint would not return (rate limit, node error), so they were not searched.
+export interface Discovery {source: 'hypersync' | 'rpc-scan'; searched: string; nominees: Record<string, Nominee[]>; unread?: number}
 interface Options {chainId: number; addresses: string[]; selectors: string[]; target: number; rpcUrl: string; token?: string; maxBlocks: number; log: (line: string) => void}
 
 // Newest first, at most `target` per selector, no duplicates.
@@ -58,12 +59,22 @@ async function fromRpcScan(o: Options): Promise<Discovery> {
   const head = Number(BigInt(headHex)), floor = Math.max(0, head - o.maxBlocks + 1), per = 20;
   const nominees: Record<string, Nominee[]> = {};
   const remaining = () => o.selectors.filter(s => (nominees[s]?.length ?? 0) < o.target);
-  let next = head, scanned = 0, lowest = head;
+  let next = head, scanned = 0, lowest = head, unread = 0;
   const worker = async () => {
     while (next >= floor && remaining().length) {
       const top = next; next -= per;
       const numbers = Array.from({length: per}, (_, i) => top - i).filter(n => n >= floor);
-      const blocks = await rpcBatch(o.rpcUrl, numbers.map(n => ({method: 'eth_getBlockByNumber' as const, params: ['0x' + n.toString(16), true]})));
+      const read = (list: number[]) => rpcBatch(o.rpcUrl, list.map(n => ({method: 'eth_getBlockByNumber' as const, params: ['0x' + n.toString(16), true]})));
+      const blocks = await read(numbers);
+      // A mined block the node answers with null or an error (public endpoints throttle inside a batch) is asked
+      // for once more; what is still missing is counted, so "not found" never hides "not read".
+      const failed = numbers.map((n, i) => blocks[i] ? -1 : i).filter(i => i >= 0);
+      if (failed.length) {
+        await new Promise(r => setTimeout(r, 1500));
+        const again = await read(failed.map(i => numbers[i]));
+        failed.forEach((i, k) => { blocks[i] = again[k]; });
+        unread += blocks.filter(b => !b).length;
+      }
       const candidates: {selector: string; hash: string; blockNumber: number}[] = [];
       for (const block of blocks as any[]) for (const tx of block?.transactions ?? []) {
         const selector = String(tx.input ?? '').slice(0, 10).toLowerCase();
@@ -78,7 +89,7 @@ async function fromRpcScan(o: Options): Promise<Discovery> {
     }
   };
   await Promise.all(Array.from({length: 6}, worker));
-  return {source: 'rpc-scan', searched: `RPC scan of blocks ${lowest}–${head} over ${redactUrl(o.rpcUrl)}`, nominees};
+  return {source: 'rpc-scan', searched: `RPC scan of blocks ${lowest}–${head} over ${redactUrl(o.rpcUrl)}${unread ? `, ${unread} of them unreadable` : ''}`, nominees, ...(unread ? {unread} : {})};
 }
 
 export function discoverCalls(o: Options): Promise<Discovery> {

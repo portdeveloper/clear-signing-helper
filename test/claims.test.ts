@@ -56,7 +56,10 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
   writeJson(path.join(root, 'clear-signing/fixtures/buy.json'), {contract: id, chainId: 31337, to: tx.to, data: tx.data, value: '0', from: tx.from, txHash: tx.hash});
   writeJson(path.join(root, 'clear-signing/fixtures/pay.json'), {contract: id, chainId: 31337, to: paid.to, data: paid.data, value: '0', from: paid.from, txHash: paid.hash});
   const lines: string[] = [];
-  const hidden = await checkClaims(loadState({root}), {contract: id, rpcUrl: url, budget: 100, log: line => lines.push(line)});
+  // The first endpoint is dead: each fixture is replayed on the fallback, and the result names the endpoint used.
+  const hidden = await checkClaims(loadState({root}), {contract: id, rpcUrls: ['http://127.0.0.1:9', url], budget: 100, log: line => lines.push(line)});
+  assert.ok(lines.some(l => /127\.0\.0\.1:9 failed \(FETCH_FAILED\); replaying on/.test(l)), lines.join('\n'));
+  assert.ok(hidden.results.every(x => (x as {endpoint?: string}).endpoint === url));
   const r = hidden.results.find(x => x.fixture.endsWith('buy.json'))!;
   assert.equal(r.status, 'checked');
   assert.match(r.claims.find(c => c.claim.startsWith('"Amount to Receive"'))!.baseline, /^holds/);
@@ -73,6 +76,8 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
   assert.deepEqual(hidden.findings.filter(f => f.fixture.endsWith('pay.json')), []);
 
   write({format: 'raw', visible: {mustMatch: [0]}}, {format: 'raw', visible: 'never'});
-  const pinned = await checkClaims(loadState({root}), {contract: id, rpcUrl: url, budget: 100, log: () => {}});
+  const pinned = await checkClaims(loadState({root}), {contract: id, rpcUrls: [url], budget: 100, log: () => {}});
+  // With no endpoint left to fall back to, the endpoint's failure is the answer.
+  await assert.rejects(checkClaims(loadState({root}), {contract: id, rpcUrls: ['http://127.0.0.1:9'], budget: 100, log: () => {}}), /127\.0\.0\.1:9/);
   assert.deepEqual(pinned.findings, []);
 });

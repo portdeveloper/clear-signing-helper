@@ -110,7 +110,9 @@ async function rpcRequestOnce(url: string, method: ReadMethod, params: unknown[]
 export async function fetchTokenMetadata(url: string, chainId: number, address: string): Promise<{name: string; symbol: string; decimals: number} | {error: string}> {
   const served = Number(BigInt(await rpcCall(url, 'eth_chainId', [])));
   if (served !== chainId) fail('RPC_CHAIN_MISMATCH', `${redact(url)} serves chain ${served}, but the fixture is on chain ${chainId}.`, 2);
-  const call = async (data: string) => { try { return await rpcCall(url, 'eth_call', [{to: address, data}, 'latest']); } catch (e) { if (e instanceof Failure && e.code === 'RPC_ERROR') return '0x'; throw e; } };
+  // A revert means "not a token"; a rate limit that outlasts the retries means "not asked", and is said as such.
+  let throttled = false;
+  const call = async (data: string) => { try { return await rpcCall(url, 'eth_call', [{to: address, data}, 'latest']); } catch (e) { if (e instanceof Failure && e.code === 'RPC_ERROR') { if (RATE_LIMITED.test(e.message)) throttled = true; return '0x'; } throw e; } };
   const text = (hex: string) => {
     if (hex.length === 66) return Buffer.from(hex.slice(2), 'hex').toString('utf8').replace(/\0+$/, '');
     try { return AbiCoder.defaultAbiCoder().decode(['string'], hex)[0] as string; } catch { return ''; }
@@ -118,7 +120,7 @@ export async function fetchTokenMetadata(url: string, chainId: number, address: 
   const [symbolHex, decimalsHex, nameHex] = [await call('0x95d89b41'), await call('0x313ce567'), await call('0x06fdde03')];
   const symbol = text(symbolHex).trim(), name = text(nameHex).trim() || symbol;
   const decimals = decimalsHex.length >= 66 ? Number(BigInt(decimalsHex.slice(0, 66))) : NaN;
-  if (!symbol || !Number.isInteger(decimals) || decimals < 0 || decimals > 255) return {error: `${address} did not answer symbol() and decimals() as an ERC-20 on chain ${chainId}`};
+  if (!symbol || !Number.isInteger(decimals) || decimals < 0 || decimals > 255) return {error: throttled ? `${address}: ${redact(url)} rate-limited the symbol()/decimals() calls, so the token was not read; run tokens --rpc-url again or use another endpoint` : `${address} did not answer symbol() and decimals() as an ERC-20 on chain ${chainId}`};
   return {name, symbol, decimals};
 }
 export async function rpcCall(url: string, method: 'eth_chainId' | 'eth_getCode' | 'eth_call', params: unknown[], timeoutMs = 30_000): Promise<string> {

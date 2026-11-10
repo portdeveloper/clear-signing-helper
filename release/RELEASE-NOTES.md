@@ -1,3 +1,33 @@
+# Clear Signing Helper 0.6.0-preview.7 — developer preview
+
+Brings the tool back in step with the registry, which changed its linter, both test runners and the descriptor schema since 0.6.0-preview.6, and ships the checks and fixes that came out of writing twelve top-contract descriptors (all merged except one draft).
+
+## What changed
+
+- **Registry CI pins and schema at registry `b021a8d` (2026-11-10).** The linter (`ccd51ad`), the Sourcify runner (`277965d`, renderer 0.3.1) and the Rust runner (`8bfe6b4`) are the ones registry CI runs now. The bundled descriptor schema equals the registry's again: it adds `chainId` and `chainIdPath` to the `calldata` format's parameters. Checked by rebuilding the merged Disperse descriptor from scratch: the exported descriptor and tests equal the registry's files, lint reports 0 errors, and both runners pass 3 of 3.
+- **Three shapes merged descriptors use are no longer rejected:** a top-level `$comment`, a `context.contract.factory`, and one argument shown twice when every appearance is conditional (`visible: {ifNotIn: …}` or `mustMatch`), as the Across SpokePool file shows `destinationChainId`. Two unconditional appearances are still a `DUPLICATE_FIELD` error. The validator now accepts 576 of the registry's 616 calldata descriptors; the 40 it rejects use the nested `calldata` format (39) or an encrypted field (1), neither of which this tool renders.
+- **Checks from the registry's AI reviews.** `SENTENCE_OMITS` warns when an `interpolatedIntent` leaves out a shown amount or recipient. `NATIVE_AMOUNT_UNPAID` warns when an amount is shown in ETH while ETH input is pinned to zero. `claims` gained a probe for arguments the contract ignores, and no longer reports array recipients as unexplained or stops on unnamed ABI parameters.
+- **Decisions files** take `ifNotIn` (hide a field at listed values), and a struct member's NatSpec goes to that member only.
+- **`discover`** skips a transaction that is already a fixture instead of copying it under a new name, counts the blocks the endpoint would not return (so "not found" is never "not read"), and says when token metadata is incomplete. `--per-function` takes 1 to 10.
+- **`tokens --rpc-url <url>`** (new) fills the token metadata that existing fixtures lack: fixtures made before their amounts were typed, or whose lookup was rate-limited. A rate-limited lookup is now reported as such, not as "not an ERC-20".
+- **`claims` takes several `--rpc-url`s.** When an endpoint throttles or times out, the fixture is replayed from the start on the next one.
+- **`export` leaves unreferenced `metadata.constants` out of the registry file** and lists them as `unusedConstantsOmitted`. The working copy keeps them.
+- **Priors** refreshed at registry `b021a8d`: 616 descriptors, 1,032 selectors.
+
+## Upgrade from 0.6.0-preview.6
+
+The schema changed, so the engine fingerprint did. In each project run `clear-signing upgrade`, look at the previews, then `clear-signing review --accept` and `clear-signing test --update`. No descriptor that was valid becomes invalid. Rebuild the registry runners once with `clear-signing registry setup-runners`.
+
+## Install
+
+```sh
+sha256sum --check clear-signing-helper-0.6.0-preview.7.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.6.0-preview.7.tgz
+clear-signing --version
+```
+
+Expected version: `0.6.0-preview.7`. Network access, scope and validation are otherwise as described for 0.6.0-preview.6 below; `tokens` makes the same read-only `eth_call`s as `fixture --rpc-url`.
+
 # Clear Signing Helper 0.6.0-preview.6 — developer preview
 
 Adds `claims`, a check that runs each fixture on a local fork and tests what the screen says against what the transaction actually does. Every finding the reviewers made on the first two top-contract descriptors (registry #3133 and #3135) was a screen that is false for some argument values. The tool's other checks read names and the ABI, so none of them could catch those.

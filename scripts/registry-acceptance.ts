@@ -1,4 +1,4 @@
-// Acceptance metric: does the validator accept what the registry has merged? Usage: npx tsx scripts/registry-acceptance.ts <registry-clone>
+// Acceptance metric: does the validator accept what the registry has merged? Usage: [LIST=1] npx tsx scripts/registry-acceptance.ts <registry-clone>
 import fs from 'node:fs'; import path from 'node:path';
 import { FunctionFragment, Interface } from 'ethers';
 import { validateDescriptor, errorsOf, warningsOf } from '../src/descriptors.js';
@@ -21,6 +21,8 @@ for (const entity of fs.readdirSync(path.join(root, 'registry'))) for (const nam
   d.$schema = 'https://eips.ethereum.org/assets/eip-7730/erc7730-v2.schema.json';
   const diags = validateDescriptor(d, c, {id: c.id, descriptor: name, exclusions: {}});
   const errs = errorsOf(diags); if (!errs.length) clean++;
+  // LIST=1 prints each rejected file with its error classes, to tell a new rejection class from a known one.
+  if (errs.length && process.env.LIST) console.log(`REJECTED ${entity}/${name}: ${[...new Set(errs.map(e => e.code === 'UNSUPPORTED_FORMAT' ? `${e.code}(${e.message.split(' ')[0]})` : e.code))].join(', ')}`);
   for (const e of errs) { errCodes.set(e.code, (errCodes.get(e.code) ?? 0) + 1); if (!examples.has(e.code)) examples.set(e.code, `${entity}/${name}: ${e.message.slice(0, 160)}`); 
     const key = e.code === 'UNSUPPORTED_FEATURE' ? 'UF ' + e.message.replace(/^(.*?)\.([^. ]+) is not supported.*$/, '$1.$2').replace(/formats\.[^.]*\([^)]*\)/, 'formats.<fn>').replace(/field in [^.]*\(.*?\)\./,'field.').replace(/group in [^.]*\(.*?\)\./,'group.') : e.code === 'SCHEMA_INVALID' ? 'SI ' + e.message.replace(/\/display\/formats\/[^/]+/, '/display/formats/<fn>').replace(/\/fields\/\d+/g, '/fields/N') : e.code === 'INVALID_PATH' ? 'IP ' + (/^(\S+) is not a leaf/.exec(e.message)?.[1] ?? e.message) : e.code === 'TOKEN_MAPPING' || e.code === 'FORMAT_TYPE' || e.code === 'INVALID_INTERPOLATION' ? e.code + ' ' + e.message.replace(/^\S+\(.*?\) /, '').replace(/0x[0-9a-fA-F]{40}/g, '<addr>').replace(/[#.\w\[\]-]+ (requires|must|for|references|is)/, '<path> $1').slice(0, 110) : null;
     if (key) { detail.set(key, (detail.get(key) ?? 0) + 1); const ex = perKeyExamples.get(key) ?? []; if (ex.length < 2) { ex.push(`${entity}/${name} :: ${e.signature ?? ''} :: ${e.message.slice(0, 200)}`); perKeyExamples.set(key, ex); } } }

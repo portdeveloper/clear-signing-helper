@@ -293,10 +293,12 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
     return errors;
   }
   try {
-    assertKeys(d, ['$schema', 'context', 'metadata', 'display'], 'descriptor');
+    // $comment is a note for readers (the schema allows it at the top level); it changes nothing a wallet shows.
+    assertKeys(d, ['$schema', '$comment', 'context', 'metadata', 'display'], 'descriptor');
     if (d.$schema !== SCHEMA_URL) fail('SCHEMA_VERSION', `Use the pinned schema ${SCHEMA_URL}.`);
     assertKeys(d.context, ['contract', '$id'], 'context');
-    assertKeys(d.context.contract, ['deployments', 'abi'], 'context.contract');
+    // factory (schema: deployments found through a factory's deploy event) binds more addresses; it changes no screen.
+    assertKeys(d.context.contract, ['deployments', 'abi', 'factory'], 'context.contract');
     if (!Array.isArray(d.context.contract.deployments)) fail('INVALID_BINDING', 'context.contract.deployments must be an array (empty for local drafts).');
     if (d.context.contract.abi !== undefined && !Array.isArray(d.context.contract.abi)) fail('INVALID_BINDING', 'context.contract.abi must be an ABI array when present.');
     if (d.context.contract.abi !== undefined) add('DEPRECATED_FIELD', 'context.contract.abi is deprecated; registry lint fails it since ethereum/clear-signing-erc7730-registry#3128.', undefined, 'warning');
@@ -345,7 +347,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         const typeOf = (p: string) => leafMap.get(leafKey(p)) ?? TRANSACTION_FIELDS[p];
         // referenced: leaves a displayed field reads through a parameter (the token of a tokenAmount, an NFT
         // collection, a chain id). The registry linter counts them as displayed; so does UNDISPLAYED_ARGUMENT.
-        const seen = new Set<string>(), displayedLeaves = new Set<string>(), declaredHidden = new Set<string>(), referenced = new Set<string>();
+        const seen = new Set<string>(), conditionalOnly = new Set<string>(), displayedLeaves = new Set<string>(), declaredHidden = new Set<string>(), referenced = new Set<string>();
         const longLabels = new Set<string>();
         const resolved = resolveFields(spec.fields, definitions, group => {
           assertKeys(group, ['path','label','fields','iteration','$id'], `group in ${sig}`);
@@ -375,7 +377,12 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           }
           const type = typeOf(field.path);
           if (!type) fail('INVALID_PATH', `${field.path} is not a leaf argument or supported transaction field of ${sig}.`);
-          if (seen.has(field.path)) fail('DUPLICATE_FIELD', `${field.path} is displayed more than once.`);
+          // One leaf may appear twice when each appearance is conditional (visible: {ifNotIn | mustMatch}): the
+          // registry's Across file shows destinationChainId as a chain name or as an enum, never both.
+          const conditional = field.visible !== null && typeof field.visible === 'object';
+          if (seen.has(field.path) && !(conditional && conditionalOnly.has(field.path))) fail('DUPLICATE_FIELD', `${field.path} is displayed more than once; a second appearance is allowed only when every appearance has a visible rule (ifNotIn or mustMatch).`);
+          if (!seen.has(field.path) && conditional) conditionalOnly.add(field.path);
+          if (!conditional) conditionalOnly.delete(field.path);
           seen.add(field.path); displayedLeaves.add(leaf!);
           if (field.format === undefined) fail('UNSUPPORTED_FORMAT', `${field.path} has no format; the pinned renderer needs one (use raw).`);
           const params = field.params ?? {};

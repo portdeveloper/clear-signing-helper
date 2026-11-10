@@ -68,12 +68,13 @@ test('a Uniswap V2 router ABI finds the registry\'s V2 router descriptor, contai
     [['registry/uniswap/calldata-UniswapV2Router02.json',17,17,true],['registry/quickswap/calldata-QuickSwap.json',15,17,true]]);
 });
 test('a contract with many more functions than the registry describes still matches when the file is contained in it',()=>{
-  // SwapRouter02: the registry file describes six swaps; the contract also has permits, sweeps and multicalls.
+  // SwapRouter02: the registry file describes four swaps (the two packed-path ones were removed in registry #3146);
+  // the contract also has those, permits, sweeps and multicalls.
   const extra=Array.from({length:24},(_,i)=>`extraFunction${i}(uint256)`);
   const [m]=registryMatches(selectorsOf('exactInput((bytes,address,uint256,uint256))','exactInputSingle((address,address,uint24,address,uint256,uint256,uint160))','exactOutput((bytes,address,uint256,uint256))','exactOutputSingle((address,address,uint24,address,uint256,uint256,uint160))','swapExactTokensForTokens(uint256,uint256,address[],address)','swapTokensForExactTokens(uint256,uint256,address[],address)','multicall(bytes[])',...extra));
   assert.equal(m?.file,'registry/uniswap/calldata-UniswapV3Router02.json');
-  assert.ok(m.contained&&m.shared.length===6);
-  // Without containment, 6 of 30 distinctive functions is too little to suggest anything.
+  assert.ok(m.contained&&m.shared.length===4);
+  // Without containment, one shared function among 27 is too little to suggest anything.
   assert.deepEqual(registryMatches(selectorsOf('exactInput((bytes,address,uint256,uint256))','exactInputSingle((address,address,uint24,address,uint256,uint256,uint160))','exactOutput((bytes,address,uint256,uint256))',...extra)),[]);
 });
 test('standard interfaces and single coincidences suggest nothing',()=>{

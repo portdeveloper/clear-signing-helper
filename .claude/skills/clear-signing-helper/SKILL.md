@@ -130,6 +130,7 @@ clear-signing fixture --name <n> --contract <id> --function '<sig>' --args '[...
 clear-signing fixture --name <n> --contract <id> --broadcast-tx <hash>     # Foundry: a real recorded transaction
 clear-signing discover --contract <id> --rpc-url <url>                      # finds real transactions for every described function without a fixture
 clear-signing fixture --name <n> --contract <id> --tx <hash> --rpc-url <url>   # any project: a mined transaction sent to the contract; also fills token metadata
+clear-signing tokens --rpc-url <url> [--contract <id>]                       # fills token metadata that existing fixtures lack (discover run before apply, or a rate-limited lookup)
 clear-signing preview --fixture clear-signing/fixtures/<n>.json           # add tokens/addressNames to the fixture until it renders cleanly
 clear-signing check --contract <id>
 clear-signing review --accept --contract <id>
@@ -138,6 +139,8 @@ clear-signing export --contract <id> --strict-portability --registry-runners --r
 ```
 
 Prefer real transactions: a reviewer trusts what users signed over an encoded example. For a deployed contract, run `discover` first: it finds successful transactions sent directly to the contract and makes fixtures from them. Ask the user for an `ENVIO_API_TOKEN` (free at https://envio.dev) when functions are rarely used; without one it only scans recent blocks and lists what it did not reach. For those, pass a hash you find on an explorer with `--tx`, and encode with `--function` only for functions nobody has called directly. Say in the PR which fixtures are encoded.
+
+Read `notes` in the `discover` result: it says when blocks could not be read from the endpoint (so "missing" may only mean "not searched"), when the only calls found are fixtures already, and when token metadata is incomplete. `claims` takes `--rpc-url` more than once; name a second archive endpoint so a throttled one does not end the run.
 
 Every function you kept needs at least one passing fixture. With `--rpc-url` (also on an encoded `--function` fixture), `fixture` reads each token the rendering needs from the chain (`symbol`, `decimals`, `name`) into the fixture's `tokens`; check `unresolvedTokens` in the result. `addressNames` and `chain` you add yourself; rendering never fetches. `export` writes `bundle/registry/<entity>/calldata-<Name>.json` and `testsv2/` exactly as the registry wants them, runs `erc7730 lint` and both registry test runners at the pins in the clone's CI files, and records everything under `bundle/review/`. Any failure produces no bundle. `--strict-portability` rejects ABI shapes with recorded wallet failures (signed ints, nested arrays, multi-field tuple arrays); if it fires, exclude that function or drop strict mode and say so in the PR. If one registry runner fails where the other passes because the two disagree (registry #3027: the Rust runner hard-codes native tickers, MATIC on Polygon, ETH on Celo and Sonic), do not drop `--registry-runners`; add `--accept-runner-failure rust="<why>"` so the other runner still checks the expected values, and say it in the PR.
 

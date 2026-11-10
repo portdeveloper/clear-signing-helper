@@ -1,1 +1,169 @@
-{}
+{
+  "src/AssetVault.sol:AssetVault": {
+    "fingerprint": "fbc5d20048b75f5bdc09417512f022fcce39d673043919e89552241f8d86d79c",
+    "questions": [
+      {
+        "signature": "deposit(uint256,address)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "emergencyWithdraw(address,uint256)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "transferAdmin(address)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "withdraw(uint256,address,address)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      }
+    ]
+  },
+  "src/ClearToken.sol:ClearToken": {
+    "fingerprint": "64b5550a486f01b2fc5293b496529928b7f012c9f2555ee1069544edc176b480",
+    "questions": [
+      {
+        "signature": "approve(address,uint256)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "burn(uint256)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "mint(address,uint256)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "transfer(address,uint256)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "transferAdmin(address)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "transferFrom(address,address,uint256)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      }
+    ]
+  },
+  "src/SwapRouter.sol:SwapRouter": {
+    "fingerprint": "3c608b9d390c020637694e5617e2814bf064020d3462fa6a6e7a85dc483eabce",
+    "questions": [
+      {
+        "signature": "batchSwap((address,address,uint256,uint256)[],address)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "executeRoute((address,address,address,uint256,uint256,bytes),address)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "executeRoute((address,address,address,uint256,uint256,bytes)[],address)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "setDefaultMode(uint8)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "swapExactETHForTokens(uint256,address[],address,uint256)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "swapExactTokensForTokens(uint256,address,address)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "swapExactTokensForTokens(uint256,uint256,address,address,address)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      },
+      {
+        "signature": "transferAdmin(address)",
+        "questions": [
+          "Does the action describe the actual operation?",
+          "Are every recipient, spender, limit, and other relevant argument visible?",
+          "Are raw values intentional? Verify units and token relationships before choosing formatters."
+        ]
+      }
+    ]
+  }
+}

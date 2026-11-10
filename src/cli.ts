@@ -1,5 +1,5 @@
 import { Command, CommanderError, Option } from 'commander';
-import { init, loadState, check, review, sync, preview, createFixture, fillTokenMetadata, discoverFixtures, runTests, checkClaims, exportBundle, upgrade, writeDecisions, applyDecisions } from './app.js';
+import { init, loadState, check, review, sync, preview, createFixture, fillTokenMetadata, fillTokens, discoverFixtures, runTests, checkClaims, exportBundle, upgrade, writeDecisions, applyDecisions } from './app.js';
 import { Failure } from './io.js';
 import { servePreview } from './preview.js';
 import { displayText, humanOutput } from './output.js';
@@ -80,9 +80,14 @@ program.command('discover').description('Find real transactions sent to a contra
   .requiredOption('--rpc-url <url>','Read-only endpoint for the deployment\'s chain: every candidate is re-read and checked here, and token metadata comes from it')
   .option('--chain-id <number>','Chain to search when the contract is bound on several')
   .option('--function <signature>','Only this described function, by name or signature (repeatable; also re-searches functions that have a fixture)',select,[])
-  .option('--per-function <n>','Fixtures to create per function','1')
+  .option('--per-function <n>','Fixtures to create per function, 1 to 10','1')
   .option('--max-blocks <n>','Without ENVIO_API_TOKEN: how many recent blocks the RPC scan reads','20000')
   .action(async options=>output(await discoverFixtures(state(),{contract:options.contract,rpcUrl:options.rpcUrl,chainId:options.chainId,functions:options.function,perFunction:Number(options.perFunction),maxBlocks:Number(options.maxBlocks),log:progress})));
+program.command('tokens').description('Fill missing token metadata (symbol, decimals, name) in existing fixtures, for the tokens their renderings need')
+  .requiredOption('--rpc-url <url>','Read-only endpoint for the fixtures\' chain')
+  .option('--contract <path:name>','Only fixtures of this selected contract (repeatable)',select,[])
+  .option('--fixture <path>','Only this fixture, relative to the project root (repeatable)',select,[])
+  .action(async options=>output(await fillTokens(state(),{rpcUrl:options.rpcUrl,contracts:options.contract,fixtures:options.fixture})));
 program.command('preview').description('Render one transaction fixture locally')
   .requiredOption('--fixture <path>','Fixture path relative to the project root')
   .option('--open','Serve on loopback and open a browser')
@@ -98,10 +103,10 @@ program.command('test').description('Compare fixture renderings against checked-
   .action(async options=>{const r=await runTests(state(),options.update===true,options.contract);output({passed:r.passed,updated:r.updated});});
 program.command('claims').description('Replay real-transaction fixtures on a local anvil fork and test each shown amount, limit and recipient against what the call does, also with hidden or raw arguments varied; writes nothing')
   .requiredOption('--contract <path:name>','Selected contract identity')
-  .requiredOption('--rpc-url <url>','Endpoint for the fork; it must serve state at each fixture\'s block (an archive node for older transactions)')
+  .option('--rpc-url <url>','Endpoint for the fork; it must serve state at each fixture\'s block (an archive node for older transactions). Repeat it to name fallbacks, tried in order when an endpoint throttles or times out',select,[])
   .option('--fixture <path>','Only this fixture (repeatable)',select,[])
   .option('--budget <n>','Most calls to simulate per fixture','300')
-  .action(async options=>output(await checkClaims(state(),{contract:options.contract,rpcUrl:options.rpcUrl,fixtures:options.fixture,budget:Number(options.budget),log:progress})));
+  .action(async options=>output(await checkClaims(state(),{contract:options.contract,rpcUrls:options.rpcUrl,fixtures:options.fixture,budget:Number(options.budget),log:progress})));
 program.command('export').description('Validate and write a submission bundle; does not publish')
   .requiredOption('--out <directory>','New output directory inside the project')
   .option('--contract <path:name>','Export only this selected contract and its fixtures (repeatable)',select,[])
