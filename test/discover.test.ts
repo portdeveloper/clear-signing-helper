@@ -40,6 +40,8 @@ const txs:Record<string,{to:string;input:string;block:number;status:string}>={
 
 // Blocks the mock node refuses inside a batch, as a throttling public endpoint does.
 const unreadable=new Set<number>();
+// Receipts the mock node refuses inside a batch (the scan); single reads (fixture --tx) still work.
+const unreadableReceipts=new Set<string>();
 function project() {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-discover-'));
   fs.writeFileSync(path.join(root,'token.abi.json'),JSON.stringify(tokenAbi));
@@ -68,6 +70,7 @@ async function mockChain(t:any) {
         .map(([hash,x])=>({hash,block_number:x.block,to:x.to,input:x.input,status:Number(x.status)}));
       return json(200,{archive_height:1000,next_block:q.to_block,data:{transactions:hits}});
     }
+    let inBatch=false;
     const one=(call:any)=>{
       const {method,params,id}=call;seen.methods.push(method);
       const ok=(result:unknown)=>({jsonrpc:'2.0',id,result});
@@ -76,6 +79,7 @@ async function mockChain(t:any) {
       if(method==='eth_getBlockByNumber') { const n=Number(BigInt(params[0])); if(unreadable.has(n)) return {jsonrpc:'2.0',id,error:{code:-32005,message:'limit exceeded'}}; return ok({number:params[0],transactions:Object.entries(txs).filter(([,x])=>x.block===n).map(([hash,x])=>({hash,to:x.to,input:x.input,blockNumber:params[0]}))}); }
       const x=txs[params?.[0]];
       if(method==='eth_getTransactionByHash') return ok(x?{hash:params[0],from:sender,to:x.to,input:x.input,value:'0x0',blockNumber:'0x'+x.block.toString(16),chainId:'0x279f'}:null);
+      if(method==='eth_getTransactionReceipt'&&inBatch&&unreadableReceipts.has(params[0])) return {jsonrpc:'2.0',id,error:{code:-32005,message:'limit exceeded'}};
       if(method==='eth_getTransactionReceipt') return ok(x?{status:x.status}:null);
       if(method==='eth_call'&&params[0].to.toLowerCase()===token) {
         const coder=AbiCoder.defaultAbiCoder(), s=params[0].data;
@@ -86,6 +90,7 @@ async function mockChain(t:any) {
       return {jsonrpc:'2.0',id,error:{message:`${method} not allowed`}};
     };
     const call=JSON.parse(body);
+    inBatch=Array.isArray(call);
     return json(200,Array.isArray(call)?call.map(one):one(call));
   });});
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>server.close());
@@ -162,4 +167,11 @@ await test('discover without a token scans recent blocks over the RPC and report
   assert.match(partial.notes.join(' '),/2 block\(s\) could not be read/);
   assert.match(partial.next,/unreadable/);
   unreadable.clear();
+  // The same for a candidate's receipt: the call was seen but its success could not be read.
+  const {root:root4,id:id4}=project();t.after(()=>fs.rmSync(root4,{recursive:true,force:true}));
+  unreadableReceipts.add(h(1));t.after(()=>unreadableReceipts.clear());
+  const noReceipt=(await runAsync(root4,['discover','--contract',id4,'--rpc-url',rpc,'--max-blocks','200'])).result;
+  assert.deepEqual([noReceipt.created.length,noReceipt.missing],[0,['transfer(address,uint256)']]);
+  assert.match(noReceipt.searched,/1 of them unreadable/);
+  unreadableReceipts.clear();
 });

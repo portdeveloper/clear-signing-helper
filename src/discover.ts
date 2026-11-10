@@ -81,7 +81,16 @@ async function fromRpcScan(o: Options): Promise<Discovery> {
         if (tx.to && to.has(String(tx.to).toLowerCase()) && remaining().includes(selector)) candidates.push({selector, hash: String(tx.hash).toLowerCase(), blockNumber: Number(BigInt(tx.blockNumber))});
       }
       if (candidates.length) {
-        const receipts = await rpcBatch(o.rpcUrl, candidates.map(c => ({method: 'eth_getTransactionReceipt' as const, params: [c.hash]})));
+        const receiptsOf = (list: typeof candidates) => rpcBatch(o.rpcUrl, list.map(c => ({method: 'eth_getTransactionReceipt' as const, params: [c.hash]})));
+        const receipts = await receiptsOf(candidates);
+        // A mined transaction has a receipt, so a null one was not read: asked once more, then its block counts as unread.
+        const lost = candidates.map((_, i) => receipts[i] ? -1 : i).filter(i => i >= 0);
+        if (lost.length) {
+          await new Promise(r => setTimeout(r, 1500));
+          const again = await receiptsOf(lost.map(i => candidates[i]));
+          lost.forEach((i, k) => { receipts[i] = again[k]; });
+          unread += new Set(lost.filter(i => !receipts[i]).map(i => candidates[i].blockNumber)).size;
+        }
         candidates.forEach((c, i) => { if ((receipts[i] as any)?.status === '0x1') add(nominees, c.selector, [c], o.target); });
       }
       scanned += numbers.length; lowest = Math.min(lowest, numbers[numbers.length - 1] ?? lowest);
