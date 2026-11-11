@@ -446,3 +446,32 @@ await test('decisions: mustMatch pins an argument that would switch off a check 
   run(root,['apply','--decisions','clear-signing/decisions/again.json']);
   assert.equal(read(descFile).display.formats[Object.keys(d.display.formats)[0]].fields.find((x:any)=>x.path==='params.sqrtPriceLimitX96').visible,undefined);
 });
+
+await test('decisions: several byte slices of one leaf keep their own fields on a re-apply',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const abi=[{type:'function',name:'swap',stateMutability:'nonpayable',outputs:[],inputs:[{name:'tokenFrom',type:'address'},{name:'amount',type:'uint256'},{name:'data',type:'bytes'}]}];
+  fs.writeFileSync(path.join(root,'meta.abi.json'),JSON.stringify(abi));
+  run(root,['init','--abi','meta.abi.json','--name','Meta','--owner','Example']);
+  const id='clear-signing/abi/Meta.json:Meta', sig='swap(address,uint256,bytes)';
+  const created=run(root,['decisions','--contract',id]).result,dfile=path.join(root,created.created),dec=read(dfile);
+  const f=dec.functions[sig].fields;dec.author='llm:test-model';dec.functions[sig].intent='Swap';
+  const amount={format:'tokenAmount',params:{tokenPath:'tokenFrom'}};
+  f.amount={...f.amount,label:'Send',...amount};
+  delete f.data;
+  f['data.[96:128]']={type:'uint256',show:true,label:'Receive at least',...amount};
+  f['data.[224:256]']={type:'uint256',show:true,label:'Fee on output',format:'raw',mustMatch:[0]};
+  const dir=path.join(root,'clear-signing/descriptors'),descFile=path.join(dir,fs.readdirSync(dir)[0]);
+  // The scaffold shows the whole argument; point that field at the first slice, as an author does by hand.
+  const d0=read(descFile);for(const x of Object.values(d0.display.formats as any).flatMap((x:any)=>x.fields) as any[])if(x.path==='data')x.path='data.[96:128]';write(descFile,d0);
+  write(dfile,dec);run(root,['apply','--decisions',created.created]);
+  const fields=()=>Object.values(read(descFile).display.formats as any).flatMap((x:any)=>x.fields).filter((x:any)=>x.path.startsWith('data.[')).map((x:any)=>[x.path,x.label,x.format]);
+  assert.deepEqual(fields(),[['data.[96:128]','Receive at least','tokenAmount'],['data.[224:256]','Fee on output','raw']]);
+  // A third slice, placed between the two: the earlier ones stay as they were (the first used to overwrite the others).
+  const g:any={};for(const [k,v] of Object.entries(f)){g[k]=v;if(k==='data.[96:128]')g['data.[160:192]']={type:'uint256',show:true,label:'Fee',...amount};}
+  dec.functions[sig].fields=g;write(dfile,dec);run(root,['apply','--decisions',created.created]);run(root,['apply','--decisions',created.created]);
+  assert.deepEqual(fields(),[['data.[96:128]','Receive at least','tokenAmount'],['data.[160:192]','Fee','tokenAmount'],['data.[224:256]','Fee on output','raw']]);
+  // The bare leaf key still edits the first field of the leaf, and only that one.
+  const h:any={};for(const [k,v] of Object.entries(g))h[k==='data.[96:128]'?'data':k]=k==='data.[96:128]'?{...(v as any),label:'Minimum out'}:v;
+  dec.functions[sig].fields=h;write(dfile,dec);run(root,['apply','--decisions',created.created]);
+  assert.deepEqual(fields().map(x=>x[1]),['Minimum out','Fee','Fee on output']);
+});

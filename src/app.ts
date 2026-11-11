@@ -3,7 +3,7 @@ import path from 'node:path';
 import TOML from '@iarna/toml';
 import { Interface, FunctionFragment, getAddress } from 'ethers';
 import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
-import { ENGINE, SUPPORTED_FORMATS, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, REGISTRY_NAME, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
+import { ENGINE, SUPPORTED_FORMATS, normalizePath, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, REGISTRY_NAME, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
 import { priorsFor, summarizePrior, registryMatches, buildPriorsIndex, usePriorsIndex, PRIORS_META } from './priors.js';
 import { gatherEvidence } from './evidence.js';
 import { permitOf } from './permits.js';
@@ -568,6 +568,8 @@ const DESCRIPTOR_NEVER = 'visible "never" in the descriptor';
 const neverHidden = (resolved: ResolvedField[], leafKeys: string[]) => new Set(resolved.filter(r => r.hidden && r.key).flatMap(r => coveredLeaves(r.key!, leafKeys)));
 // The decisions template for the current descriptor. apply compares a filled file against it, so only
 // values someone changed are recorded as decided; unchanged values keep the provenance init gave them.
+// A field path as a decisions key that keeps its byte slice: "#.data.[160:192]" -> "data.[160:192]".
+const sliceKey = (p: string) => p.startsWith('@.') ? p : normalizePath(p.replace(/^#\./, ''));
 function buildDecisions(state: State, id: string): Decisions {
   const selection = selectContracts(state, [id])[0];
   const c = getContract(state.project, id), d = state.descriptors.get(id)!, evidence = gatherEvidence(state.project, c);
@@ -745,8 +747,11 @@ export function applyDecisions(state: State, file: string) {
       if ('fields' in item) { const inner = edit(item.fields, item.path === undefined ? prefix : joinPath(prefix, item.path) + '.'); return inner.length ? [{...item, fields: inner}] : []; }
       const merged = mergeDefinition(item, definitions);
       if (typeof merged.path !== 'string') return [item];
-      const full = leafKey(joinPath(prefix, merged.path));
-      const decision = fd.fields?.[full];
+      // A byte-slice field answers to its own key ("data.[160:192]") when the file has one. The bare leaf key
+      // ("data") edits only the first field of that leaf, so several slices of one leaf survive a re-apply.
+      const leaf = leafKey(joinPath(prefix, merged.path)), exact = sliceKey(joinPath(prefix, merged.path));
+      const full = exact !== leaf && fd.fields?.[exact] ? exact : leaf;
+      const decision = full === leaf && present.has(leaf) && exact !== leaf ? undefined : fd.fields?.[full];
       if (!decision) return [item];
       present.add(full);
       if (decision.show === false) {
@@ -784,7 +789,7 @@ export function applyDecisions(state: State, file: string) {
       if (spec.fields.some(x => 'fields' in x)) return;
       const keys = Object.keys(fd.fields ?? {});
       let last = -1;
-      const ranked = spec.fields.map((item, i) => { const p = mergeDefinition(item as Field, definitions).path, k = typeof p === 'string' ? keys.indexOf(leafKey(p)) : -1; if (k >= 0) last = k; return {item, rank: k >= 0 ? k : last, i}; });
+      const ranked = spec.fields.map((item, i) => { const p = mergeDefinition(item as Field, definitions).path, k = typeof p === 'string' ? (keys.includes(sliceKey(p)) ? keys.indexOf(sliceKey(p)) : keys.indexOf(leafKey(p))) : -1; if (k >= 0) last = k; return {item, rank: k >= 0 ? k : last, i}; });
       spec.fields = ranked.sort((a, b) => a.rank - b.rank || a.i - b.i).map(r => r.item);
     };
     for (const [full, decision] of Object.entries(fd.fields ?? {})) {

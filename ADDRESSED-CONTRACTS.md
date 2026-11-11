@@ -48,7 +48,7 @@ SwapRouter02 was already in the registry; our PR fixed its file. Other top-25 co
 
 | Address | Contract | PR | State |
 |---|---|---|---|
-| `0x881d40237659c251811cec9c364ef91dc08d300c` | MetaMask MetaSwap | #3205 (draft) | A pinned subset: `feeOnTop` must be 0 and `aggregatorId` one of 4, about a third of swaps when measured on 2026-11-06. Waits on an AI review |
+| `0x881d40237659c251811cec9c364ef91dc08d300c` | MetaMask MetaSwap | #3205 (draft) | A pinned subset: `feeOnTop` must be 0 and `aggregatorId` one of 4, about a third of swaps when measured on 2026-11-06. Reviewed by marcocastignoli on 2026-11-11: the fee and its recipient are now shown (`84b4c45`), but the four pinned adapters have no verified source, so it stays a draft until MetaMask verifies them on Sourcify |
 
 ## Skipped: cannot be covered today (29, plus MetaBridge, which is also under "Open")
 
