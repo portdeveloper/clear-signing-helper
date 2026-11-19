@@ -182,10 +182,14 @@ async function startFork(rpcUrl: string, block: number): Promise<Fork> {
 const hex = (n: bigint | number) => '0x' + n.toString(16);
 
 async function execute(fork: Fork, tx: {from: string; to: string; data: string; value: bigint}, timestamp: number, watch: string[], traced = false): Promise<Run> {
+  // State the fork reads from the endpoint inside a snapshot is forgotten when the snapshot is reverted, so every
+  // run would fetch it again. Read outside one, it stays: the balances, and whatever a dry call of the same
+  // transaction touches (its result does not matter).
+  const before = await Promise.all(watch.map(a => rpc(fork.url, 'eth_getBalance', [a, 'latest'])));
+  await rpc(fork.url, 'eth_call', [{from: tx.from, to: tx.to, data: tx.data, value: hex(tx.value), gas: hex(15_000_000), gasPrice: '0x0'}, 'latest']).catch(() => undefined);
   const snapshot = await rpc(fork.url, 'evm_snapshot');
   try {
     await rpc(fork.url, 'evm_setNextBlockTimestamp', [timestamp]);
-    const before = await Promise.all(watch.map(a => rpc(fork.url, 'eth_getBalance', [a, 'latest'])));
     let hash: string;
     try { hash = await rpc(fork.url, 'eth_sendTransaction', [{from: tx.from, to: tx.to, data: tx.data, value: hex(tx.value), gas: hex(15_000_000), gasPrice: '0x0'}]); }
     catch (e) {
@@ -195,7 +199,7 @@ async function execute(fork: Fork, tx: {from: string; to: string; data: string; 
       return {ok: false, error: message};
     }
     let receipt: any = null;
-    for (let i = 0; i < 200 && !receipt; i++) { receipt = await rpc(fork.url, 'eth_getTransactionReceipt', [hash]); if (!receipt) await new Promise(r => setTimeout(r, 25)); }
+    for (let i = 0; i < 200 && !receipt; i++) { receipt = await rpc(fork.url, 'eth_getTransactionReceipt', [hash]); if (!receipt) await new Promise(r => setTimeout(r, i < 40 ? 5 : 25)); }
     if (!receipt || receipt.status !== '0x1') return {ok: false, error: 'reverted'};
     const after = await Promise.all(watch.map(a => rpc(fork.url, 'eth_getBalance', [a, 'latest'])));
     const delta = new Map<string, Map<string, bigint>>(), wrapped = new Set<string>(), approvals = new Map<string, bigint>();
@@ -315,8 +319,11 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
     // A one-level array field ("recipients.[]") is not expanded, so it covers each element leaf ("recipients.[0]").
     const covers = (set: Set<string>, p: string) => set.has(p) || set.has(p.replace(/\.\[\d+\]/g, '.[]'));
 
+    // A call that moves nothing, with no amount on its screen (a cancel, a nonce bump), gives the first four probes
+    // nothing to test a variation against; only the ignored-argument probe applies.
+    const inert = !checkable.size && !base.effects!.delta.size && value === 0n;
     // 1. Unexplained arguments (hidden, raw or not displayed; never one pinned with mustMatch).
-    for (const leaf of leaves) {
+    for (const leaf of inert ? [] : leaves) {
       if (!budgetLeft()) break;
       if (covers(explained, leaf.path) || covers(pinned, leaf.path) || /^bytes\d+$/.test(leaf.type)) continue;
       const current = valueAt(root, leaf.path, ctx(root));
@@ -352,7 +359,7 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
       }
     }
     // 2. Bytes after a packed path's last hop: a token read from the end shows whatever the caller appends.
-    for (const {field, hidden} of fields) {
+    for (const {field, hidden} of inert ? [] : fields) {
       const ref = field.params?.tokenPath;
       if (hidden || typeof ref !== 'string' || !/\.\[-\d*:-?\d*\]$|\.\[\d*:-\d+\]$/.test(ref) || !budgetLeft()) continue;
       const leaf = stripRoot(ref).replace(/\.\[-?\d*:-?\d*\]$/, ''), current = valueAt(root, leaf, ctx(root));
@@ -370,7 +377,9 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
         if (v === good) break;
         if ((await run(setAt(root, leaf, v))).ok) good = v; else { bad = v; break; }
       }
-      for (let i = 0; bad !== undefined && i < 256 && (bad > good ? bad - good : good - bad) > 1n && budgetLeft(); i++) {
+      // To within 1/4096 of the edge: the last wei costs sixty more runs on an 18-decimal amount and shows nothing new.
+      const gap = () => bad! > good ? bad! - good : good - bad!;
+      for (let i = 0; bad !== undefined && i < 256 && gap() > 1n && gap() > good / 4096n && budgetLeft(); i++) {
         const mid = (good + bad) / 2n;
         if ((await run(setAt(root, leaf, mid))).ok) good = mid; else bad = mid;
       }
@@ -412,6 +421,10 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
     return result;
   } catch (e) {
     if (e instanceof Failure) throw e;
-    fail('CLAIMS_FAILED', `${file}: ${(e as Error).message}`, 2);
+    // The fork lost its endpoint mid-run (a rate limit while several forks read at once): the caller replays the
+    // fixture on the next endpoint. Nothing found so far is kept, so a finding never mixes endpoints.
+    const message = (e as Error).message;
+    if (/Fork Error|\b429\b|rate.?limit|too many requests|Max retries exceeded|fetch failed|ECONNRE/i.test(message)) fail('FORK_UNAVAILABLE', `${file}: the fork could not read state from the endpoint: ${message.slice(0, 200)}`, 2);
+    fail('CLAIMS_FAILED', `${file}: ${message}`, 2);
   } finally { fork.process.kill(); }
 }

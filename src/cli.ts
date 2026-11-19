@@ -108,8 +108,9 @@ program.command('claims').description('Replay real-transaction fixtures on a loc
   .option('--rpc-url <url>','Endpoint for the fork; it must serve state at each fixture\'s block (an archive node for older transactions). Repeat it to name fallbacks, tried in order when an endpoint throttles or times out',select,[])
   .option('--fixture <path>','Only this fixture (repeatable)',select,[])
   .option('--budget <n>','Most calls to simulate per fixture','100')
+  .option('--parallel <n>','Fixtures replayed at once, each on its own fork, 1 to 8','3')
   .option('--time-limit <seconds>','Start no new fixture after this long; fixtures not replayed are listed (one fixture of each function goes first)','900')
-  .action(async options=>output(await checkClaims(state(),{contract:options.contract,rpcUrls:options.rpcUrl,fixtures:options.fixture,budget:Number(options.budget),timeLimit:Number(options.timeLimit),log:progress})));
+  .action(async options=>output(await checkClaims(state(),{contract:options.contract,rpcUrls:options.rpcUrl,fixtures:options.fixture,budget:Number(options.budget),timeLimit:Number(options.timeLimit),parallel:Number(options.parallel),log:progress})));
 program.command('export').description('Validate and write a submission bundle; does not publish')
   .requiredOption('--out <directory>','New output directory inside the project')
   .option('--contract <path:name>','Export only this selected contract and its fixtures (repeatable)',select,[])

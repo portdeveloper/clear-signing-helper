@@ -407,7 +407,7 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
 // rpcUrls: tried in order for each fixture. Public archive endpoints throttle or time out mid-run, so a fixture whose
 // fork cannot read state from one endpoint is replayed from the start on the next; a finding never mixes endpoints.
 const ENDPOINT_FAILURES = new Set(['FORK_UNAVAILABLE', 'FETCH_TIMEOUT', 'FETCH_FAILED', 'RPC_FAILED']);
-export async function checkClaims(state: State, o: {contract: string; rpcUrls: string[]; fixtures?: string[]; budget: number; timeLimit?: number; log: (line: string) => void}) {
+export async function checkClaims(state: State, o: {contract: string; rpcUrls: string[]; fixtures?: string[]; budget: number; timeLimit?: number; parallel?: number; log: (line: string) => void}) {
   if (!o.rpcUrls.length) fail('USAGE_ERROR', 'claims needs --rpc-url (repeat it to name fallback endpoints).', 2);
   if (!Number.isInteger(o.budget) || o.budget < 1 || o.budget > 10_000) fail('USAGE_ERROR', '--budget must be an integer from 1 to 10000.', 2);
   const c = getContract(state.project, o.contract);
@@ -425,17 +425,23 @@ export async function checkClaims(state: State, o: {contract: string; rpcUrls: s
   if (!o.fixtures?.length) for (const file of files) { const s = selectorOf(file), n = seenSelectors.get(s) ?? 0; seenSelectors.set(s, n + 1); rank.set(file, n); }
   const ordered = [...files].sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
   const results: Awaited<ReturnType<typeof checkFixtureClaims>>[] = [], notReplayed: string[] = [], deadline = Date.now() + timeLimit * 1000;
-  for (const file of ordered) {
-    if (Date.now() > deadline) { notReplayed.push(file); continue; }
+  const parallel = o.parallel ?? 3;
+  if (!Number.isInteger(parallel) || parallel < 1 || parallel > 8) fail('USAGE_ERROR', '--parallel must be an integer from 1 to 8.', 2);
+  const slots: (Awaited<ReturnType<typeof checkFixtureClaims>> | undefined)[] = [];
+  // Each fixture has its own fork, so several replay at once; worker k starts on endpoint k, which spreads the
+  // forks' reads over the endpoints named. The first fixture goes alone: if it cannot run at all, that is the answer.
+  const replay = async (file: string, index: number, worker: number) => {
+    if (Date.now() > deadline) { notReplayed.push(file); return; }
     const f = readJson<Fixture>(safePath(state.project.root, file));
     validateFixture(f);
     if (f.contract !== c.id) fail('FIXTURE_CONTRACT', `${file} is a fixture of ${f.contract}, not ${c.id}.`, 2);
+    const name = path.basename(file, '.json'), urls = o.rpcUrls.map((_, i) => o.rpcUrls[(i + worker) % o.rpcUrls.length]);
     o.log(`claims: ${file}`);
     let r: Awaited<ReturnType<typeof checkFixtureClaims>> | undefined;
-    for (const [i, rpcUrl] of o.rpcUrls.entries()) {
+    for (const [i, rpcUrl] of urls.entries()) {
       try { r = {...await checkFixtureClaims(file, f, d, c, {rpcUrl, budget: o.budget, log: o.log}), ...(o.rpcUrls.length > 1 ? {endpoint: redactUrl(rpcUrl)} : {})}; break; }
       catch (e) {
-        if (e instanceof Failure && ENDPOINT_FAILURES.has(e.code) && i < o.rpcUrls.length - 1) { o.log(`  ${redactUrl(rpcUrl)} failed (${e.code}); replaying on ${redactUrl(o.rpcUrls[i + 1])}`); continue; }
+        if (e instanceof Failure && ENDPOINT_FAILURES.has(e.code) && i < urls.length - 1) { o.log(`  ${name}: ${redactUrl(rpcUrl)} failed (${e.code}); replaying on ${redactUrl(urls[i + 1])}`); continue; }
         // One fixture that cannot be replayed (an endpoint that stays down, a probe the fork chokes on) does not
         // cost the results of the others.
         // With nothing replayed yet, a failure is the answer (the endpoint is down, anvil is missing).
@@ -445,12 +451,16 @@ export async function checkClaims(state: State, o: {contract: string; rpcUrls: s
         break;
       }
     }
-    if (!r) continue;
-    o.log(`  ${r.status}; ${r.runs} run(s), ${r.findings.length} finding(s)`);
+    if (!r) return;
+    o.log(`  ${name}: ${r.status}; ${r.runs} run(s), ${r.findings.length} finding(s)`);
     // Said as they are found: a run that is stopped keeps what it learned.
-    for (const x of r.findings) o.log(`  FINDING ${x.kind}${x.argument ? ` ${x.argument}` : ''}: ${x.claim}. ${x.message}`);
-    results.push(r);
-  }
+    for (const x of r.findings) o.log(`  ${name}: FINDING ${x.kind}${x.argument ? ` ${x.argument}` : ''}: ${x.claim}. ${x.message}`);
+    slots[index] = r; results.push(r);
+  };
+  if (ordered.length) await replay(ordered[0], 0, 0);
+  let nextFixture = 1;
+  await Promise.all(Array.from({length: Math.min(parallel, Math.max(0, ordered.length - 1))}, async (_, worker) => { while (nextFixture < ordered.length) { const index = nextFixture++; await replay(ordered[index], index, worker); } }));
+  results.splice(0, results.length, ...slots.filter((r): r is NonNullable<typeof r> => !!r));
   if (notReplayed.length) o.log(`claims: time limit reached; not replayed: ${notReplayed.join(', ')}`);
   return {claimsChecked: results.length, results, findings: results.flatMap(r => r.findings), ...(notReplayed.length ? {notReplayed} : {}),
     note: 'A finding is a run of the real transaction, or of a variation of it, where the call succeeds and a shown amount, limit or recipient is false. Read each against the source: fix the wording, pin the argument with mustMatch, or exclude the function. Fixtures without a txHash are not replayed.'};
