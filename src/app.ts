@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import TOML from '@iarna/toml';
-import { Interface, FunctionFragment, getAddress } from 'ethers';
+import { AbiCoder, Interface, FunctionFragment, getAddress } from 'ethers';
 import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
 import { ENGINE, SUPPORTED_FORMATS, normalizePath, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, REGISTRY_NAME, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
 import { priorsFor, summarizePrior, registryMatches, buildPriorsIndex, usePriorsIndex, PRIORS_META } from './priors.js';
@@ -12,7 +12,7 @@ import { limitOf, LIMIT_HINT, EXACT_HINT, stopsEarly, STOPS_EARLY_HINT } from '.
 import { NATIVE_AMOUNT_HINT } from './screens.js';
 import {portabilityFindings, displayedFindings, runnerDivergence, PORTABILITY_REFERENCE} from './portability.js';
 import { canonical, hash, readJson, readText, safePath, writeJson, writeText, walk, assertKeys, fail, Failure, type Diagnostic } from './io.js';
-import { renderFixture, validateFixture, blockingWarnings, decodeCanonical, type Fixture, type Rendering } from './fixtures.js';
+import { renderFixture, validateFixture, blockingWarnings, decodeCanonical, splitTrailingBytes, describeTrailingBytes, type Fixture, type Rendering } from './fixtures.js';
 import { registryTests } from './registry.js';
 import { runUpstreamLint, runUpstreamFormat, skippedLint, lintPinFromRegistry, DEFAULT_LINT_PIN, type LintResult } from './lint.js';
 import { setupRunners, runRegistryRunners, pinsFromRegistry, DEFAULT_PINS, parseAcceptedFailures, unacceptedFailures, type RunnerResult } from './runners.js';
@@ -241,8 +241,8 @@ export function createFixture(state: State, options: {name:string; contract:stri
   const c=getContract(state.project,options.contract);
   if(!state.config.contracts.some(s=>s.id===c.id)) fail('CONTRACT_NOT_SELECTED', 'Run init --contract for this contract first.',2);
   const iface=new Interface(c.abi);
-  let data:string, source:string|undefined, txHash:string|undefined;
-  // A real transaction, recorded by a broadcast or fetched with --tx, is copied as sent; nothing is re-encoded.
+  let data:string, source:string|undefined, txHash:string|undefined, trailingBytes:string|undefined;
+  // A real transaction, recorded by a broadcast or fetched with --tx, is copied as sent; only bytes after its ABI encoding are removed, and recorded (--tx).
   const copy=(t:{hash:string;chainId:number;to:string;data:string;value:string;from?:string}, origin:string)=>{
     if(!c.functions.some(f=>f.selector.toLowerCase()===t.data.slice(0,10).toLowerCase())) fail(options.transaction?'TX_SELECTOR_MISMATCH':'BROADCAST_TX_MISMATCH',`Transaction ${t.hash} calls selector ${t.data.slice(0,10)}, which is not a write function of ${c.id}.`,2);
     data=t.data; source=origin; txHash=t.hash;
@@ -253,7 +253,13 @@ export function createFixture(state: State, options: {name:string; contract:stri
     const bound=d.context.contract.deployments.filter(x=>x.chainId===t.chainId);
     if(!bound.some(x=>x.address.toLowerCase()===t.to.toLowerCase())) fail('TX_TARGET_MISMATCH',`Transaction ${t.hash} was sent to ${t.chainId}:${t.to}, which is not a deployment of ${c.id}${bound.length?` (bound on chain ${t.chainId}: ${bound.map(x=>x.address).join(', ')})`:` (no deployment bound on chain ${t.chainId})`}. A call made through a router, a multicall or a smart account has the outer contract as its target; use a transaction sent to this contract directly.`,2);
     copy(t,`${t.rpc} at block ${t.blockNumber}`);
-    try { decodeCanonical(c, data!); } catch(e) { if(e instanceof Failure) fail(e.code,`Transaction ${t.hash}: ${e.message}`,2); throw e; }
+    try { decodeCanonical(c, data!); } catch(e) {
+      if(!(e instanceof Failure)) throw e;
+      // Bytes after the ABI encoding (integrator tags) are removed and recorded; the fixture's calldata stays canonical.
+      const split=e.code==='NONCANONICAL_CALLDATA'?splitTrailingBytes(c,data!):undefined;
+      if(!split) fail(e.code,`Transaction ${t.hash}: ${e.message}${e.code==='NONCANONICAL_CALLDATA'?' Its calldata is not the canonical encoding followed by extra bytes, so no canonical fixture can be made from it.':''}`,2);
+      data=split.data; trailingBytes=split.trailingBytes; decodeCanonical(c,data);
+    }
   } else if(options.broadcastTx) {
     // A recorded broadcast transaction is real calldata against a real deployment; nothing is re-encoded.
     const call=state.project.calls.find(x=>x.hash===options.broadcastTx!.toLowerCase());
@@ -269,12 +275,12 @@ export function createFixture(state: State, options: {name:string; contract:stri
     if(!options.chainName || !m) fail('FIXTURE_ARGUMENTS','--chain-name and --native-currency SYMBOL:DECIMALS must be given together.',2);
     chain={name:options.chainName, nativeCurrency:{name:m[1], symbol:m[1], decimals:Number(m[2])}};
   }
-  const fixture: Fixture={contract:c.id, chainId:Number(options.chainId), to:options.to!, data:data!, value:options.value, ...(options.from?{from:options.from}:{}), ...(txHash?{txHash}:{}), ...(options.local?{localBinding:true}:{}), ...(chain?{chain}:{}), tokens:{}, addressNames:{}};
+  const fixture: Fixture={contract:c.id, chainId:Number(options.chainId), to:options.to!, data:data!, value:options.value, ...(options.from?{from:options.from}:{}), ...(txHash?{txHash}:{}), ...(trailingBytes?{trailingBytes}:{}), ...(options.local?{localBinding:true}:{}), ...(chain?{chain}:{}), tokens:{}, addressNames:{}};
   validateFixture(fixture);
   const file=`clear-signing/fixtures/${options.name}.json`;
   if(fs.existsSync(safePath(state.project.root,file))) fail('FILE_EXISTS',`Refusing to overwrite ${file}.`,2);
   writeJson(safePath(state.project.root,file),fixture);
-  return {created:file, ...(source?{source}:{}), next:`Run preview --fixture ${file}. Add local token metadata and address names to the fixture as needed.`};
+  return {created:file, ...(source?{source}:{}), ...(trailingBytes?{trailingBytes, canonicalized:`The transaction carried ${describeTrailingBytes(trailingBytes)} after its ABI encoding. They are removed from the fixture's calldata and kept as trailingBytes; the exported test says so, and claims replays the transaction as sent.`}:{}), next:`Run preview --fixture ${file}. Add local token metadata and address names to the fixture as needed.`};
 }
 // Fills a fixture's token metadata from the chain for the tokens its rendering needs and lacks: read-only
 // eth_call against the endpoint the user named. Written values are what the contracts return today.
@@ -284,6 +290,8 @@ export async function fillTokenMetadata(state: State, file: string, rpcUrl: stri
   await renderFixture(f, d, c, missing).catch(e => { if (!(e instanceof Failure)) throw e; });
   const added: Record<string, {name: string; symbol: string; decimals: number}> = {}, unresolved: string[] = [];
   for (const address of missing) {
+    // The zero address and 0xEeee…EEeE stand for the native currency in many contracts; neither is a token to look up.
+    if (/^0x(0{40}|[eE]{40})$/.test(address)) { unresolved.push(`${getAddress(address)} is not a token: if the contract uses it for the native currency, set nativeCurrencyAddress on the field that shows the amount`); continue; }
     const t = await fetchTokenMetadata(rpcUrl, f.chainId, getAddress(address));
     if ('error' in t) unresolved.push(t.error); else added[getAddress(address)] = t;
   }
@@ -304,7 +312,9 @@ export async function fillTokens(state: State, o: {rpcUrl: string; contracts?: s
 // Fixtures from real transactions without hashes in hand: for each described function of a contract that has
 // no fixture yet, nominate successful direct calls to its deployment (discover.ts), then take each nominee
 // through the --tx path (re-read over the user's RPC, every refusal applies) and fill its token metadata.
-export async function discoverFixtures(state: State, o: {contract: string; rpcUrl: string; chainId?: string; functions?: string[]; perFunction: number; maxBlocks: number; log: (line: string) => void}) {
+export async function discoverFixtures(state: State, o: {contract: string; rpcUrl: string; logRpcUrls?: string[]; chainId?: string; functions?: string[]; perFunction: number; maxBlocks: number; logBlocks: number; timeLimit: number; log: (line: string) => void}) {
+  if (!Number.isFinite(o.timeLimit) || o.timeLimit < 10 || o.timeLimit > 3600) fail('USAGE_ERROR', '--time-limit must be 10 to 3600 seconds.', 2);
+  if (!Number.isInteger(o.logBlocks) || o.logBlocks < 1 || o.logBlocks > 10_000_000) fail('USAGE_ERROR', '--log-blocks must be an integer from 1 to 10000000.', 2);
   if (!Number.isInteger(o.perFunction) || o.perFunction < 1 || o.perFunction > 10) fail('USAGE_ERROR', '--per-function must be an integer from 1 to 10.', 2);
   if (!Number.isInteger(o.maxBlocks) || o.maxBlocks < 1 || o.maxBlocks > 1_000_000) fail('USAGE_ERROR', '--max-blocks must be an integer from 1 to 1000000.', 2);
   const c = getContract(state.project, o.contract);
@@ -330,37 +340,60 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
   const alreadyCovered = wanted.filter(f => !targets.includes(f)).map(f => f.format('sighash'));
   if (!targets.length) return {searched: null, created: [], missing: [], refused: [], alreadyCovered, next: 'Every described function already has a fixture; pass --function to add more.'};
   const token = process.env.ENVIO_API_TOKEN?.trim() || undefined;
-  // A few spare nominees per function, since a nominee can still be refused (non-canonical calldata).
-  const found = await discoverCalls({chainId, addresses, selectors: targets.map(f => f.selector.toLowerCase()), target: o.perFunction + 2 + haveTx.size, rpcUrl: o.rpcUrl, token, maxBlocks: o.maxBlocks, log: o.log});
-  const created: Record<string, unknown>[] = [], refused: {function: string; txHash: string; code: string; message: string}[] = [], missing: string[] = [];
-  const duplicates: {function: string; txHash: string}[] = [], unresolved: string[] = [], onlyKnown: string[] = [];
+  const created: Record<string, unknown>[] = [], refused: {function: string; txHash: string; code: string; message: string}[] = [];
+  const duplicates: {function: string; txHash: string}[] = [], unresolved: string[] = [];
   const freeName = (base: string) => { for (let i = 1; ; i++) { const name = i === 1 ? base : `${base}-${i}`; if (!fs.existsSync(safePath(state.project.root, `clear-signing/fixtures/${name}.json`))) return name; } };
-  for (const f of targets) {
-    let made = 0;
-    for (const n of found.nominees[f.selector.toLowerCase()] ?? []) {
-      if (made >= o.perFunction) break;
-      if (haveTx.has(n.hash.toLowerCase())) { duplicates.push({function: f.format('sighash'), txHash: n.hash}); continue; }
+  const bySelector = new Map(targets.map(f => [f.selector.toLowerCase(), f])), made = new Map<string, number>(), tried = new Map<string, number>(), passed = new Map<string, number>(), shapes = new Map<string, Set<string>>();
+  // Each nominee becomes a fixture as soon as it is found, so a search that is interrupted or throttled keeps
+  // what it made. A function is given up on after a few refusals: its traffic is then likely all of one refused kind.
+  // After its first fixture a function takes only calls of another shape: native value sent or not, and other
+  // addresses among its arguments (tokens, pools; the sender's own address aside). Three swaps of one pair say
+  // no more than one. A function whose calls all look alike keeps one fixture.
+  const TRIES = o.perFunction + 4, ALIKE = 25;
+  const shapeOf = (f: FunctionFragment, tx: {from: string; value: string; data: string}) => {
+    const found = new Set<string>(), walk = (v: unknown) => { if (typeof v === 'string') { if (/^0x[0-9a-fA-F]{40}$/.test(v) && v.toLowerCase() !== tx.from.toLowerCase()) found.add(v.toLowerCase()); } else if (Array.isArray(v)) v.forEach(walk); };
+    try { walk(AbiCoder.defaultAbiCoder().decode(f.inputs, '0x' + tx.data.slice(10), true).toArray(true)); } catch { /* createFixture refuses what does not decode */ }
+    return `${BigInt(tx.value) > 0n ? 'value' : 'no value'}|${[...found].sort().join(',')}`;
+  };
+  const found = await discoverCalls({chainId, addresses, selectors: [...bySelector.keys()], rpcUrl: o.rpcUrl, logRpcUrls: o.logRpcUrls, token, maxBlocks: o.maxBlocks, logBlocks: o.logBlocks, deadline: Date.now() + o.timeLimit * 1000, log: o.log,
+    have: selector => made.get(selector) ?? 0,
+    wanted: selector => (made.get(selector) ?? 0) < o.perFunction && (tried.get(selector) ?? 0) < TRIES && (passed.get(selector) ?? 0) < ALIKE,
+    take: async (selector, n) => {
+      const f = bySelector.get(selector)!, signature = f.format('sighash');
+      if (haveTx.has(n.hash.toLowerCase())) { duplicates.push({function: signature, txHash: n.hash}); return; }
       try {
         const transaction = await fetchTransaction(o.rpcUrl, n.hash);
+        const shape = shapeOf(f, transaction), known = shapes.get(selector) ?? new Set<string>();
+        if (known.has(shape)) { passed.set(selector, (passed.get(selector) ?? 0) + 1); return; }
+        tried.set(selector, (tried.get(selector) ?? 0) + 1);
         const r = createFixture(state, {name: freeName(f.name), contract: c.id, args: '[]', value: '0', local: false, transaction});
-        const metadata = await fillTokenMetadata(state, r.created, o.rpcUrl);
-        if (metadata.unresolvedTokens?.length) unresolved.push(r.created);
-        created.push({function: f.format('sighash'), file: r.created, txHash: n.hash, blockNumber: n.blockNumber, ...metadata});
         haveTx.add(n.hash.toLowerCase());
-        made++;
+        made.set(selector, (made.get(selector) ?? 0) + 1);
+        shapes.set(selector, known.add(shape));
+        const entry: Record<string, unknown> = {function: signature, file: r.created, txHash: n.hash, blockNumber: n.blockNumber, ...(r.trailingBytes ? {trailingBytes: r.trailingBytes} : {})};
+        created.push(entry);
+        o.log(`  fixture ${r.created} <- ${n.hash}`);
+        // The fixture stands even if its token lookup is throttled; tokens --rpc-url fills it later.
+        try {
+          const metadata = await fillTokenMetadata(state, r.created, o.rpcUrl);
+          Object.assign(entry, metadata);
+          if (metadata.unresolvedTokens?.length) unresolved.push(r.created);
+        } catch (e) { if (!(e instanceof Failure)) throw e; unresolved.push(r.created); entry.unresolvedTokens = [`token metadata was not read: ${e.message}`]; }
       } catch (e) {
         if (!(e instanceof Failure)) throw e;
-        refused.push({function: f.format('sighash'), txHash: n.hash, code: e.code, message: e.message});
+        refused.push({function: signature, txHash: n.hash, code: e.code, message: e.message});
       }
-    }
-    // Found, but only transactions that are fixtures already: not "never called".
-    if (!made && duplicates.some(x => x.function === f.format('sighash'))) onlyKnown.push(f.format('sighash'));
-    else if (!made) missing.push(f.format('sighash'));
-  }
-  const widen = token ? 'HyperSync searched the whole chain, so these were never called directly' : 'set ENVIO_API_TOKEN to search the whole chain, or raise --max-blocks';
+    }});
+  // Found, but only transactions that are fixtures already: not "never called".
+  const unmade = targets.filter(f => !made.get(f.selector.toLowerCase()));
+  const onlyKnown = unmade.filter(f => duplicates.some(x => x.function === f.format('sighash'))).map(f => f.format('sighash'));
+  const missing = unmade.map(f => f.format('sighash')).filter(s => !onlyKnown.includes(s));
+  const widen = token ? 'HyperSync searched the whole chain, so these were never called directly' : 'set ENVIO_API_TOKEN to search the whole chain, or raise --log-blocks and --max-blocks';
   // What the search could not read is said, never left to look like "no such call".
   const notes = [
     ...(onlyKnown.length ? [`The only usable calls found for ${onlyKnown.join(', ')} are fixtures already (alreadyFixtures); nothing was copied twice.`] : []),
+    ...(found.logs?.note ? [found.logs.note] : []),
+    ...(created.some(x => x.trailingBytes) ? [`${created.filter(x => x.trailingBytes).length} fixture(s) come from transactions that carried bytes after their ABI encoding (integrator tags); those bytes are removed from the calldata and kept as trailingBytes. The exported test says so.`] : []),
     ...(found.unread ? [`${found.unread} block(s) could not be read from ${redactUrl(o.rpcUrl)} (rate limit or node error) and were not searched; run discover again, or use another endpoint.`] : []),
     ...(unresolved.length ? [`Token metadata is incomplete in ${unresolved.join(', ')} (see unresolvedTokens); run tokens --rpc-url <url> to try again, or add the token under "tokens" in the fixture by hand.`] : []),
     ...(created.length && !created.some(x => Object.keys((x as {tokens?: object}).tokens ?? {}).length) ? ['No token metadata was needed for these fixtures as the descriptor stands. If their amounts are still raw (discover run before apply), run tokens --rpc-url <url> once they are tokenAmount.'] : [])];
@@ -373,7 +406,7 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
 // rpcUrls: tried in order for each fixture. Public archive endpoints throttle or time out mid-run, so a fixture whose
 // fork cannot read state from one endpoint is replayed from the start on the next; a finding never mixes endpoints.
 const ENDPOINT_FAILURES = new Set(['FORK_UNAVAILABLE', 'FETCH_TIMEOUT', 'FETCH_FAILED', 'RPC_FAILED']);
-export async function checkClaims(state: State, o: {contract: string; rpcUrls: string[]; fixtures?: string[]; budget: number; log: (line: string) => void}) {
+export async function checkClaims(state: State, o: {contract: string; rpcUrls: string[]; fixtures?: string[]; budget: number; timeLimit?: number; log: (line: string) => void}) {
   if (!o.rpcUrls.length) fail('USAGE_ERROR', 'claims needs --rpc-url (repeat it to name fallback endpoints).', 2);
   if (!Number.isInteger(o.budget) || o.budget < 1 || o.budget > 10_000) fail('USAGE_ERROR', '--budget must be an integer from 1 to 10000.', 2);
   const c = getContract(state.project, o.contract);
@@ -383,8 +416,16 @@ export async function checkClaims(state: State, o: {contract: string; rpcUrls: s
   throwDiagnostics(errorsOf(validateDescriptor(d, c, selection)));
   const files = o.fixtures?.length ? o.fixtures : fixtureFiles(state, [c.id]);
   if (!files.length) fail('NO_FIXTURES', `No fixtures for ${c.id}. Use fixture --tx or discover to copy real transactions.`, 2);
-  const results = [];
-  for (const file of files) {
+  const timeLimit = o.timeLimit ?? 900;
+  if (!Number.isFinite(timeLimit) || timeLimit < 10 || timeLimit > 86_400) fail('USAGE_ERROR', '--time-limit must be 10 to 86400 seconds.', 2);
+  // One fixture of every function before a second of any, so a run that is cut short has looked at each screen.
+  const selectorOf = (file: string) => readJson<Fixture>(safePath(state.project.root, file)).data.slice(0, 10).toLowerCase();
+  const rank = new Map<string, number>(), seenSelectors = new Map<string, number>();
+  if (!o.fixtures?.length) for (const file of files) { const s = selectorOf(file), n = seenSelectors.get(s) ?? 0; seenSelectors.set(s, n + 1); rank.set(file, n); }
+  const ordered = [...files].sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
+  const results: Awaited<ReturnType<typeof checkFixtureClaims>>[] = [], notReplayed: string[] = [], deadline = Date.now() + timeLimit * 1000;
+  for (const file of ordered) {
+    if (Date.now() > deadline) { notReplayed.push(file); continue; }
     const f = readJson<Fixture>(safePath(state.project.root, file));
     validateFixture(f);
     if (f.contract !== c.id) fail('FIXTURE_CONTRACT', `${file} is a fixture of ${f.contract}, not ${c.id}.`, 2);
@@ -393,15 +434,24 @@ export async function checkClaims(state: State, o: {contract: string; rpcUrls: s
     for (const [i, rpcUrl] of o.rpcUrls.entries()) {
       try { r = {...await checkFixtureClaims(file, f, d, c, {rpcUrl, budget: o.budget, log: o.log}), ...(o.rpcUrls.length > 1 ? {endpoint: redactUrl(rpcUrl)} : {})}; break; }
       catch (e) {
-        if (!(e instanceof Failure) || !ENDPOINT_FAILURES.has(e.code) || i === o.rpcUrls.length - 1) throw e;
-        o.log(`  ${redactUrl(rpcUrl)} failed (${e.code}); replaying on ${redactUrl(o.rpcUrls[i + 1])}`);
+        if (e instanceof Failure && ENDPOINT_FAILURES.has(e.code) && i < o.rpcUrls.length - 1) { o.log(`  ${redactUrl(rpcUrl)} failed (${e.code}); replaying on ${redactUrl(o.rpcUrls[i + 1])}`); continue; }
+        // One fixture that cannot be replayed (an endpoint that stays down, a probe the fork chokes on) does not
+        // cost the results of the others.
+        // With nothing replayed yet, a failure is the answer (the endpoint is down, anvil is missing).
+        if (!results.some(x => !x.status.startsWith('failed'))) throw e;
+        const message = e instanceof Failure ? `${e.code}: ${e.message}` : (e as Error).message;
+        r = {fixture: file, signature: '', status: `failed: ${message.slice(0, 300)}`, runs: 0, claims: [], findings: []};
+        break;
       }
     }
     if (!r) continue;
     o.log(`  ${r.status}; ${r.runs} run(s), ${r.findings.length} finding(s)`);
+    // Said as they are found: a run that is stopped keeps what it learned.
+    for (const x of r.findings) o.log(`  FINDING ${x.kind}${x.argument ? ` ${x.argument}` : ''}: ${x.claim}. ${x.message}`);
     results.push(r);
   }
-  return {claimsChecked: results.length, results, findings: results.flatMap(r => r.findings),
+  if (notReplayed.length) o.log(`claims: time limit reached; not replayed: ${notReplayed.join(', ')}`);
+  return {claimsChecked: results.length, results, findings: results.flatMap(r => r.findings), ...(notReplayed.length ? {notReplayed} : {}),
     note: 'A finding is a run of the real transaction, or of a variation of it, where the call succeeds and a shown amount, limit or recipient is false. Read each against the source: fix the wording, pin the argument with mustMatch, or exclude the function. Fixtures without a txHash are not replayed.'};
 }
 export function fixtureFiles(state: State, ids?: string[]) {
@@ -743,6 +793,9 @@ export function applyDecisions(state: State, file: string) {
     const never = neverHidden(resolveFields(spec.fields, definitions), leaves(f.inputs).map(l => l.path));
     const hiddenHere: Record<string, string> = {};
     const present = new Set<string>();
+    // A leaf hidden as a whole while byte slices of it are shown (a pinned mode byte, a token at a fixed offset):
+    // the slices stand for the leaf in the descriptor, and the reason for the rest of its bytes stays in clear-signing.toml.
+    const slicesShown = (leaf: string) => Object.entries(fd.fields ?? {}).some(([k, v]) => k.startsWith(`${leaf}.[`) && v.show !== false);
     const edit = (items: (Field | Group)[], prefix = ''): (Field | Group)[] => items.flatMap((item): (Field | Group)[] => {
       if ('fields' in item) { const inner = edit(item.fields, item.path === undefined ? prefix : joinPath(prefix, item.path) + '.'); return inner.length ? [{...item, fields: inner}] : []; }
       const merged = mergeDefinition(item, definitions);
@@ -760,6 +813,7 @@ export function applyDecisions(state: State, file: string) {
         pinOf(decision, `${sig} ${full}`);
         const reason = decision.hideReason!.trim();
         if (reason !== DESCRIPTOR_NEVER) hiddenHere[full] = reason;
+        if (full === leaf && slicesShown(leaf)) return [];
         // Already hidden by the descriptor: keep it as written, apart from a changed label (the linter checks
         // hidden labels' length too).
         if (merged.visible === 'never') return [typeof item.$ref !== 'string' && decision.label?.trim() && decision.label.trim() !== item.label ? {...item, label: decision.label.trim()} : item];
@@ -799,7 +853,7 @@ export function applyDecisions(state: State, file: string) {
         pinOf(decision, `${sig} ${full}`);
         const reason = decision.hideReason!.trim();
         if (reason !== DESCRIPTOR_NEVER) hiddenHere[full] = reason;
-        if (!never.has(full) && full !== '@.value') spec.fields.push({path: full, label: decision.label?.trim() || full, visible: 'never'});
+        if (!never.has(full) && full !== '@.value' && !slicesShown(full)) spec.fields.push({path: full, label: decision.label?.trim() || full, visible: 'never'});
         continue;
       }
       const format = decision.format ?? 'raw';

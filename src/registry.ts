@@ -1,7 +1,7 @@
 import { Ajv } from 'ajv';
 import { Transaction } from 'ethers';
 import testSchema from '../schemas/erc7730-tests-v2.schema.json' with {type:'json'};
-import type { Fixture, Rendering } from './fixtures.js';
+import { describeTrailingBytes, type Fixture, type Rendering } from './fixtures.js';
 import type { Descriptor } from './descriptors.js';
 import { canonical, fail } from './io.js';
 const validate = new Ajv({strict:false, allErrors:true}).compile(testSchema);
@@ -31,7 +31,8 @@ export function registryTests(descriptorName: string, descriptor: Descriptor, fi
     merge(tokens,f.tokens??{});merge(addressNames,f.addressNames??{});merge(ensNames,f.ensNames??{});merge(nftCollectionNames,f.nftCollectionNames??{});
     for (const [height,ts] of Object.entries(f.blockTimestamps??{})) { if (height in blockTimestamps && blockTimestamps[height]!==ts) fail('EXPORT_METADATA_CONFLICT', `Fixtures for ${descriptorName} disagree on block timestamp ${height}.`); blockTimestamps[height]=ts; }
     // Registry convention: "<what> - chain <id>". Fixture names are unique within a project.
-    const description=`${name.replace(/^clear-signing\/fixtures\//,'').replace(/\.json$/,'')} - chain ${f.chainId}`;
+    // A test made from a real transaction minus its trailing bytes says so: its rawTx is not the one behind txHash.
+    const description=`${name.replace(/^clear-signing\/fixtures\//,'').replace(/\.json$/,'')} - chain ${f.chainId}${f.trailingBytes?` (arguments of the real transaction; ${describeTrailingBytes(f.trailingBytes)} removed)`:''}`;
     return testCase(description,f,r,descriptor.metadata.owner);
   });
   const result={$schema:'../../../specs/erc7730-tests-v2.schema.json',descriptor:`../${descriptorName}`,dataProvider:{tokens,addressNames,...(Object.keys(ensNames).length?{ensNames}:{}),...(Object.keys(nftCollectionNames).length?{nftCollectionNames}:{}),...(Object.keys(blockTimestamps).length?{blockTimestamps}:{})},tests};

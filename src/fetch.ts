@@ -130,8 +130,8 @@ export async function rpcCall(url: string, method: 'eth_chainId' | 'eth_getCode'
 }
 // Batched read-only JSON-RPC for the block scan in discovery (discover.ts). Entries the node answers with an
 // error come back as null. Rate limits are retried a few times with backoff, since public endpoints throttle.
-type ScanMethod = 'eth_blockNumber' | 'eth_getBlockByNumber' | 'eth_getTransactionReceipt';
-export async function rpcBatch(url: string, calls: {method: ScanMethod; params: unknown[]}[], timeoutMs = 60_000): Promise<unknown[]> {
+type ScanMethod = 'eth_blockNumber' | 'eth_getBlockByNumber' | 'eth_getTransactionReceipt' | 'eth_getLogs' | 'eth_getTransactionByHash';
+export async function rpcBatch(url: string, calls: {method: ScanMethod; params: unknown[]}[], timeoutMs = 60_000, retries = 4): Promise<unknown[]> {
   const shown = redact(url);
   for (let attempt = 0; ; attempt++) {
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -139,14 +139,14 @@ export async function rpcBatch(url: string, calls: {method: ScanMethod; params: 
       const response = await fetch(url, {method: 'POST', signal: controller.signal, headers: {'content-type': 'application/json', accept: 'application/json'}, body: JSON.stringify(calls.map((c, id) => ({jsonrpc: '2.0', id, method: c.method, params: c.params})))});
       const text = await response.text();
       if (text.length > 64 * 1024 * 1024) fail('FETCH_TOO_LARGE', `${shown} returned more than 64 MiB for a batch of ${calls.length}.`, 2);
-      if (response.status === 429 && attempt < 4) { await new Promise(r => setTimeout(r, 1000 * 2 ** attempt)); continue; }
+      if (response.status === 429 && attempt < retries) { await new Promise(r => setTimeout(r, 1000 * 2 ** attempt)); continue; }
       let body: any = null; try { body = JSON.parse(text); } catch { body = null; }
       if (!Array.isArray(body)) fail('RPC_FAILED', `${shown} answered a JSON-RPC batch with HTTP ${response.status} and no batch result; the block scan needs an endpoint that accepts batches.`, 2);
       const byId = new Map<number, any>(body.map((r: any) => [r?.id, r]));
       return calls.map((_, id) => byId.get(id)?.result ?? null);
     } catch (e) {
       if (e instanceof Failure) throw e;
-      if (attempt < 4) { await new Promise(r => setTimeout(r, 1000 * 2 ** attempt)); continue; }
+      if (attempt < retries) { await new Promise(r => setTimeout(r, 1000 * 2 ** attempt)); continue; }
       if ((e as Error).name === 'AbortError') fail('FETCH_TIMEOUT', `${shown} did not answer a batch within ${timeoutMs / 1000}s.`, 2);
       fail('FETCH_FAILED', `${shown}: ${(e as Error).message}`, 2);
     } finally { clearTimeout(timer); }

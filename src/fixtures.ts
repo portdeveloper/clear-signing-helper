@@ -10,6 +10,9 @@ export interface Fixture {
   contract: string; chainId: number; to: string; data: string; value: string; from?: string;
   // The hash of the real transaction this fixture copies (a broadcast record or --tx); exported as txHash.
   txHash?: string;
+  // Bytes the real transaction carried after its ABI encoding (an integrator tag, a referral code), removed
+  // from `data` so the fixture stays canonical. Only with txHash; `data` + these bytes is what was sent.
+  trailingBytes?: string;
   localBinding?: boolean;
   // Local metadata only. Nothing is fetched. Keys are addresses; block heights are decimal strings.
   chain?: {name: string; nativeCurrency: {name: string; symbol: string; decimals: number}};
@@ -25,13 +28,14 @@ export interface Rendering {
 }
 export function validateFixture(f: Fixture) {
   assertTreeBudget(f);
-  assertKeys(f, ['contract', 'chainId', 'to', 'data', 'value', 'from', 'txHash', 'localBinding', 'chain', 'tokens', 'addressNames', 'ensNames', 'nftCollectionNames', 'blockTimestamps'], 'fixture');
+  assertKeys(f, ['contract', 'chainId', 'to', 'data', 'value', 'from', 'txHash', 'trailingBytes', 'localBinding', 'chain', 'tokens', 'addressNames', 'ensNames', 'nftCollectionNames', 'blockTimestamps'], 'fixture');
   if (typeof f.contract !== 'string') fail('INVALID_FIXTURE', 'fixture.contract must be a source:contract identity.');
   if (!Number.isSafeInteger(f.chainId) || f.chainId <= 0) fail('INVALID_FIXTURE', 'chainId must be a positive safe integer.');
   if (typeof f.to !== 'string' || !isAddress(f.to) || (f.from !== undefined && !isAddress(f.from))) fail('INVALID_FIXTURE', 'to/from must be valid EVM addresses.');
   if (typeof f.data !== 'string' || !/^0x(?:[0-9a-fA-F]{2}){4,}$/.test(f.data) || f.data.length > 131074) fail('INVALID_CALLDATA', 'data must be even-length hex containing a selector, at most 64 KiB.');
   if (typeof f.value !== 'string' || !/^(0|[1-9][0-9]*)$/.test(f.value) || f.value.length > 78 || BigInt(f.value) >= 2n**256n) fail('INVALID_FIXTURE', 'value must be a decimal uint256 string in wei.');
   if (f.txHash !== undefined && (typeof f.txHash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(f.txHash))) fail('INVALID_FIXTURE', 'txHash must be a 32-byte transaction hash.');
+  if (f.trailingBytes !== undefined && (typeof f.trailingBytes !== 'string' || !/^0x(?:[0-9a-fA-F]{2})+$/.test(f.trailingBytes) || f.trailingBytes.length > 131074 || !f.txHash)) fail('INVALID_FIXTURE', 'trailingBytes must be non-empty even-length hex and needs the txHash of the transaction that carried them.');
   if (f.localBinding !== undefined && typeof f.localBinding !== 'boolean') fail('INVALID_FIXTURE', 'localBinding must be a boolean.');
   if (f.tokens !== undefined) {
     assertKeys(f.tokens, Object.keys(f.tokens ?? {}), 'tokens');
@@ -63,6 +67,23 @@ export function validateFixture(f: Fixture) {
     const n = f.chain.nativeCurrency;
     if (typeof f.chain.name !== 'string' || !f.chain.name.trim() || typeof n?.name !== 'string' || !n.name.trim() || typeof n.symbol !== 'string' || !n.symbol.trim() || !Number.isInteger(n.decimals) || n.decimals < 0 || n.decimals > 255) fail('INVALID_METADATA', 'chain requires a name and nativeCurrency {name, symbol, decimals in [0,255]}.');
   }
+}
+// A real transaction whose calldata is its canonical ABI encoding followed by extra bytes: the contract's ABI
+// decoder never reads those, so the canonical part is what a wallet decodes. Returns that part and the tail.
+// Anything else noncanonical (odd offsets, dirty padding) has no canonical prefix and stays refused.
+export function splitTrailingBytes(contract: Contract, data: string): {data: string; trailingBytes: string} | undefined {
+  const matching = contract.functions.filter(fn => fn.selector.toLowerCase() === data.slice(0,10).toLowerCase());
+  if (matching.length !== 1) return undefined;
+  try {
+    const iface = new Interface(contract.abi), canonical = iface.encodeFunctionData(matching[0], iface.decodeFunctionData(matching[0], data)).toLowerCase();
+    const sent = data.toLowerCase();
+    return sent.length > canonical.length && sent.startsWith(canonical) ? {data: canonical, trailingBytes: '0x' + sent.slice(canonical.length)} : undefined;
+  } catch { return undefined; }
+}
+// How to say what the tail is: printable ASCII is quoted, anything else is counted.
+export function describeTrailingBytes(hex: string) {
+  const bytes = Buffer.from(hex.slice(2), 'hex'), text = bytes.toString('latin1');
+  return `${bytes.length} trailing byte${bytes.length === 1 ? '' : 's'}${bytes.length >= 4 && /^[\x20-\x7e]+$/.test(text) ? ` ("${text.replace(/"/g, "'")}")` : ''}`;
 }
 // Calldata must name exactly one write function and re-encode byte for byte: appended bytes or a
 // noncanonical encoding would show the signer something other than what the contract reads.

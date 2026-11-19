@@ -32,16 +32,18 @@ function runAsync(root:string,args:string[],expected=0,env:Record<string,string|
 const iface=new Interface(tokenAbi);
 const transfer=iface.encodeFunctionData('transfer',[other,2500000n]);
 const h=(n:number)=>'0x'+n.toString(16).padStart(64,'0');
-// The chain: h(1) a good transfer (block 900), h(2) a newer transfer with a trailing byte (non-canonical),
+// The chain: h(1) a good transfer (block 900), h(2) a newer transfer with dirty address padding (undecodable),
 // h(3) a reverted transfer, h(4) a transfer to another contract.
 const txs:Record<string,{to:string;input:string;block:number;status:string}>={
-  [h(1)]:{to:token,input:transfer,block:900,status:'0x1'}, [h(2)]:{to:token,input:transfer+'00',block:950,status:'0x1'},
+  [h(1)]:{to:token,input:transfer,block:900,status:'0x1'}, [h(2)]:{to:token,input:transfer.slice(0,10)+'ff'+transfer.slice(12),block:950,status:'0x1'},
   [h(3)]:{to:token,input:transfer,block:960,status:'0x0'}, [h(4)]:{to:other,input:transfer,block:970,status:'0x1'}};
 
 // Blocks the mock node refuses inside a batch, as a throttling public endpoint does.
 const unreadable=new Set<number>();
 // Receipts the mock node refuses inside a batch (the scan); single reads (fixture --tx) still work.
 const unreadableReceipts=new Set<string>();
+// Whether the mock node serves eth_getLogs (with an address filter only, as many public endpoints do).
+const logs={on:false};
 function project() {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-discover-'));
   fs.writeFileSync(path.join(root,'token.abi.json'),JSON.stringify(tokenAbi));
@@ -77,6 +79,11 @@ async function mockChain(t:any) {
       if(method==='eth_chainId') return ok('0x279f');
       if(method==='eth_blockNumber') return ok('0x3e8');
       if(method==='eth_getBlockByNumber') { const n=Number(BigInt(params[0])); if(unreadable.has(n)) return {jsonrpc:'2.0',id,error:{code:-32005,message:'limit exceeded'}}; return ok({number:params[0],transactions:Object.entries(txs).filter(([,x])=>x.block===n).map(([hash,x])=>({hash,to:x.to,input:x.input,blockNumber:params[0]}))}); }
+      if(method==='eth_getLogs') {
+        if(!logs.on||!params[0].address) return {jsonrpc:'2.0',id,error:{code:-32701,message:'Please specify an address in your request'}};
+        const lo=Number(BigInt(params[0].fromBlock)), hi=Number(BigInt(params[0].toBlock));
+        return ok(Object.entries(txs).filter(([,x])=>x.status==='0x1'&&x.block>=lo&&x.block<=hi&&params[0].address.includes(x.to)).map(([hash,x])=>({address:x.to,transactionHash:hash,blockNumber:'0x'+x.block.toString(16),topics:[]})));
+      }
       const x=txs[params?.[0]];
       if(method==='eth_getTransactionByHash') return ok(x?{hash:params[0],from:sender,to:x.to,input:x.input,value:'0x0',blockNumber:'0x'+x.block.toString(16),chainId:'0x279f'}:null);
       if(method==='eth_getTransactionReceipt'&&inBatch&&unreadableReceipts.has(params[0])) return {jsonrpc:'2.0',id,error:{code:-32005,message:'limit exceeded'}};
@@ -104,8 +111,8 @@ await test('discover with ENVIO_API_TOKEN: HyperSync nominates, the RPC re-check
   const env={ENVIO_API_TOKEN:envioToken,CLEAR_SIGNING_HYPERSYNC_URL:hypersync};
   const r=(await runAsync(root,['discover','--contract',id,'--rpc-url',rpc],0,env)).result;
   assert.equal(r.source,'hypersync');
-  // Newest first: h(2) is non-canonical and refused, the reverted h(3) is dropped by the status check, h(1) is taken.
-  assert.deepEqual(r.refused.map((x:any)=>[x.txHash,x.code]),[[h(2),'NONCANONICAL_CALLDATA']]);
+  // Newest first: h(2) does not decode and is refused, the reverted h(3) is dropped by the status check, h(1) is taken.
+  assert.deepEqual(r.refused.map((x:any)=>[x.txHash,x.code]),[[h(2),'CALLDATA_DECODE']]);
   assert.deepEqual(r.created.map((x:any)=>[x.file,x.txHash,x.blockNumber]),[['clear-signing/fixtures/transfer.json',h(1),900]]);
   const f=read(path.join(root,'clear-signing/fixtures/transfer.json'));
   assert.deepEqual([f.txHash,f.to.toLowerCase(),f.data,f.from.toLowerCase()],[h(1),token,transfer,sender]);
@@ -174,4 +181,20 @@ await test('discover without a token scans recent blocks over the RPC and report
   assert.deepEqual([noReceipt.created.length,noReceipt.missing],[0,['transfer(address,uint256)']]);
   assert.match(noReceipt.searched,/1 of them unreadable/);
   unreadableReceipts.clear();
+});
+
+await test('discover without a token finds calls by the logs they left, far beyond the block scan, and writes fixtures as it goes',async t=>{
+  const {root,id}=project();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const {rpc,seen}=await mockChain(t);
+  logs.on=true;t.after(()=>{logs.on=false;});
+  // The scan alone (20 blocks) would not reach block 900; the log search does.
+  const r=(await runAsync(root,['discover','--contract',id,'--rpc-url',rpc,'--max-blocks','20'])).result;
+  assert.equal(r.source,'rpc-logs');
+  assert.match(r.searched,/^logs of blocks \d+–1000/);
+  // h(2) left a log too but does not decode; h(1) is taken.
+  assert.deepEqual(r.created.map((x:any)=>[x.file,x.txHash,x.blockNumber]),[['clear-signing/fixtures/transfer.json',h(1),900]]);
+  assert.deepEqual(r.refused.map((x:any)=>[x.txHash,x.code]),[[h(2),'CALLDATA_DECODE']]);
+  assert.match(r.notes.join(' '),/only with an address filter/);
+  assert.ok(seen.methods.includes('eth_getLogs')&&!seen.methods.includes('eth_getBlockByNumber'),'no block scan once every function is found');
+  assert.equal((await runAsync(root,['discover','--contract',id,'--rpc-url',rpc,'--function','transfer','--time-limit','5'],2)).diagnostics[0].code,'USAGE_ERROR');
 });

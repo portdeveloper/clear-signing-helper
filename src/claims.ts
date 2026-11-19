@@ -245,7 +245,8 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
   const result = {fixture: file, signature, status: 'checked' as string, runs: 0, claims: [] as {claim: string; baseline: string}[], findings: [] as ClaimFinding[]};
   if (!f.txHash) return {...result, status: 'skipped: no real transaction (txHash) to replay'};
   const tx = await fetchTransaction(o.rpcUrl, f.txHash);
-  if (tx.data.toLowerCase() !== f.data.toLowerCase() || tx.to.toLowerCase() !== f.to.toLowerCase()) return {...result, status: 'skipped: the fixture no longer matches its transaction'};
+  const tail = (f.trailingBytes ?? '0x').slice(2).toLowerCase();
+  if (tx.data.toLowerCase() !== f.data.toLowerCase() + tail || tx.to.toLowerCase() !== f.to.toLowerCase()) return {...result, status: 'skipped: the fixture no longer matches its transaction'};
   const [block] = await rpcBatch(o.rpcUrl, [{method: 'eth_getBlockByNumber', params: [hex(tx.blockNumber), false]}]) as any[];
   const timestamp = Number(BigInt(block?.timestamp ?? 0));
   if (!timestamp) fail('RPC_FAILED', `${redactUrl(o.rpcUrl)} returned no block ${tx.blockNumber}.`, 2);
@@ -260,7 +261,7 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
     const run = async (r: Tree, v = value, traced = false) => {
       result.runs++;
       const watch = [...new Set([sender, to, ...addressesIn(r)])];
-      return execute(fork, {from: sender, to, data: encode(r), value: v}, timestamp, watch, traced);
+      return execute(fork, {from: sender, to, data: encode(r) + tail, value: v}, timestamp, watch, traced);
     };
     const base = await run(root);
     if (!base.ok) return {...result, status: `skipped: the transaction reverts when replayed at block ${tx.blockNumber - 1} (another transaction earlier in its block may set it up): ${base.error}`};

@@ -160,7 +160,7 @@ await test('fixture --tx copies a mined transaction as sent, records its hash in
   const tx=(over:Record<string,unknown>)=>({hash:'',from:sender,to:token,input:transfer,value:'0x0',blockNumber:'0x10',chainId:'0x279f',...over});
   const chain:Record<string,{tx:any;status?:string}>={
     [h(1)]:{tx:tx({})}, [h(2)]:{tx:tx({}),status:'0x0'}, [h(3)]:{tx:tx({blockNumber:null})}, [h(4)]:{tx:tx({to:impl})},
-    [h(5)]:{tx:tx({input:transfer+'00'})}, [h(6)]:{tx:tx({input:iface.encodeFunctionData('approve',[proxy,1n]).replace(/^0x095ea7b3/,'0xdeadbeef')})}, [h(7)]:{tx:tx({to:null})}};
+    [h(5)]:{tx:tx({input:transfer+'00'})}, [h(6)]:{tx:tx({input:iface.encodeFunctionData('approve',[proxy,1n]).replace(/^0x095ea7b3/,'0xdeadbeef')})}, [h(7)]:{tx:tx({to:null})}, [h(8)]:{tx:tx({input:transfer.slice(0,10)+'ff'+transfer.slice(12)})}};
   const methods:string[]=[];
   const server=createServer((req,res)=>{let body='';req.on('data',c=>body+=c).on('end',()=>{
     const {method,params,id:rid}=JSON.parse(body);methods.push(method);
@@ -189,15 +189,20 @@ await test('fixture --tx copies a mined transaction as sent, records its hash in
   assert.deepEqual(made.tokens,{[token]:{name:'Clear Token',symbol:'CLR',decimals:6}});assert.deepEqual(f.tokens,made.tokens);
   // Only reads: nothing that could sign or send.
   assert.deepEqual([...new Set(methods)].sort(),['eth_call','eth_chainId','eth_getTransactionByHash','eth_getTransactionReceipt']);
-  for(const [hash,code] of [[h(2),'TX_REVERTED'],[h(3),'TX_PENDING'],[h(4),'TX_TARGET_MISMATCH'],[h(5),'NONCANONICAL_CALLDATA'],[h(6),'TX_SELECTOR_MISMATCH'],[h(7),'TX_CONTRACT_CREATION'],[h(9),'TX_NOT_FOUND']] as const)
+  for(const [hash,code] of [[h(2),'TX_REVERTED'],[h(3),'TX_PENDING'],[h(4),'TX_TARGET_MISMATCH'],[h(8),'CALLDATA_DECODE'],[h(6),'TX_SELECTOR_MISMATCH'],[h(7),'TX_CONTRACT_CREATION'],[h(9),'TX_NOT_FOUND']] as const)
     assert.equal((await fixture(`bad-${code}`,hash,2)).diagnostics[0].code,code,code);
   assert.ok(!fs.existsSync(path.join(root,'clear-signing/fixtures/bad-TX_REVERTED.json')),'a refusal writes no fixture');
   assert.equal(run(root,['fixture','--name','x','--contract',id,'--tx',h(1)],2).diagnostics[0].code,'USAGE_ERROR');
+  // Bytes after the ABI encoding (an integrator tag) are removed and recorded; the fixture stays canonical.
+  const tagged=(await fixture('tagged',h(5))).result, tf=read(path.join(root,tagged.created));
+  assert.deepEqual([tf.data,tf.trailingBytes,tf.txHash,tagged.trailingBytes],[transfer,'0x00',h(5),'0x00']);
+  assert.match(tagged.canonicalized,/1 trailing byte after/);
   // The hash travels into the exported registry test case.
   run(root,['review','--accept']);run(root,['test','--update']);
   const exported=run(root,['export','--out','bundle','--no-lint']).result;
   const tests=read(path.join(root,exported.registryPath,'testsv2/calldata-ClearToken.tests.json'));
   assert.equal(tests.tests[0].txHash,h(1));
+  assert.deepEqual([tests.tests[1].txHash,tests.tests[1].description,tests.tests[1].rawTx===tests.tests[0].rawTx],[h(5),'tagged - chain 10143 (arguments of the real transaction; 1 trailing byte removed)',true]);
 });
 
 await test('init --address names the verified contract\'s address immutables as metadata constants, from the Sourcify record alone',async t=>{
@@ -474,4 +479,25 @@ await test('decisions: several byte slices of one leaf keep their own fields on 
   const h:any={};for(const [k,v] of Object.entries(g))h[k==='data.[96:128]'?'data':k]=k==='data.[96:128]'?{...(v as any),label:'Minimum out'}:v;
   dec.functions[sig].fields=h;write(dfile,dec);run(root,['apply','--decisions',created.created]);
   assert.deepEqual(fields().map(x=>x[1]),['Minimum out','Fee','Fee on output']);
+});
+await test('decisions: a leaf hidden as a whole with one byte slice of it shown and pinned needs no hand edit',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const abi=[{type:'function',name:'swap',stateMutability:'nonpayable',outputs:[],inputs:[{name:'tokenFrom',type:'address'},{name:'amount',type:'uint256'},{name:'data',type:'bytes'}]}];
+  fs.writeFileSync(path.join(root,'meta.abi.json'),JSON.stringify(abi));
+  run(root,['init','--abi','meta.abi.json','--name','Meta','--owner','Example']);
+  const id='clear-signing/abi/Meta.json:Meta', sig='swap(address,uint256,bytes)';
+  const created=run(root,['decisions','--contract',id]).result,dfile=path.join(root,created.created),dec=read(dfile);
+  const f=dec.functions[sig].fields;dec.author='llm:test-model';dec.functions[sig].intent='Swap';
+  f.data={...f.data,show:false,hideReason:'Route bytes; only the mode word is pinned'};
+  f['data.[0:32]']={type:'uint256',show:true,label:'Mode',format:'raw',mustMatch:[0]};
+  write(dfile,dec);
+  const dir=path.join(root,'clear-signing/descriptors'),descFile=path.join(dir,fs.readdirSync(dir)[0]);
+  const paths=()=>Object.values(read(descFile).display.formats as any).flatMap((x:any)=>x.fields).filter((x:any)=>x.path.startsWith('data')).map((x:any)=>[x.path,x.visible]);
+  for(let i=0;i<2;i++){
+    run(root,['apply','--decisions',created.created]);
+    assert.deepEqual(paths(),[['data.[0:32]',{mustMatch:[0]}]]);
+  }
+  assert.match(fs.readFileSync(path.join(root,'clear-signing.toml'),'utf8'),/Route bytes; only the mode word is pinned/);
+  const checked=run(root,['check','--contract',id],1);
+  assert.ok(!JSON.stringify(checked).includes('HIDDEN_AND_DISPLAYED'));
 });

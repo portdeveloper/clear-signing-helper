@@ -56,16 +56,17 @@ function formatHumanOutput(data: any): string {
     ...data.results.flatMap((r:any)=>[`${r.fixture} (${r.signature}): ${r.status}${r.runs?`, ${r.runs} run(s)`:''}`,
       ...r.claims.map((c:any)=>`  ${c.claim}: ${c.baseline}`),
       ...r.findings.map((f:any)=>`  FINDING ${f.kind}${f.argument?` ${f.argument}`:''}: ${f.claim}. ${f.message}`)]),
+    ...(data.notReplayed?.length ? [`Not replayed (time limit): ${data.notReplayed.join(', ')}`] : []),
     `\n${data.findings.length} finding(s) in ${data.claimsChecked} fixture(s).`, data.note].join('\n');
   if (data.passed !== undefined) return `${data.passed} signing test(s) passed.${data.updated ? ` ${data.updated} expectation(s) updated.` : ''}`;
   if (data.alreadyCovered !== undefined && Array.isArray(data.missing)) return [
     ...(data.searched ? [`Searched: ${data.searched}`] : []),
-    ...data.created.map((c:any)=>`Created ${c.file} from ${c.txHash} (block ${c.blockNumber})${c.unresolvedTokens?`; unresolved tokens: ${c.unresolvedTokens.join('; ')}`:''}`),
+    ...data.created.map((c:any)=>`Created ${c.file} from ${c.txHash} (block ${c.blockNumber})${c.trailingBytes?`, ${(c.trailingBytes.length-2)/2} trailing byte(s) removed`:''}${c.unresolvedTokens?`; unresolved tokens: ${c.unresolvedTokens.join('; ')}`:''}`),
     ...data.refused.map((r:any)=>`Skipped ${r.txHash} for ${r.function}: ${r.code}`),
     ...(data.alreadyCovered.length ? [`Already have a fixture (${data.alreadyCovered.length}): ${data.alreadyCovered.map((s:string)=>s.split('(')[0]).join(', ')}`] : []),
     data.next].join('\n');
   if (data.created) {
-    if (typeof data.created === 'string') return `Created ${data.created}${data.source?` from ${data.source}`:''}\n${data.next}`;
+    if (typeof data.created === 'string') return `Created ${data.created}${data.source?` from ${data.source}`:''}\n${data.canonicalized?data.canonicalized+'\n':''}${data.next}`;
     const imports=(data.imports??[]).map((i:any)=>`  ${i.contract} from ${i.source}${i.match?` (${i.match})`:''}: ${i.origin}${i.proxy?`\n    proxy ${i.proxy.type??''} -> implementation ${i.proxy.implementation.address}${i.proxy.implementation.name?` (${i.proxy.implementation.name})`:''}; the descriptor binds the proxy address`:''}`);
     const bindings=(data.bindings??[]).map((b:any)=>`  ${b.contract} bound to ${b.chainId}:${b.address} (from ${b.source})`);
     const label:Record<string,string>={natspec:'NatSpec',ast:'AST',broadcast:'broadcast',verified:'verified source',convention:'convention',registry:'registry prior',human:'human',llm:'LLM'};

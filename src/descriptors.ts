@@ -347,7 +347,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         const typeOf = (p: string) => leafMap.get(leafKey(p)) ?? TRANSACTION_FIELDS[p];
         // referenced: leaves a displayed field reads through a parameter (the token of a tokenAmount, an NFT
         // collection, a chain id). The registry linter counts them as displayed; so does UNDISPLAYED_ARGUMENT.
-        const seen = new Set<string>(), conditionalOnly = new Set<string>(), displayedLeaves = new Set<string>(), declaredHidden = new Set<string>(), referenced = new Set<string>();
+        const seen = new Set<string>(), conditionalOnly = new Set<string>(), displayedLeaves = new Set<string>(), displayedWhole = new Set<string>(), declaredHidden = new Set<string>(), referenced = new Set<string>();
         const longLabels = new Set<string>();
         const resolved = resolveFields(spec.fields, definitions, group => {
           assertKeys(group, ['path','label','fields','iteration','$id'], `group in ${sig}`);
@@ -384,6 +384,8 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
           if (!seen.has(field.path) && conditional) conditionalOnly.add(field.path);
           if (!conditional) conditionalOnly.delete(field.path);
           seen.add(field.path); displayedLeaves.add(leaf!);
+          // A byte slice shows part of a leaf; a hidden reason for the rest of it is not a contradiction.
+          if (!/\.\[-?\d*:-?\d*\]$/.test(field.path)) displayedWhole.add(leaf!);
           if (field.format === undefined) fail('UNSUPPORTED_FORMAT', `${field.path} has no format; the pinned renderer needs one (use raw).`);
           const params = field.params ?? {};
           for (const k of ['token', 'tokenPath', 'collection', 'collectionPath', 'chainIdPath']) { const v = params[k]; if (typeof v === 'string' && !v.startsWith('@.') && !v.startsWith('$.') && !isAddress(v)) coveredLeaves(leafKey(v), leafMap.keys()).forEach(l => referenced.add(l)); }
@@ -430,7 +432,7 @@ export function validateDescriptor(d: Descriptor, c: Contract, selection: Select
         const hiddenHere = hidden[sig] ?? {};
         for (const [leaf, reason] of Object.entries(hiddenHere)) {
           if (!leafMap.has(leaf)) add('STALE_HIDDEN', `${sig} hidden path ${leaf} is not an argument of the function.`, key);
-          else if (displayedLeaves.has(leaf)) add('HIDDEN_AND_DISPLAYED', `${sig} displays ${leaf} but also lists it under hidden.`, key);
+          else if (displayedWhole.has(leaf)) add('HIDDEN_AND_DISPLAYED', `${sig} displays ${leaf} but also lists it under hidden.`, key);
           if (typeof reason !== 'string' || !reason.trim()) add('HIDDEN_REASON', `${sig} hidden path ${leaf} needs a reason.`, key);
         }
         for (const leaf of leafMap.keys()) if (!displayedLeaves.has(leaf) && !referenced.has(leaf) && !hiddenHere[leaf] && !declaredHidden.has(leaf)) add('UNDISPLAYED_ARGUMENT', `${sig} does not display ${leaf}. Signers will not see this argument.`, key, 'warning');

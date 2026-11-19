@@ -77,12 +77,14 @@ program.command('fixture').description('Encode an example transaction from the c
   });
 program.command('discover').description('Find real transactions sent to a contract\'s deployment and make fixtures from them, for each described function without one')
   .requiredOption('--contract <path:name>','Selected contract identity')
-  .requiredOption('--rpc-url <url>','Read-only endpoint for the deployment\'s chain: every candidate is re-read and checked here, and token metadata comes from it')
+  .requiredOption('--rpc-url <url>','Read-only endpoint for the deployment\'s chain: every candidate is re-read and checked on the first one named, and token metadata comes from it. Repeat it to name more: the log search uses the first that serves eth_getLogs without an address (many public endpoints do not)',select,[])
   .option('--chain-id <number>','Chain to search when the contract is bound on several')
   .option('--function <signature>','Only this described function, by name or signature (repeatable; also re-searches functions that have a fixture)',select,[])
-  .option('--per-function <n>','Fixtures to create per function, 1 to 10','1')
-  .option('--max-blocks <n>','Without ENVIO_API_TOKEN: how many recent blocks the RPC scan reads','20000')
-  .action(async options=>output(await discoverFixtures(state(),{contract:options.contract,rpcUrl:options.rpcUrl,chainId:options.chainId,functions:options.function,perFunction:Number(options.perFunction),maxBlocks:Number(options.maxBlocks),log:progress})));
+  .option('--per-function <n>','Fixtures to create per function, 1 to 10; after the first, only calls that differ (native value sent or not, other token or pool addresses)','3')
+  .option('--log-blocks <n>','Without ENVIO_API_TOKEN: how far back the log search (eth_getLogs) looks for calls that left a log at the contract','500000')
+  .option('--time-limit <seconds>','Without ENVIO_API_TOKEN: stop searching after this long and report what was found; fixtures are written as they are found','240')
+  .option('--max-blocks <n>','Without ENVIO_API_TOKEN: how many recent blocks are scanned in full for calls the log search cannot see','3000')
+  .action(async options=>output(await discoverFixtures(state(),{contract:options.contract,rpcUrl:options.rpcUrl[0],logRpcUrls:options.rpcUrl.slice(1),chainId:options.chainId,functions:options.function,perFunction:Number(options.perFunction),maxBlocks:Number(options.maxBlocks),logBlocks:Number(options.logBlocks),timeLimit:Number(options.timeLimit),log:progress})));
 program.command('tokens').description('Fill missing token metadata (symbol, decimals, name) in existing fixtures, for the tokens their renderings need')
   .requiredOption('--rpc-url <url>','Read-only endpoint for the fixtures\' chain')
   .option('--contract <path:name>','Only fixtures of this selected contract (repeatable)',select,[])
@@ -105,8 +107,9 @@ program.command('claims').description('Replay real-transaction fixtures on a loc
   .requiredOption('--contract <path:name>','Selected contract identity')
   .option('--rpc-url <url>','Endpoint for the fork; it must serve state at each fixture\'s block (an archive node for older transactions). Repeat it to name fallbacks, tried in order when an endpoint throttles or times out',select,[])
   .option('--fixture <path>','Only this fixture (repeatable)',select,[])
-  .option('--budget <n>','Most calls to simulate per fixture','300')
-  .action(async options=>output(await checkClaims(state(),{contract:options.contract,rpcUrls:options.rpcUrl,fixtures:options.fixture,budget:Number(options.budget),log:progress})));
+  .option('--budget <n>','Most calls to simulate per fixture','100')
+  .option('--time-limit <seconds>','Start no new fixture after this long; fixtures not replayed are listed (one fixture of each function goes first)','900')
+  .action(async options=>output(await checkClaims(state(),{contract:options.contract,rpcUrls:options.rpcUrl,fixtures:options.fixture,budget:Number(options.budget),timeLimit:Number(options.timeLimit),log:progress})));
 program.command('export').description('Validate and write a submission bundle; does not publish')
   .requiredOption('--out <directory>','New output directory inside the project')
   .option('--contract <path:name>','Export only this selected contract and its fixtures (repeatable)',select,[])
