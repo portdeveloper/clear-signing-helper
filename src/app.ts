@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import TOML from '@iarna/toml';
-import { AbiCoder, Interface, FunctionFragment, getAddress } from 'ethers';
+import { AbiCoder, EventFragment, Interface, FunctionFragment, getAddress } from 'ethers';
 import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
 import { ENGINE, SUPPORTED_FORMATS, normalizePath, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, REGISTRY_NAME, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
 import { priorsFor, summarizePrior, registryMatches, buildPriorsIndex, usePriorsIndex, PRIORS_META } from './priors.js';
@@ -355,7 +355,8 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
     try { walk(AbiCoder.defaultAbiCoder().decode(f.inputs, '0x' + tx.data.slice(10), true).toArray(true)); } catch { /* createFixture refuses what does not decode */ }
     return `${BigInt(tx.value) > 0n ? 'value' : 'no value'}|${[...found].sort().join(',')}`;
   };
-  const found = await discoverCalls({chainId, addresses, selectors: [...bySelector.keys()], rpcUrl: o.rpcUrl, logRpcUrls: o.logRpcUrls, token, maxBlocks: o.maxBlocks, logBlocks: o.logBlocks, deadline: Date.now() + o.timeLimit * 1000, log: o.log,
+  const found = await discoverCalls({chainId, addresses, selectors: [...bySelector.keys()], rpcUrl: o.rpcUrl, logRpcUrls: o.logRpcUrls, token, scanAnyway: !!o.functions?.length,
+    eventTopics: new Interface(c.abi).fragments.filter((x): x is EventFragment => x.type === 'event' && !(x as EventFragment).anonymous).map(x => x.topicHash), maxBlocks: o.maxBlocks, logBlocks: o.logBlocks, deadline: Date.now() + o.timeLimit * 1000, log: o.log,
     have: selector => made.get(selector) ?? 0,
     wanted: selector => (made.get(selector) ?? 0) < o.perFunction && (tried.get(selector) ?? 0) < TRIES && (passed.get(selector) ?? 0) < ALIKE,
     take: async (selector, n) => {
@@ -372,13 +373,13 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
         shapes.set(selector, known.add(shape));
         const entry: Record<string, unknown> = {function: signature, file: r.created, txHash: n.hash, blockNumber: n.blockNumber, ...(r.trailingBytes ? {trailingBytes: r.trailingBytes} : {})};
         created.push(entry);
-        o.log(`  fixture ${r.created} <- ${n.hash}`);
         // The fixture stands even if its token lookup is throttled; tokens --rpc-url fills it later.
         try {
           const metadata = await fillTokenMetadata(state, r.created, o.rpcUrl);
           Object.assign(entry, metadata);
           if (metadata.unresolvedTokens?.length) unresolved.push(r.created);
         } catch (e) { if (!(e instanceof Failure)) throw e; unresolved.push(r.created); entry.unresolvedTokens = [`token metadata was not read: ${e.message}`]; }
+        o.log(`Created ${r.created} from ${n.hash} (block ${n.blockNumber})${r.trailingBytes ? `, ${(r.trailingBytes.length - 2) / 2} trailing byte(s) removed` : ''}${entry.unresolvedTokens ? `; unresolved tokens: ${(entry.unresolvedTokens as string[]).join('; ')}` : ''}`);
       } catch (e) {
         if (!(e instanceof Failure)) throw e;
         refused.push({function: signature, txHash: n.hash, code: e.code, message: e.message});

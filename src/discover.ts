@@ -12,7 +12,7 @@ export interface Nominee {hash: string; blockNumber: number}
 export interface Discovery {source: 'hypersync' | 'rpc-logs' | 'rpc-scan' | 'rpc-logs+scan'; searched: string; unread?: number; logs?: {available: boolean; note?: string}}
 // wanted/take: the caller turns each nominee into a fixture as it is found (newest first within a source), so an
 // interrupted or throttled search keeps what it already made. A selector is searched for while wanted() holds.
-interface Options {chainId: number; addresses: string[]; selectors: string[]; rpcUrl: string; logRpcUrls?: string[]; token?: string; maxBlocks: number; logBlocks: number; deadline: number; log: (line: string) => void;
+interface Options {chainId: number; addresses: string[]; selectors: string[]; rpcUrl: string; logRpcUrls?: string[]; eventTopics?: string[]; scanAnyway?: boolean; token?: string; maxBlocks: number; logBlocks: number; deadline: number; log: (line: string) => void;
   wanted: (selector: string) => boolean; have: (selector: string) => number; take: (selector: string, nominee: Nominee) => Promise<void>}
 
 const num = (v: unknown) => typeof v === 'number' ? v : Number(BigInt(String(v)));
@@ -80,13 +80,13 @@ async function fromHypersync(o: Options & {token: string}): Promise<Discovery> {
 // Public endpoints differ: many refuse a log query without an address, cap the range or the result count, and
 // throttle. So each filter is probed per endpoint, requests go one at a time, a throttled endpoint is left for
 // the next one that serves logs, and transactions are looked up on the primary endpoint.
-async function fromLogs(o: Options, head: number): Promise<{available: boolean; note?: string; searched?: string}> {
+async function fromLogs(o: Options, head: number): Promise<{available: boolean; complete?: boolean; note?: string; searched?: string}> {
   const to = new Set(o.addresses.map(a => a.toLowerCase())), padded = [...to].map(a => '0x' + '0'.repeat(24) + a.slice(2));
   const all: object[] = [{address: [...to]}, {topics: [null, padded]}, {topics: [null, null, padded]}];
   const floor = Math.max(0, head - o.logBlocks + 1), {offer, remaining, fixtures, progress} = offering(o), hex = (n: number) => '0x' + n.toString(16);
-  // STALL: transactions read since the last new fixture. Past it, what is still missing is not called directly
+  // STALL: milliseconds since the last new fixture. Past it, what is still missing is not called directly
   // often enough to be worth the wait (a function nobody calls would otherwise use the whole time limit).
-  const MIN = 50, MAX = 100_000, LOOKUPS = 10_000, STALL = 3000;
+  const MIN = 50, MAX = 100_000, LOOKUPS = 20_000, STALL = 45_000;
   const query = async (url: string, filter: object, lo: number, hi: number): Promise<any[] | 'narrow' | 'throttled'> => {
     try {
       const [r] = await rpcBatch(url, [{method: 'eth_getLogs', params: [{...filter, fromBlock: hex(lo), toBlock: hex(hi)}]}], 45_000, 1);
@@ -103,10 +103,48 @@ async function fromLogs(o: Options, head: number): Promise<{available: boolean; 
   if (!endpoints.length) return {available: false, note: `No endpoint named answered eth_getLogs, so only the block scan ran; an endpoint that serves logs reaches much further back (name one with another --rpc-url).`};
   endpoints.sort((a, b) => b.filters.length - a.filters.length);
   const widest = endpoints[0].filters.length;
-  let at = 0, hi = head, size = 2000, lookups = 0, strikes = 0, lowest = head + 1, stopped: string | undefined, last = 0, lastAt = 0;
-  const stalled = () => { if (fixtures() !== last) { last = fixtures(); lastAt = lookups; } return lookups - lastAt >= STALL; };
+  let lookups = 0;
+  const lookUp = async (hashes: [string, number][]) => {
+    for (let i = 0; i < hashes.length && remaining().length && Date.now() <= o.deadline; i += 50) {
+      const part = hashes.slice(i, i + 50);
+      let txs: unknown[] = [];
+      try { txs = await rpcBatch(o.rpcUrl, part.map(([hash]) => ({method: 'eth_getTransactionByHash' as const, params: [hash]}))); } catch (e) { if (!(e instanceof Failure)) throw e; }
+      lookups += part.length;
+      const want = remaining(), found: Record<string, Nominee[]> = {};
+      (txs as any[]).forEach((tx, k) => {
+        const selector = String(tx?.input ?? tx?.data ?? '').slice(0, 10).toLowerCase();
+        if (tx?.to && to.has(String(tx.to).toLowerCase()) && want.includes(selector)) (found[selector] ??= []).push({hash: part[k][0], blockNumber: part[k][1]});
+      });
+      for (const [selector, list] of Object.entries(found)) await offer(selector, list);
+    }
+  };
+  // First, each event the contract declares, by its topic, over the whole history in one request: a function
+  // called twice a year sits next to its own event, however much other traffic the contract has. An event too
+  // frequent for one request (result or range limit) is asked over a recent range; the walk below covers the rest.
+  const PER_EVENT = 400;
+  let events = 0, eventsAnswered = 0;
+  for (const topic of o.eventTopics ?? []) {
+    if (!remaining().length || Date.now() > o.deadline) break;
+    events++;
+    let logs: any[] | undefined;
+    for (const span of [head + 1, 1_000_000, 50_000]) {
+      for (const {url} of endpoints) {
+        const r = await query(url, {address: [...to], topics: [topic]}, Math.max(0, head - span + 1), head);
+        if (Array.isArray(r)) { logs = r; break; }
+      }
+      if (logs) break;
+    }
+    if (!logs) continue;
+    eventsAnswered++;
+    const byHash = new Map<string, number>();
+    for (const log of logs) if (typeof log?.transactionHash === 'string' && log.blockNumber) byHash.set(log.transactionHash.toLowerCase(), Number(BigInt(log.blockNumber)));
+    if (byHash.size) await lookUp([...byHash].sort((a, b) => b[1] - a[1]).slice(0, PER_EVENT));
+  }
+  if (events) o.log(`Events by topic: ${eventsAnswered} of ${events} answered; ${progress()}`);
+  let at = 0, hi = head, size = 2000, strikes = 0, lowest = head + 1, stopped: string | undefined, last = fixtures(), lastAt = lookups, lastTime = Date.now();
+  const stalled = () => { if (fixtures() !== last) { last = fixtures(); lastAt = lookups; lastTime = Date.now(); } return Date.now() - lastTime > STALL; };
   while (hi >= floor && remaining().length && lookups < LOOKUPS) {
-    if (stalled()) { stopped = `The log search stopped at block ${lowest}: the last ${lookups - lastAt} transactions read gave no new fixture, so the functions still missing are rarely or never called directly. Pass --function to search for one of them alone, or set ENVIO_API_TOKEN to filter by function on the server.`; break; }
+    if (stalled()) { stopped = `The log search stopped at block ${lowest}: the last ${lookups - lastAt} transactions read (${Math.round((Date.now() - lastTime) / 1000)}s) gave no new fixture, so the functions still missing are rarely or never called directly. Pass --function to search for one of them alone, or set ENVIO_API_TOKEN to filter by function on the server.`; break; }
     if (Date.now() > o.deadline) { stopped = `The log search stopped at the time limit, at block ${lowest}; run discover again with a larger --time-limit to go further back.`; break; }
     const lo = Math.max(floor, hi - size + 1), {url, filters} = endpoints[at], logs: any[] = [];
     let problem: 'narrow' | 'throttled' | undefined;
@@ -132,18 +170,7 @@ async function fromLogs(o: Options, head: number): Promise<{available: boolean; 
     const byHash = new Map<string, number>();
     for (const log of logs) if (typeof log?.transactionHash === 'string' && log.blockNumber) byHash.set(log.transactionHash.toLowerCase(), Number(BigInt(log.blockNumber)));
     const hashes = [...byHash].sort((a, b) => b[1] - a[1]);
-    for (let i = 0; i < hashes.length && remaining().length && lookups < LOOKUPS && !stalled() && Date.now() <= o.deadline; i += 50) {
-      const part = hashes.slice(i, i + 50);
-      let txs: unknown[] = [];
-      try { txs = await rpcBatch(o.rpcUrl, part.map(([hash]) => ({method: 'eth_getTransactionByHash' as const, params: [hash]}))); } catch (e) { if (!(e instanceof Failure)) throw e; }
-      lookups += part.length;
-      const want = remaining(), found: Record<string, Nominee[]> = {};
-      (txs as any[]).forEach((tx, k) => {
-        const selector = String(tx?.input ?? tx?.data ?? '').slice(0, 10).toLowerCase();
-        if (tx?.to && to.has(String(tx.to).toLowerCase()) && want.includes(selector)) (found[selector] ??= []).push({hash: part[k][0], blockNumber: part[k][1]});
-      });
-      for (const [selector, list] of Object.entries(found)) await offer(selector, list);
-    }
+    for (let i = 0; i < hashes.length && remaining().length && lookups < LOOKUPS && !stalled() && Date.now() <= o.deadline; i += 50) await lookUp(hashes.slice(i, i + 50));
     o.log(`Logs of blocks ${lo}–${hi}: ${hashes.length} transaction(s); ${progress()}`);
     if (hashes.length < 500) size = Math.min(MAX, size * 2);
     hi = lo - 1;
@@ -152,7 +179,7 @@ async function fromLogs(o: Options, head: number): Promise<{available: boolean; 
     ...(stopped ? [stopped] : []),
     ...(lookups >= LOOKUPS && !stopped && remaining().length ? [`The log search stopped after reading ${lookups} transactions (down to block ${lowest}); the functions still missing are rare next to this contract's traffic. Set ENVIO_API_TOKEN to filter by function on the server.`] : []),
     ...(widest < all.length ? [`The endpoints named serve eth_getLogs only with an address filter, so the log search saw only transactions in which the contract itself emitted an event; name an endpoint without that limit with another --rpc-url.`] : [])];
-  return {available: true, searched: `logs of blocks ${Math.min(lowest, head)}–${head} (${[...new Set(endpoints.map(e => redactUrl(e.url)))].join(', ')})`, ...(notes.length ? {note: notes.join(' ')} : {})};
+  return {available: true, complete: widest === all.length, searched: `${eventsAnswered ? `${eventsAnswered} event(s) of the contract by topic over its history; ` : ''}logs of blocks ${Math.min(lowest, head)}–${head} (${[...new Set(endpoints.map(e => redactUrl(e.url)))].join(', ')})`, ...(notes.length ? {note: notes.join(' ')} : {})};
 }
 
 async function fromRpcScan(o: Options): Promise<Discovery> {
@@ -163,7 +190,9 @@ async function fromRpcScan(o: Options): Promise<Discovery> {
   const {offer, lacking, progress} = offering(o);
   // Calls that leave a log trace first (cheap and deep), then a scan of recent blocks for the rest.
   const logs = await fromLogs(o, head);
-  if (logs.available && !lacking().length) return {source: 'rpc-logs', searched: logs.searched!, logs};
+  // With every log filter served, a direct call the log search missed left no event at the contract and moved no
+  // token to or from it; the block scan is kept for endpoints that serve less, and for functions asked by name.
+  if (logs.available && (!lacking().length || (logs.complete && !o.scanAnyway))) return {source: 'rpc-logs', searched: logs.searched!, logs};
   if (logs.available) o.log(`Still without a fixture after the log search: ${lacking().length} function(s); scanning the last ${head - floor + 1} blocks for calls that leave no log at the contract`);
   let next = head, scanned = 0, lowest = head, unread = 0;
   const worker = async () => {

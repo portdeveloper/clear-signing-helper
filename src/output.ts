@@ -61,7 +61,9 @@ function formatHumanOutput(data: any): string {
   if (data.passed !== undefined) return `${data.passed} signing test(s) passed.${data.updated ? ` ${data.updated} expectation(s) updated.` : ''}`;
   if (data.alreadyCovered !== undefined && Array.isArray(data.missing)) return [
     ...(data.searched ? [`Searched: ${data.searched}`] : []),
-    ...data.created.map((c:any)=>`Created ${c.file} from ${c.txHash} (block ${c.blockNumber})${c.trailingBytes?`, ${(c.trailingBytes.length-2)/2} trailing byte(s) removed`:''}${c.unresolvedTokens?`; unresolved tokens: ${c.unresolvedTokens.join('; ')}`:''}`),
+    // Each fixture was named as it was made; the summary counts them.
+    `${data.created.length} fixture(s) created for ${new Set(data.created.map((c:any)=>c.function)).size} function(s).`,
+    ...(data.notes ?? []),
     ...data.refused.map((r:any)=>`Skipped ${r.txHash} for ${r.function}: ${r.code}`),
     ...(data.alreadyCovered.length ? [`Already have a fixture (${data.alreadyCovered.length}): ${data.alreadyCovered.map((s:string)=>s.split('(')[0]).join(', ')}`] : []),
     data.next].join('\n');

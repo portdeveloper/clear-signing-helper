@@ -190,7 +190,7 @@ await test('discover without a token finds calls by the logs they left, far beyo
   // The scan alone (20 blocks) would not reach block 900; the log search does.
   const r=(await runAsync(root,['discover','--contract',id,'--rpc-url',rpc,'--max-blocks','20'])).result;
   assert.equal(r.source,'rpc-logs');
-  assert.match(r.searched,/^logs of blocks \d+–1000/);
+  assert.match(r.searched,/^2 event\(s\) of the contract by topic over its history; logs of blocks \d+–1000/);
   // h(2) left a log too but does not decode; h(1) is taken.
   assert.deepEqual(r.created.map((x:any)=>[x.file,x.txHash,x.blockNumber]),[['clear-signing/fixtures/transfer.json',h(1),900]]);
   assert.deepEqual(r.refused.map((x:any)=>[x.txHash,x.code]),[[h(2),'CALLDATA_DECODE']]);
