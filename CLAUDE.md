@@ -14,7 +14,7 @@ Make it easy for a team to go from a deployed contract to a descriptor and test 
 
 The success test is simple: a team with a real project (reference case: the sibling repo `../puddleswap`, a Uniswap V2 fork on Monad testnet, chain 10143) runs the tool, edits labels, and ends with files the registry maintainers would merge. Anything that makes them leave the tool to finish, or that rejects a descriptor the registry would accept, is a defect against this purpose. So is asking a human for something the repository already proves (see roadmap item 3).
 
-## What the tool is today (main; release 0.6.0-preview.7)
+## What the tool is today (main; release 0.6.0-preview.8)
 
 A Node 22+ CLI, `clear-signing`, that works from a Foundry repo, an ABI file, or a verified address (`mode = "abi"` in `clear-signing.toml`).
 
@@ -401,7 +401,7 @@ The registry had moved its linter, both runners and the schema since preview.6, 
 - Not done, by choice: items 19–22. #3130 is still an open proposal, untouched since 2026-10-21, and nothing in registry CI enforces it.
 - Not fixed: `fixture --tx` refuses MetaMask swaps (one trailing byte). That is the canonical-calldata rule working; do not weaken it.
 
-### 35. Real transactions with trailing bytes, and discovery over plain RPC — `done` (2026-11-18, unreleased)
+### 35. Real transactions with trailing bytes, and discovery over plain RPC — `done` (2026-11-18 to 2026-11-20, shipped in 0.6.0-preview.8)
 
 The blind comparison with plain Fable 5.2 lost on real-transaction tests (Tycho 0 against 17: every swap carries an ASCII integrator tag after its ABI encoding) and on time (`discover` over a public RPC found nothing in any of four runs; every agent wrote its own `eth_getLogs` scanner).
 

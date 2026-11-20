@@ -1,3 +1,32 @@
+# Clear Signing Helper 0.6.0-preview.8 — developer preview
+
+Makes real transactions usable as tests on contracts where they were refused or never found, and makes the fork replay fast enough to run on every fixture. It comes out of a blind comparison on four contracts between an agent using this tool and descriptors written by a plain model.
+
+## What changed
+
+- **Real transactions with bytes after their ABI encoding become fixtures.** Many dapps append an integrator tag or referral code. `fixture --tx` and `discover` now keep such a transaction: the fixture's calldata is the canonical encoding, the removed bytes are stored as `trailingBytes`, the exported test description says how many were removed, and `claims` replays the transaction as it was sent. Calldata that is noncanonical in any other way is still refused. The tool does not check that the contract ignores bytes past its arguments (ERC-2771 forwarders do not); read the source for that.
+- **`discover` works over public RPC endpoints.** Without an Envio token it first asks for each event the contract's ABI declares, by topic, over the contract's whole history, then walks back through logs, and only then scans blocks. `--rpc-url` repeats: endpoints are probed per filter, and the search moves on when one throttles. It stops 45 seconds after the last new fixture, within `--time-limit` (240 s). Each fixture is written as it is found, so an interrupted run keeps them.
+- **Up to three differing calls per function.** `--per-function` defaults to 3; after a function's first fixture, only a call of another shape is taken (native value sent or not, other addresses among its arguments).
+- **`claims` is several times faster.** A fork forgot fetched state on every revert, so each run fetched the transaction's state again; the state is now read once before the snapshot (40 runs of one swap: 33 s to 6.8 s). `--parallel` (3) replays several fixtures at once, a fork that loses its endpoint falls back to the next `--rpc-url`, `--time-limit` (900 s) starts no new fixture after it and lists what was not replayed, `--budget` defaults to 100, one fixture of every function is replayed before a second of any, and a fixture that fails no longer costs the results of the others.
+- **`claims` reports funds a contract keeps once per asset**, led by the argument that leaves most, and no longer says that anyone can take them: it asks the reader to find in the source whether it is a fee taken by design or a balance any caller can take out. The result lists each distinct finding once with its fixtures (`causes`) and counts checked, skipped and failed fixtures separately.
+- **A decisions file may hide a leaf and show byte slices of it** (`data` hidden with a reason, `data.[0:32]` shown and pinned with `mustMatch`); `apply` writes only the slice fields. A slice field answers to its own key, so several slices of one leaf survive a re-apply.
+- **The zero address and `0xEeee…EEeE` are reported as the native sentinel**, not looked up as tokens.
+- **Priors** refreshed at registry `f4905fa` (2026-11-20): 641 descriptors, 1,105 selectors. The validator accepts 601 of the registry's 641 calldata descriptors; the 40 it rejects use the nested `calldata` format (39) or an encrypted field (1). Registry CI pins and schemas are unchanged since 0.6.0-preview.7.
+
+## Upgrade from 0.6.0-preview.7
+
+Nothing to run: renderer, schema and validator subset are unchanged, so reviews and expectations stay valid.
+
+## Install
+
+```sh
+sha256sum --check clear-signing-helper-0.6.0-preview.8.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.6.0-preview.8.tgz
+clear-signing --version
+```
+
+Expected version: `0.6.0-preview.8`. New network use: `discover` also sends read-only `eth_getLogs` and `eth_getTransactionByHash` to the `--rpc-url`s you name. Scope and validation are otherwise as described for 0.6.0-preview.7 below.
+
 # Clear Signing Helper 0.6.0-preview.7 — developer preview
 
 Brings the tool back in step with the registry, which changed its linter, both test runners and the descriptor schema since 0.6.0-preview.6, and ships the checks and fixes that came out of writing twelve top-contract descriptors (all merged except one draft).
