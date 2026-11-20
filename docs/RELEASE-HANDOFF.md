@@ -5,6 +5,17 @@
 - Refresh the advisory registry prior: `npm run priors:snapshot -- <fresh registry clone>` and commit `src/data/registry-priors.json`; its `commit` and `generatedAt` fields are shown to users.
 - Run `npm run registry:acceptance -- <fresh registry clone>` and record the accepted count in CLAUDE.md. Any new rejection class other than the `calldata` format is a regression against what the registry accepts.
 
+## 0.6.0-preview.8 (2026-11-20)
+
+Roadmap item 35 and everything on `main` since preview.7: fixtures from real transactions with trailing bytes, `discover` over public RPC with up to three differing calls per function, faster parallel `claims` with one finding per cause, slice pins in decisions files. Registry pins and schemas are unchanged (drift 7/7 at registry `f4905fa`), so the **engine fingerprint is unchanged** and users run no `upgrade`. Priors at `f4905fa` (641 descriptors, 1,105 selectors); acceptance 601 of 641.
+
+- [x] `npm run release:verify` (suite 98/98, two clean builds) produced `clear-signing-helper-0.6.0-preview.8.tgz`, SHA-256 `c477f206e5bcb3b57748b4806b7e57feaabd36cdd0b783f700ff6356c5c04ea8`.
+- [x] Committed as `754f155`, then published that tarball to npm as [`clear-signing-helper@0.6.0-preview.8`](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.8) with `--tag preview --ignore-scripts --access public`, then moved `latest` to it. Give `npm publish` the path as `./release/…tgz`: without the `./` npm reads `release/<file>` as a GitHub repository. The token came from `~/.config/clear-signing-helper/npmrc-release` via `--userconfig`; the file was deleted after the publish.
+- [x] Pushed `main`, tagged `v0.6.0-preview.8` at `754f155`; CI run [44739180991](https://github.com/portdeveloper/clear-signing-helper/actions/runs/44739180991) (tag) and 44739177660 (push) passed on Node 22.22.3 and 24.20.0, ubuntu-24.04 and macos-15; the tag run's log shows the SHA-256 above four times, once per job. [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.8) with the tarball, checksum and verification record.
+- [x] npm served the tarball about 5 minutes after the publish (404 before that). The registry tarball has the same SHA-256; integrity `sha512-jsuJAtb7yTb2dK/ELiUpVWtVtrc7eHlYLxE36QqMiclmFNXs7Mpm0nLzuzMkqop8LrcvzOAsShvkk3HOau7PFg==`. Both `preview` and `latest` point to it, and from a clean cache `npx --package=clear-signing-helper@0.6.0-preview.8 clear-signing --version` reported `0.6.0-preview.8` and `claims --help` lists `--parallel`.
+- [ ] The npm token used for this release was pasted into the session transcript on 2026-11-20; the owner said it revokes itself. Not checked.
+- Not re-run for this release: the live export against the registry runners (pins unchanged since preview.7), and a blind agent run with the last three changes.
+
 ## 0.6.0-preview.7 (2026-11-10)
 
 Roadmap item 34 plus everything on `main` since preview.6 (item 33's checks, `ifNotIn`, the `claims` fixes). Registry pins and the descriptor schema moved to registry `b021a8d`, so the **engine fingerprint changed**: users run `upgrade`, `review --accept`, `test --update`. Priors at `b021a8d` (616 descriptors, 1,032 selectors); acceptance 576 of 616; `registry:drift` 7 of 7.
