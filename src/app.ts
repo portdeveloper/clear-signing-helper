@@ -462,7 +462,18 @@ export async function checkClaims(state: State, o: {contract: string; rpcUrls: s
   await Promise.all(Array.from({length: Math.min(parallel, Math.max(0, ordered.length - 1))}, async (_, worker) => { while (nextFixture < ordered.length) { const index = nextFixture++; await replay(ordered[index], index, worker); } }));
   results.splice(0, results.length, ...slots.filter((r): r is NonNullable<typeof r> => !!r));
   if (notReplayed.length) o.log(`claims: time limit reached; not replayed: ${notReplayed.join(', ')}`);
-  return {claimsChecked: results.length, results, findings: results.flatMap(r => r.findings), ...(notReplayed.length ? {notReplayed} : {}),
+  // Findings that say the same thing about the same argument in several fixtures are one thing to read in the source.
+  const findings = results.flatMap(r => r.findings), causes: {kind: string; arguments: string[]; claim: string; fixtures: string[]}[] = [];
+  for (const x of findings) {
+    const claim = x.claim.split(' says ')[0], args = x.cases?.map(k => k.argument) ?? (x.argument ? [x.argument] : []);
+    let cause = causes.find(k => k.kind === x.kind && k.claim === claim && (x.kind === 'retained' || k.arguments.join() === args.join()));
+    if (!cause) causes.push(cause = {kind: x.kind, arguments: [], claim, fixtures: []});
+    for (const a of args) if (!cause.arguments.includes(a)) cause.arguments.push(a);
+    const name = path.basename(x.fixture, '.json');
+    if (!cause.fixtures.includes(name)) cause.fixtures.push(name);
+  }
+  const count = (prefix: string) => results.filter(r => r.status.startsWith(prefix)).length;
+  return {claimsChecked: count('checked'), skipped: count('skipped'), failed: count('failed'), results, findings, causes, ...(notReplayed.length ? {notReplayed} : {}),
     note: 'A finding is a run of the real transaction, or of a variation of it, where the call succeeds and a shown amount, limit or recipient is false. Read each against the source: fix the wording, pin the argument with mustMatch, or exclude the function. Fixtures without a txHash are not replayed.'};
 }
 export function fixtureFiles(state: State, ids?: string[]) {

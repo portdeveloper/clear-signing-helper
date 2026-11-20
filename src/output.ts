@@ -57,7 +57,9 @@ function formatHumanOutput(data: any): string {
       ...r.claims.map((c:any)=>`  ${c.claim}: ${c.baseline}`),
       ...r.findings.map((f:any)=>`  FINDING ${f.kind}${f.argument?` ${f.argument}`:''}: ${f.claim}. ${f.message}`)]),
     ...(data.notReplayed?.length ? [`Not replayed (time limit): ${data.notReplayed.join(', ')}`] : []),
-    `\n${data.findings.length} finding(s) in ${data.claimsChecked} fixture(s).`, data.note].join('\n');
+    `\n${data.findings.length} finding(s) in ${data.claimsChecked} fixture(s) checked${data.skipped ? `, ${data.skipped} skipped` : ''}${data.failed ? `, ${data.failed} failed` : ''}${data.causes?.length && data.causes.length < data.findings.length ? `; ${data.causes.length} distinct:` : '.'}`,
+    ...(data.causes?.length && data.causes.length < data.findings.length ? data.causes.map((k:any)=>`  ${k.kind}${k.arguments.length?` ${k.arguments.join(', ')}`:''}: ${k.claim}, in ${k.fixtures.length} fixture(s) (${k.fixtures.join(', ')})`) : []),
+    data.note].join('\n');
   if (data.passed !== undefined) return `${data.passed} signing test(s) passed.${data.updated ? ` ${data.updated} expectation(s) updated.` : ''}`;
   if (data.alreadyCovered !== undefined && Array.isArray(data.missing)) return [
     ...(data.searched ? [`Searched: ${data.searched}`] : []),

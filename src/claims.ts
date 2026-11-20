@@ -35,7 +35,7 @@ export interface Claim {path: string; label: string; kind: ClaimKind; asset: str
 // state: logs and the storage, balance and code writes of the run (prestateTracer diff), when asked for.
 interface Effects {delta: Map<string, Map<string, bigint>>; wrapped: Set<string>; approvals: Map<string, bigint>; state?: string}
 interface Run {ok: boolean; effects?: Effects; error?: string}
-export interface ClaimFinding {fixture: string; signature: string; claim: string; kind: 'baseline' | 'argument' | 'limit' | 'exact' | 'path-tail' | 'retained' | 'ignored'; argument?: string; value?: string; message: string}
+export interface ClaimFinding {fixture: string; signature: string; claim: string; kind: 'baseline' | 'argument' | 'limit' | 'exact' | 'path-tail' | 'retained' | 'ignored'; argument?: string; value?: string; message: string; asset?: string; cases?: {argument: string; value: string; kept: string}[]}
 
 // ---- calldata as a tree: tuples keyed by component name, so descriptor paths read and write it.
 type Tree = any;
@@ -294,10 +294,18 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
       for (const [asset] of outcome.effects!.delta) {
         if (asset !== 'native' && outcome.effects!.wrapped.has(asset)) continue;
         const kept = net(outcome.effects!, asset, to), before = net(base.effects!, asset, to);
-        if (kept > 0n && before <= 0n && !result.findings.some(x => x.kind === 'retained' && x.argument === argument)) {
-          result.findings.push({fixture: file, signature, claim: `funds paid in stay with the contract`, kind: 'retained', argument, value: shown, message: `With ${argument} = ${shown} the call succeeds and ${to} keeps ${kept} of ${asset}, which the real transaction did not leave there; anyone who can sweep the contract can take it.`});
-          found = true;
-        }
+        if (kept <= 0n || before > 0n || result.findings.some(x => x.kind === 'retained' && x.cases!.some(k => k.argument === argument))) continue;
+        // One finding per asset the contract keeps: several arguments usually reach the same line of code (Tycho's
+        // router keeps output above expectedAmountOut, whether that is lowered or amountIn is raised), and the case
+        // that leaves most leads, so a one-wei case does not hide a whole output.
+        let finding = result.findings.find(x => x.kind === 'retained' && x.asset === asset);
+        if (!finding) result.findings.push(finding = {fixture: file, signature, claim: `funds paid in stay with the contract`, kind: 'retained', asset, cases: [], message: ''});
+        const cases = finding.cases!;
+        cases.push({argument, value: shown, kept: String(kept)});
+        cases.sort((a, b) => BigInt(a.kept) === BigInt(b.kept) ? 0 : BigInt(a.kept) > BigInt(b.kept) ? -1 : 1);
+        finding.argument = cases[0].argument; finding.value = cases[0].value;
+        finding.message = `With ${cases[0].argument} = ${cases[0].value} the call succeeds and ${to} keeps ${cases[0].kept} of ${asset}, which the real transaction did not leave there.${cases.length > 1 ? ` Also with ${cases.slice(1).map(k => `${k.argument} = ${k.value} (keeps ${k.kept})`).join(', ')}.` : ''} Nothing on the screen says so. Read in the source where it goes: a fee or surplus the contract takes by design, or a balance any caller can take out through a sweep or refund function.`;
+        found = true;
       }
       return found;
     };

@@ -74,6 +74,9 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
   // A shown array element is explained by its "recipients.[]" field: sending to the swap itself is on screen,
   // not funds the contract keeps (Disperse, registry #3151, gave 8 such findings before).
   assert.deepEqual(hidden.findings.filter(f => f.fixture.endsWith('pay.json')), []);
+  // The summary counts what was checked and names each distinct finding once, with its fixtures.
+  assert.deepEqual([hidden.claimsChecked, hidden.skipped, hidden.failed], [2, 0, 0]);
+  assert.deepEqual(hidden.causes.map(k => [k.kind, k.arguments, k.fixtures]), hidden.findings.map(f => [f.kind, [f.argument], ['buy']]));
 
   write({format: 'raw', visible: {mustMatch: [0]}}, {format: 'raw', visible: 'never'});
   const pinned = await checkClaims(loadState({root}), {contract: id, rpcUrls: [url], budget: 100, log: () => {}});
