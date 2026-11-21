@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import TOML from '@iarna/toml';
-import { AbiCoder, EventFragment, Interface, FunctionFragment, getAddress } from 'ethers';
+import { ParamType, AbiCoder, EventFragment, Interface, FunctionFragment, getAddress } from 'ethers';
 import { loadProject, defaultContracts, deployedContracts, suggestedContracts, getContract, type Project, type Contract } from './foundry.js';
 import { ENGINE, SUPPORTED_FORMATS, normalizePath, scaffoldWithProvenance, scaffoldFormatWithProvenance, enumKeysFor, enumMetadata, signature, parseSignature, leaves, resolveFields, mergeDefinition, joinPath, leafKey, coveredLeaves, validateDescriptor, reviewQuestions, REGISTRY_NAME, errorsOf, warningsOf, type Descriptor, type Selection, type Provenance, type Field, type Group, type ResolvedField } from './descriptors.js';
 import { priorsFor, summarizePrior, registryMatches, buildPriorsIndex, usePriorsIndex, PRIORS_META } from './priors.js';
@@ -355,6 +355,43 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
     try { walk(AbiCoder.defaultAbiCoder().decode(f.inputs, '0x' + tx.data.slice(10), true).toArray(true)); } catch { /* createFixture refuses what does not decode */ }
     return `${BigInt(tx.value) > 0n ? 'value' : 'no value'}|${[...found].sort().join(',')}`;
   };
+  // The newest call is not always a fair example: the last calls before a contract was paused may be the attack
+  // that caused the pause (Tycho Router V3: amounts near 2^256 of a token that is no token). Such a call is set
+  // aside, and becomes a fixture only when the function has no other, marked as unusual.
+  const HUGE = 1n << 255n, MAX = (1n << 256n) - 1n;
+  const oddAmounts = (f: FunctionFragment, tx: {data: string}) => {
+    const odd: string[] = [], walk = (t: ParamType, v: unknown, name: string) => {
+      if (t.baseType === 'tuple') t.components!.forEach((k, i) => walk(k, (v as unknown[])[i], k.name || name));
+      else if (t.baseType === 'array') (v as unknown[]).forEach(x => walk(t.arrayChildren!, x, name));
+      else if (t.type === 'uint256' && typeof v === 'bigint' && v >= HUGE && v !== MAX && maybeAmount(name, t.type)) odd.push(`${name} is ${v}, above 2^255 and not the type's maximum`);
+    };
+    try { const values = AbiCoder.defaultAbiCoder().decode(f.inputs, '0x' + tx.data.slice(10), true).toArray(true); f.inputs.forEach((t, i) => walk(t, values[i], t.name)); } catch { /* createFixture refuses what does not decode */ }
+    return odd;
+  };
+  const aside = new Map<string, {n: {hash: string; blockNumber: number}; transaction: ChainTransaction; reasons: string[]}[]>();
+  const setAside = (selector: string, n: {hash: string; blockNumber: number}, transaction: ChainTransaction, reasons: string[]) => {
+    aside.set(selector, [...(aside.get(selector) ?? []), {n, transaction, reasons}]);
+    passed.set(selector, (passed.get(selector) ?? 0) + 1);
+    o.log(`Set aside ${n.hash} (${bySelector.get(selector)!.name}, block ${n.blockNumber}): ${reasons.join('; ')}`);
+  };
+  const make = async (selector: string, n: {hash: string; blockNumber: number}, transaction: ChainTransaction, shape: string, unusual?: string[]) => {
+    const f = bySelector.get(selector)!, signature = f.format('sighash');
+    const r = createFixture(state, {name: freeName(f.name), contract: c.id, args: '[]', value: '0', local: false, transaction});
+    const entry: Record<string, unknown> = {function: signature, file: r.created, txHash: n.hash, blockNumber: n.blockNumber, ...(r.trailingBytes ? {trailingBytes: r.trailingBytes} : {}), ...(unusual ? {unusual} : {})};
+    // The fixture stands even if its token lookup is throttled; tokens --rpc-url fills it later.
+    let failed = false;
+    try { Object.assign(entry, await fillTokenMetadata(state, r.created, o.rpcUrl)); }
+    catch (e) { if (!(e instanceof Failure)) throw e; failed = true; entry.unresolvedTokens = [`token metadata was not read: ${e.message}`]; }
+    // An amount shown in something that does not answer as a token: not the example to learn the function from.
+    const notTokens = unusual || failed ? [] : ((entry.unresolvedTokens as string[] | undefined) ?? []).filter(x => /did not answer symbol\(\) and decimals\(\)/.test(x));
+    if (notTokens.length) { fs.rmSync(safePath(state.project.root, r.created)); setAside(selector, n, transaction, notTokens.map(x => `an amount is in ${x.split(' ')[0]}, which does not answer as an ERC-20`)); return; }
+    haveTx.add(n.hash.toLowerCase());
+    made.set(selector, (made.get(selector) ?? 0) + 1);
+    shapes.set(selector, (shapes.get(selector) ?? new Set<string>()).add(shape));
+    created.push(entry);
+    if (entry.unresolvedTokens) unresolved.push(r.created);
+    o.log(`Created ${r.created} from ${n.hash} (block ${n.blockNumber})${r.trailingBytes ? `, ${(r.trailingBytes.length - 2) / 2} trailing byte(s) removed` : ''}${entry.unresolvedTokens ? `; unresolved tokens: ${(entry.unresolvedTokens as string[]).join('; ')}` : ''}${unusual ? `; UNUSUAL: ${unusual.join('; ')}` : ''}`);
+  };
   const found = await discoverCalls({chainId, addresses, selectors: [...bySelector.keys()], rpcUrl: o.rpcUrl, logRpcUrls: o.logRpcUrls, token, scanAnyway: !!o.functions?.length,
     eventTopics: new Interface(c.abi).fragments.filter((x): x is EventFragment => x.type === 'event' && !(x as EventFragment).anonymous).map(x => x.topicHash), maxBlocks: o.maxBlocks, logBlocks: o.logBlocks, deadline: Date.now() + o.timeLimit * 1000, log: o.log,
     have: selector => made.get(selector) ?? 0,
@@ -362,29 +399,28 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
     take: async (selector, n) => {
       const f = bySelector.get(selector)!, signature = f.format('sighash');
       if (haveTx.has(n.hash.toLowerCase())) { duplicates.push({function: signature, txHash: n.hash}); return; }
+      if (aside.get(selector)?.some(x => x.n.hash === n.hash)) return;
       try {
         const transaction = await fetchTransaction(o.rpcUrl, n.hash);
         const shape = shapeOf(f, transaction), known = shapes.get(selector) ?? new Set<string>();
         if (known.has(shape)) { passed.set(selector, (passed.get(selector) ?? 0) + 1); return; }
+        const odd = oddAmounts(f, transaction);
+        if (odd.length) { setAside(selector, n, transaction, odd); return; }
         tried.set(selector, (tried.get(selector) ?? 0) + 1);
-        const r = createFixture(state, {name: freeName(f.name), contract: c.id, args: '[]', value: '0', local: false, transaction});
-        haveTx.add(n.hash.toLowerCase());
-        made.set(selector, (made.get(selector) ?? 0) + 1);
-        shapes.set(selector, known.add(shape));
-        const entry: Record<string, unknown> = {function: signature, file: r.created, txHash: n.hash, blockNumber: n.blockNumber, ...(r.trailingBytes ? {trailingBytes: r.trailingBytes} : {})};
-        created.push(entry);
-        // The fixture stands even if its token lookup is throttled; tokens --rpc-url fills it later.
-        try {
-          const metadata = await fillTokenMetadata(state, r.created, o.rpcUrl);
-          Object.assign(entry, metadata);
-          if (metadata.unresolvedTokens?.length) unresolved.push(r.created);
-        } catch (e) { if (!(e instanceof Failure)) throw e; unresolved.push(r.created); entry.unresolvedTokens = [`token metadata was not read: ${e.message}`]; }
-        o.log(`Created ${r.created} from ${n.hash} (block ${n.blockNumber})${r.trailingBytes ? `, ${(r.trailingBytes.length - 2) / 2} trailing byte(s) removed` : ''}${entry.unresolvedTokens ? `; unresolved tokens: ${(entry.unresolvedTokens as string[]).join('; ')}` : ''}`);
+        await make(selector, n, transaction, shape);
       } catch (e) {
         if (!(e instanceof Failure)) throw e;
         refused.push({function: signature, txHash: n.hash, code: e.code, message: e.message});
       }
     }});
+  // A function whose only calls were set aside gets the newest of them, marked; the rest are listed.
+  const setAsideList: {function: string; txHash: string; blockNumber: number; reasons: string[]}[] = [];
+  for (const [selector, list] of aside) {
+    const f = bySelector.get(selector)!;
+    let used: string | undefined;
+    if (!made.get(selector)) try { await make(selector, list[0].n, list[0].transaction, shapeOf(f, list[0].transaction), list[0].reasons); used = list[0].n.hash; } catch (e) { if (!(e instanceof Failure)) throw e; refused.push({function: f.format('sighash'), txHash: list[0].n.hash, code: e.code, message: e.message}); }
+    for (const x of list) if (x.n.hash !== used) setAsideList.push({function: f.format('sighash'), txHash: x.n.hash, blockNumber: x.n.blockNumber, reasons: x.reasons});
+  }
   // Found, but only transactions that are fixtures already: not "never called".
   const unmade = targets.filter(f => !made.get(f.selector.toLowerCase()));
   const onlyKnown = unmade.filter(f => duplicates.some(x => x.function === f.format('sighash'))).map(f => f.format('sighash'));
@@ -393,12 +429,14 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
   // What the search could not read is said, never left to look like "no such call".
   const notes = [
     ...(onlyKnown.length ? [`The only usable calls found for ${onlyKnown.join(', ')} are fixtures already (alreadyFixtures); nothing was copied twice.`] : []),
+    ...(created.some(x => x.unusual) ? [`${created.filter(x => x.unusual).map(x => x.file).join(', ')}: the only call(s) found for the function look unusual (see "unusual"). Look at the transaction before keeping it as a test: it may be an attack or a mistake, not an example.`] : []),
+    ...(setAsideList.length ? [`${setAsideList.length} call(s) were set aside as unusual and not made fixtures (setAside): an amount above 2^255, or an amount in something that is no token. Worth a look: calls like these shortly before a contract was paused or upgraded may be why.`] : []),
     ...(found.logs?.note ? [found.logs.note] : []),
     ...(created.some(x => x.trailingBytes) ? [`${created.filter(x => x.trailingBytes).length} fixture(s) come from transactions that carried bytes after their ABI encoding (integrator tags); those bytes are removed from the calldata and kept as trailingBytes. The exported test says so.`] : []),
     ...(found.unread ? [`${found.unread} block(s) could not be read from ${redactUrl(o.rpcUrl)} (rate limit or node error) and were not searched; run discover again, or use another endpoint.`] : []),
     ...(unresolved.length ? [`Token metadata is incomplete in ${unresolved.join(', ')} (see unresolvedTokens); run tokens --rpc-url <url> to try again, or add the token under "tokens" in the fixture by hand.`] : []),
     ...(created.length && !created.some(x => Object.keys((x as {tokens?: object}).tokens ?? {}).length) ? ['No token metadata was needed for these fixtures as the descriptor stands. If their amounts are still raw (discover run before apply), run tokens --rpc-url <url> once they are tokenAmount.'] : [])];
-  return {source: found.source, searched: found.searched, created, missing, refused, alreadyCovered, ...(duplicates.length ? {alreadyFixtures: duplicates} : {}), ...(notes.length ? {notes} : {}),
+  return {source: found.source, searched: found.searched, created, missing, refused, alreadyCovered, ...(duplicates.length ? {alreadyFixtures: duplicates} : {}), ...(setAsideList.length ? {setAside: setAsideList} : {}), ...(notes.length ? {notes} : {}),
     next: missing.length ? `No successful direct call found for ${missing.join(', ')}: ${found.unread ? 'part of the range was unreadable (see notes); ' : ''}${widen}; encode an example with fixture --function.` : created.length ? 'Preview the new fixtures, then run review --accept and test --update.' : 'Nothing new was found; the existing fixtures stand.'};
 }
 // The claims check (claims.ts): replay each real-transaction fixture of a contract on a local fork of the

@@ -198,3 +198,27 @@ await test('discover without a token finds calls by the logs they left, far beyo
   assert.ok(seen.methods.includes('eth_getLogs')&&!seen.methods.includes('eth_getBlockByNumber'),'no block scan once every function is found');
   assert.equal((await runAsync(root,['discover','--contract',id,'--rpc-url',rpc,'--function','transfer','--time-limit','5'],2)).diagnostics[0].code,'USAGE_ERROR');
 });
+
+// Tycho Router V3 (2026-11): the newest calls of two functions were the suspected attack, amounts near 2^256.
+await test('discover sets a call with an amount above 2^255 aside, and uses it, marked, only when the function has no other',async t=>{
+  const odd=iface.encodeFunctionData('transfer',[other,(1n<<256n)-1000n]), max=iface.encodeFunctionData('transfer',[sender,(1n<<256n)-1n]);
+  const {rpc}=await mockChain(t);
+  logs.on=true;t.after(()=>{logs.on=false;delete txs[h(8)];delete txs[h(9)];});
+  txs[h(9)]={to:token,input:odd,block:990,status:'0x1'};
+  // The type's maximum is the usual "everything" sentinel, not an oddity.
+  txs[h(8)]={to:token,input:max,block:980,status:'0x1'};
+  const {root,id}=project();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const r=(await runAsync(root,['discover','--contract',id,'--rpc-url',rpc,'--max-blocks','20'])).result;
+  assert.deepEqual(r.created.map((x:any)=>[x.txHash,x.unusual]),[[h(8),undefined],[h(1),undefined]]);
+  assert.deepEqual(r.setAside.map((x:any)=>x.txHash),[h(9)]);
+  assert.match(r.setAside[0].reasons[0],/above 2\^255/);
+  assert.match(r.notes.join(' '),/1 call\(s\) were set aside as unusual/);
+  // With no ordinary call, the unusual one is the fixture, and says so.
+  const saved={...txs};for(const k of [h(1),h(2),h(8)]) delete txs[k];t.after(()=>Object.assign(txs,{[h(1)]:saved[h(1)],[h(2)]:saved[h(2)]}));
+  const alone=project();t.after(()=>fs.rmSync(alone.root,{recursive:true,force:true}));
+  const only=(await runAsync(alone.root,['discover','--contract',alone.id,'--rpc-url',rpc,'--max-blocks','20'])).result;
+  assert.deepEqual(only.created.map((x:any)=>x.txHash),[h(9)]);
+  assert.match(only.created[0].unusual[0],/above 2\^255/);
+  assert.equal(only.setAside,undefined);
+  assert.match(only.notes.join(' '),/look unusual/);
+});
