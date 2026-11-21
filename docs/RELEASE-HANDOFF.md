@@ -5,6 +5,18 @@
 - Refresh the advisory registry prior: `npm run priors:snapshot -- <fresh registry clone>` and commit `src/data/registry-priors.json`; its `commit` and `generatedAt` fields are shown to users.
 - Run `npm run registry:acceptance -- <fresh registry clone>` and record the accepted count in CLAUDE.md. Any new rejection class other than the `calldata` format is a regression against what the registry accepts.
 
+## 0.6.0-preview.9 (2026-11-21)
+
+The six defects left open by the blind comparison runs, plus bare `--contract` names: `discover` sets unusual calls aside, a `bytes` signature beside an amount is not a permit, `fixture --args-from` for sibling functions, enums in address mode, `claims` names the fixture that reads an argument another call ignores, Sourcify retries. Registry pins and schemas are unchanged (drift 7/7 at registry `4b7ff1c`), so the **engine fingerprint is unchanged** and users run no `upgrade`. Priors at `4b7ff1c` (641 descriptors, 1,105 selectors); acceptance 601 of 641.
+
+- [x] `npm run release:verify` (suite 102/102, two clean builds) produced `clear-signing-helper-0.6.0-preview.9.tgz`, SHA-256 `b3b7cc6a9af464ed29d5ba5f97f6d334b7b53d4e431db9e55c80bd038c6a2e13`.
+- [x] Committed as `8c38454`, then published that tarball (`./release/…tgz`) to npm as [`clear-signing-helper@0.6.0-preview.9`](https://www.npmjs.com/package/clear-signing-helper/v/0.6.0-preview.9) with `--tag preview --ignore-scripts --access public`, then moved `latest` to it. The token was the one used for preview.8 (the owner said it still worked; `npm whoami` confirmed it), written to `~/.config/clear-signing-helper/npmrc-release` for the publish and deleted after it.
+- [x] Pushed `main`, tagged `v0.6.0-preview.9` at `8c38454`; CI run [44894598775](https://github.com/portdeveloper/clear-signing-helper/actions/runs/44894598775) (tag) and 44894597156 (push) passed on Node 22.22.3 and 24.20.0, ubuntu-24.04 and macos-15; the tag run's log shows the SHA-256 above four times. [GitHub prerelease](https://github.com/portdeveloper/clear-signing-helper/releases/tag/v0.6.0-preview.9) with the tarball, checksum and verification record.
+- [x] The registry tarball has the same SHA-256; integrity `sha512-DEERIUIQ3TQ1eckuPrBWfJKzSWMeUMzgSJt8Fp1YCjaX+sAXdkcclLiRbYx+drX1Mzl1i8H9WkkKN6SZAKrSeQ==`. Both `preview` and `latest` point to it, and from a clean cache `npx --package=clear-signing-helper@0.6.0-preview.9 clear-signing --version` reported `0.6.0-preview.9` and `fixture --help` lists `--args-from`.
+- [x] Live checks before the release, each on a copy of a third-run project: Tycho `discover` (suspect calls set aside), TransitSwap decisions (21 permit hints to 0) and export with three `--args-from` fixtures (lint 0 errors, both runners 12/12), fresh `init --address` of Pendle LimitRouter and TransitSwap (enums wired), Maya `claims` (`readIn` on `depositWithExpiry`).
+- [ ] The npm token is still valid a day after the owner said it revokes itself; it is in the session transcripts of 2026-11-20. Revoke it on npmjs.com.
+- Not done for this release: a blind agent run with these fixes; the Sourcify timeout path (only 503 and a dropped connection are tested).
+
 ## 0.6.0-preview.8 (2026-11-20)
 
 Roadmap item 35 and everything on `main` since preview.7: fixtures from real transactions with trailing bytes, `discover` over public RPC with up to three differing calls per function, faster parallel `claims` with one finding per cause, slice pins in decisions files. Registry pins and schemas are unchanged (drift 7/7 at registry `f4905fa`), so the **engine fingerprint is unchanged** and users run no `upgrade`. Priors at `f4905fa` (641 descriptors, 1,105 selectors); acceptance 601 of 641.
