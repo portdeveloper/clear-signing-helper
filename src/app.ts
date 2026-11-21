@@ -236,12 +236,12 @@ export async function preview(state: State, fixturePath: string): Promise<Render
   throwDiagnostics(errorsOf(validateDescriptor(d,c,selection)));
   return renderFixture(f,d,c);
 }
-export function createFixture(state: State, options: {name:string; contract:string; function?:string; args:string; chainId?:string; to?:string; value:string; from?:string; local:boolean; chainName?:string; nativeCurrency?:string; broadcastTx?:string; transaction?:ChainTransaction}) {
+export function createFixture(state: State, options: {name:string; contract:string; function?:string; args:string; chainId?:string; to?:string; value:string; from?:string; local:boolean; chainName?:string; nativeCurrency?:string; broadcastTx?:string; argsFrom?:string; transaction?:ChainTransaction}) {
   if(!/^[a-zA-Z0-9_-]+$/.test(options.name)) fail('INVALID_NAME','Fixture names may contain letters, digits, hyphens and underscores.',2);
   const c=getContract(state.project,options.contract);
   if(!state.config.contracts.some(s=>s.id===c.id)) fail('CONTRACT_NOT_SELECTED', 'Run init --contract for this contract first.',2);
   const iface=new Interface(c.abi);
-  let data:string, source:string|undefined, txHash:string|undefined, trailingBytes:string|undefined;
+  let data:string, source:string|undefined, txHash:string|undefined, trailingBytes:string|undefined, argsFrom:Fixture['argsFrom'], inherited:Partial<Fixture>={};
   // A real transaction, recorded by a broadcast or fetched with --tx, is copied as sent; only bytes after its ABI encoding are removed, and recorded (--tx).
   const copy=(t:{hash:string;chainId:number;to:string;data:string;value:string;from?:string}, origin:string)=>{
     if(!c.functions.some(f=>f.selector.toLowerCase()===t.data.slice(0,10).toLowerCase())) fail(options.transaction?'TX_SELECTOR_MISMATCH':'BROADCAST_TX_MISMATCH',`Transaction ${t.hash} calls selector ${t.data.slice(0,10)}, which is not a write function of ${c.id}.`,2);
@@ -265,8 +265,29 @@ export function createFixture(state: State, options: {name:string; contract:stri
     const call=state.project.calls.find(x=>x.hash===options.broadcastTx!.toLowerCase());
     if(!call) fail('BROADCAST_TX_NOT_FOUND',`No CALL with hash ${options.broadcastTx} in broadcast records. Available: ${state.project.calls.map(x=>`${x.hash} (${x.function??'?'} on ${x.chainId}:${x.to}, ${x.script})`).join('; ')||'none'}`,2);
     copy(call,call.file);
+  } else if(options.argsFrom) {
+    // A function nobody called directly, with the same argument types as one that was: its example is encoded
+    // from the real call's arguments, value and sender. It is not that transaction, so it carries no txHash.
+    if(!options.function) fail('FIXTURE_ARGUMENTS','--args-from needs --function, the function to encode the example for.',2);
+    if(options.args!=='[]') fail('FIXTURE_ARGUMENTS','--args-from takes the arguments from the named fixture; pass it or --args, not both.',2);
+    const from=`clear-signing/fixtures/${options.argsFrom.replace(/^clear-signing\/fixtures\//,'').replace(/\.json$/,'')}.json`;
+    if(!fs.existsSync(safePath(state.project.root,from))) fail('FIXTURE_NOT_FOUND',`No fixture ${from}.`,2);
+    const src=readJson<Fixture>(safePath(state.project.root,from)); validateFixture(src);
+    if(src.contract!==c.id) fail('ARGS_FROM_MISMATCH',`${from} is a fixture of ${src.contract}, not of ${c.id}.`,2);
+    if(!src.txHash) fail('ARGS_FROM_MISMATCH',`${from} is not a real transaction (it has no txHash), so its arguments are not real ones. Pass --args instead.`,2);
+    const real=decodeCanonical(c,src.data), wanted=iface.getFunction(options.function);
+    if(!wanted||!c.functions.some(f=>f.selector===wanted.selector)) fail('FIXTURE_ARGUMENTS',`${options.function} is not a write function of ${c.id}.`,2);
+    const realFn=iface.getFunction(real.fn.selector)!;
+    if(wanted.selector===realFn.selector) fail('ARGS_FROM_MISMATCH',`${from} already is a call to ${realFn.format('sighash')}.`,2);
+    const types=(f:typeof wanted)=>f.inputs.map(i=>i.type).join(',');
+    if(types(wanted)!==types(realFn)) fail('ARGS_FROM_MISMATCH',`${wanted.format('sighash')} does not take the same argument types as ${realFn.format('sighash')}, the function ${from} calls. Encode it with --args.`,2);
+    if(!wanted.payable&&BigInt(src.value)>0n) fail('ARGS_FROM_MISMATCH',`${from} sends ${src.value} wei and ${wanted.format('sighash')} is not payable.`,2);
+    data=iface.encodeFunctionData(wanted,[...real.decoded]); source=`arguments of ${src.txHash} (${realFn.format('sighash')}) in ${from}`;
+    argsFrom={txHash:src.txHash,function:realFn.format('sighash')};
+    options={...options, chainId:String(src.chainId), to:src.to, value:src.value, from:options.from??src.from};
+    inherited={...(src.chain?{chain:src.chain}:{}), tokens:src.tokens??{}, addressNames:src.addressNames??{}, ...(src.ensNames?{ensNames:src.ensNames}:{}), ...(src.nftCollectionNames?{nftCollectionNames:src.nftCollectionNames}:{}), ...(src.blockTimestamps?{blockTimestamps:src.blockTimestamps}:{})};
   } else {
-    if(!options.function||!options.chainId||!options.to) fail('FIXTURE_ARGUMENTS','--function, --chain-id and --to are required unless --tx or --broadcast-tx is given.',2);
+    if(!options.function||!options.chainId||!options.to) fail('FIXTURE_ARGUMENTS','--function, --chain-id and --to are required unless --tx, --broadcast-tx or --args-from is given.',2);
     try {const args=JSON.parse(options.args); if(!Array.isArray(args)) throw new Error('--args must be a JSON array'); data=iface.encodeFunctionData(options.function,args);} catch(e) {fail('FIXTURE_ARGUMENTS',`Could not encode arguments: ${(e as Error).message}`,2);}
   }
   let chain: Fixture['chain'];
@@ -275,12 +296,12 @@ export function createFixture(state: State, options: {name:string; contract:stri
     if(!options.chainName || !m) fail('FIXTURE_ARGUMENTS','--chain-name and --native-currency SYMBOL:DECIMALS must be given together.',2);
     chain={name:options.chainName, nativeCurrency:{name:m[1], symbol:m[1], decimals:Number(m[2])}};
   }
-  const fixture: Fixture={contract:c.id, chainId:Number(options.chainId), to:options.to!, data:data!, value:options.value, ...(options.from?{from:options.from}:{}), ...(txHash?{txHash}:{}), ...(trailingBytes?{trailingBytes}:{}), ...(options.local?{localBinding:true}:{}), ...(chain?{chain}:{}), tokens:{}, addressNames:{}};
+  const fixture: Fixture={contract:c.id, chainId:Number(options.chainId), to:options.to!, data:data!, value:options.value, ...(options.from?{from:options.from}:{}), ...(txHash?{txHash}:{}), ...(trailingBytes?{trailingBytes}:{}), ...(argsFrom?{argsFrom}:{}), ...(options.local?{localBinding:true}:{}), tokens:{}, addressNames:{}, ...inherited, ...(chain?{chain}:{})};
   validateFixture(fixture);
   const file=`clear-signing/fixtures/${options.name}.json`;
   if(fs.existsSync(safePath(state.project.root,file))) fail('FILE_EXISTS',`Refusing to overwrite ${file}.`,2);
   writeJson(safePath(state.project.root,file),fixture);
-  return {created:file, ...(source?{source}:{}), ...(trailingBytes?{trailingBytes, canonicalized:`The transaction carried ${describeTrailingBytes(trailingBytes)} after its ABI encoding. They are removed from the fixture's calldata and kept as trailingBytes; the exported test says so, and claims replays the transaction as sent.`}:{}), next:`Run preview --fixture ${file}. Add local token metadata and address names to the fixture as needed.`};
+  return {created:file, ...(source?{source}:{}), ...(argsFrom?{argsFrom, encoded:`An encoded example, not a real call: nobody is known to have called ${options.function} with these arguments. Its expected output is what the screen shows for them; whether the call would succeed is not checked, and claims does not replay it. The exported test says so and carries no txHash.`}:{}), ...(trailingBytes?{trailingBytes, canonicalized:`The transaction carried ${describeTrailingBytes(trailingBytes)} after its ABI encoding. They are removed from the fixture's calldata and kept as trailingBytes; the exported test says so, and claims replays the transaction as sent.`}:{}), next:`Run preview --fixture ${file}. Add local token metadata and address names to the fixture as needed.`};
 }
 // Fills a fixture's token metadata from the chain for the tokens its rendering needs and lacks: read-only
 // eth_call against the endpoint the user named. Written values are what the contracts return today.
@@ -436,7 +457,18 @@ export async function discoverFixtures(state: State, o: {contract: string; rpcUr
     ...(found.unread ? [`${found.unread} block(s) could not be read from ${redactUrl(o.rpcUrl)} (rate limit or node error) and were not searched; run discover again, or use another endpoint.`] : []),
     ...(unresolved.length ? [`Token metadata is incomplete in ${unresolved.join(', ')} (see unresolvedTokens); run tokens --rpc-url <url> to try again, or add the token under "tokens" in the fixture by hand.`] : []),
     ...(created.length && !created.some(x => Object.keys((x as {tokens?: object}).tokens ?? {}).length) ? ['No token metadata was needed for these fixtures as the descriptor stands. If their amounts are still raw (discover run before apply), run tokens --rpc-url <url> once they are tokenAmount.'] : [])];
-  return {source: found.source, searched: found.searched, created, missing, refused, alreadyCovered, ...(duplicates.length ? {alreadyFixtures: duplicates} : {}), ...(setAsideList.length ? {setAside: setAsideList} : {}), ...(notes.length ? {notes} : {}),
+  // A function with no call found, whose argument types equal those of a function that has a real fixture:
+  // its example can be encoded from that call's arguments. Suggested, never done unasked: it is not a real call.
+  const typesOf = (f: FunctionFragment) => f.inputs.map(i => i.type).join(',');
+  const realFixtures = fixtureFiles(state, [c.id]).flatMap(file => { const f = readJson<Fixture>(safePath(state.project.root, file)); return f.txHash ? [{file, selector: f.data.slice(0, 10).toLowerCase(), value: BigInt(f.value)}] : []; });
+  const siblings = unmade.flatMap(f => {
+    const like = new Interface(c.abi).fragments.filter((x): x is FunctionFragment => x.type === 'function').filter(x => x.selector !== f.selector && typesOf(x) === typesOf(f) && f.inputs.length > 0);
+    const from = realFixtures.find(r => like.some(x => x.selector.toLowerCase() === r.selector) && (f.payable || r.value === 0n));
+    const name = from?.file.replace(/^clear-signing\/fixtures\//, '').replace(/\.json$/, '');
+    return from ? [{function: f.format('sighash'), sameArgumentsAs: like.find(x => x.selector.toLowerCase() === from.selector)!.format('sighash'), fixture: from.file, command: `fixture --name ${f.name}-from-${name} --contract '${c.id}' --function '${f.format('sighash')}' --args-from ${name}`}] : [];
+  });
+  if (siblings.length) notes.push(`${siblings.map(x => x.function).join(', ')}: no call found, but each takes the same argument types as a function that has a real fixture (siblings). Its example can be encoded from that call's arguments with the command given; the result is marked as an encoded example, not a real call.`);
+  return {source: found.source, searched: found.searched, created, missing, refused, alreadyCovered, ...(siblings.length ? {siblings} : {}), ...(duplicates.length ? {alreadyFixtures: duplicates} : {}), ...(setAsideList.length ? {setAside: setAsideList} : {}), ...(notes.length ? {notes} : {}),
     next: missing.length ? `No successful direct call found for ${missing.join(', ')}: ${found.unread ? 'part of the range was unreadable (see notes); ' : ''}${widen}; encode an example with fixture --function.` : created.length ? 'Preview the new fixtures, then run review --accept and test --update.' : 'Nothing new was found; the existing fixtures stand.'};
 }
 // The claims check (claims.ts): replay each real-transaction fixture of a contract on a local fork of the

@@ -44,7 +44,7 @@ const unreadable=new Set<number>();
 const unreadableReceipts=new Set<string>();
 // Whether the mock node serves eth_getLogs (with an address filter only, as many public endpoints do).
 const logs={on:false};
-function project() {
+function project(describe=['transfer(']) {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-discover-'));
   fs.writeFileSync(path.join(root,'token.abi.json'),JSON.stringify(tokenAbi));
   const created=run(root,['init','--abi','token.abi.json','--name','ClearToken','--owner','Example']).result;
@@ -52,10 +52,10 @@ function project() {
   d.context.contract.deployments=[{chainId:10143,address:token}];
   // A constant no field references, as init leaves behind when an immutable turns out not to be needed.
   d.metadata.constants={spare:other};
-  for(const key of Object.keys(d.display.formats)) if(!key.startsWith('transfer(')) delete d.display.formats[key];
+  for(const key of Object.keys(d.display.formats)) if(!describe.some(x=>key.startsWith(x))) delete d.display.formats[key];
   write(dfile,d);
   const toml=path.join(root,'clear-signing.toml');
-  fs.writeFileSync(toml,fs.readFileSync(toml,'utf8').replace('exclusions = { }','[contracts.exclusions]\n"approve(address,uint256)" = "demo"\n"burn(uint256)" = "demo"\n"mint(address,uint256)" = "demo"\n"transferAdmin(address)" = "demo"\n"transferFrom(address,address,uint256)" = "demo"\n'));
+  fs.writeFileSync(toml,fs.readFileSync(toml,'utf8').replace('exclusions = { }','[contracts.exclusions]\n'+['approve(address,uint256)','burn(uint256)','mint(address,uint256)','transferAdmin(address)','transferFrom(address,address,uint256)'].filter(x=>!describe.some(y=>x.startsWith(y))).map(x=>`"${x}" = "demo"\n`).join('')));
   return {root,id:'clear-signing/abi/ClearToken.json:ClearToken'};
 }
 async function mockChain(t:any) {
@@ -221,4 +221,29 @@ await test('discover sets a call with an amount above 2^255 aside, and uses it, 
   assert.match(only.created[0].unusual[0],/above 2\^255/);
   assert.equal(only.setAside,undefined);
   assert.match(only.notes.join(' '),/look unusual/);
+});
+
+await test('a function nobody called gets an example encoded from the real arguments of a function with the same argument types, marked as such',async t=>{
+  const {root,id}=project(['transfer(','approve(','burn(']);t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const {rpc}=await mockChain(t);
+  const r=(await runAsync(root,['discover','--contract',id,'--rpc-url',rpc,'--max-blocks','200'])).result;
+  assert.deepEqual(r.created.map((x:any)=>x.txHash),[h(1)]);
+  // approve takes (address,uint256) like transfer, which has a real fixture; burn(uint256) does not.
+  assert.deepEqual(r.siblings.map((x:any)=>[x.function,x.sameArgumentsAs,x.fixture]),[['approve(address,uint256)','transfer(address,uint256)',r.created[0].file]]);
+  assert.match(r.notes.join(' '),/same argument types/);
+  const real=read(path.join(root,r.created[0].file));
+  const made=run(root,['fixture',...r.siblings[0].command.split(' ').slice(1).map((x:string)=>x.replace(/^'|'$/g,''))]).result;
+  const f=read(path.join(root,made.created));
+  assert.equal(f.data,iface.encodeFunctionData('approve',[other,2500000n]));
+  assert.deepEqual([f.txHash,f.argsFrom,f.from,f.to,f.value],[undefined,{txHash:h(1),function:'transfer(address,uint256)'},real.from,real.to,real.value]);
+  assert.match(made.encoded,/not a real call/);
+  // Refused: other argument types, the same function, a fixture that is not a real transaction, --args beside it.
+  const refuse=(args:string[])=>run(root,['fixture','--contract',id,...args],2).diagnostics[0].code;
+  assert.equal(refuse(['--name','b','--function','burn','--args-from','transfer']),'ARGS_FROM_MISMATCH');
+  assert.equal(refuse(['--name','b','--function','transfer','--args-from','transfer']),'ARGS_FROM_MISMATCH');
+  assert.equal(refuse(['--name','b','--function','transfer','--args-from',path.basename(made.created,'.json')]),'ARGS_FROM_MISMATCH');
+  assert.equal(refuse(['--name','b','--function','approve','--args-from','transfer','--args','[1]']),'FIXTURE_ARGUMENTS');
+  // A fixture cannot claim both to be a transaction and to borrow one's arguments.
+  write(path.join(root,made.created),{...f,txHash:h(1)});
+  assert.equal(run(root,['preview','--fixture',made.created],1).diagnostics[0].code,'INVALID_FIXTURE');
 });

@@ -13,6 +13,9 @@ export interface Fixture {
   // Bytes the real transaction carried after its ABI encoding (an integrator tag, a referral code), removed
   // from `data` so the fixture stays canonical. Only with txHash; `data` + these bytes is what was sent.
   trailingBytes?: string;
+  // An encoded example, not a real call: its arguments, value and sender are those of this real transaction,
+  // which called `function`, a function with the same argument types. Never with txHash.
+  argsFrom?: {txHash: string; function: string};
   localBinding?: boolean;
   // Local metadata only. Nothing is fetched. Keys are addresses; block heights are decimal strings.
   chain?: {name: string; nativeCurrency: {name: string; symbol: string; decimals: number}};
@@ -28,7 +31,7 @@ export interface Rendering {
 }
 export function validateFixture(f: Fixture) {
   assertTreeBudget(f);
-  assertKeys(f, ['contract', 'chainId', 'to', 'data', 'value', 'from', 'txHash', 'trailingBytes', 'localBinding', 'chain', 'tokens', 'addressNames', 'ensNames', 'nftCollectionNames', 'blockTimestamps'], 'fixture');
+  assertKeys(f, ['contract', 'chainId', 'to', 'data', 'value', 'from', 'txHash', 'trailingBytes', 'argsFrom', 'localBinding', 'chain', 'tokens', 'addressNames', 'ensNames', 'nftCollectionNames', 'blockTimestamps'], 'fixture');
   if (typeof f.contract !== 'string') fail('INVALID_FIXTURE', 'fixture.contract must be a source:contract identity.');
   if (!Number.isSafeInteger(f.chainId) || f.chainId <= 0) fail('INVALID_FIXTURE', 'chainId must be a positive safe integer.');
   if (typeof f.to !== 'string' || !isAddress(f.to) || (f.from !== undefined && !isAddress(f.from))) fail('INVALID_FIXTURE', 'to/from must be valid EVM addresses.');
@@ -36,6 +39,10 @@ export function validateFixture(f: Fixture) {
   if (typeof f.value !== 'string' || !/^(0|[1-9][0-9]*)$/.test(f.value) || f.value.length > 78 || BigInt(f.value) >= 2n**256n) fail('INVALID_FIXTURE', 'value must be a decimal uint256 string in wei.');
   if (f.txHash !== undefined && (typeof f.txHash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(f.txHash))) fail('INVALID_FIXTURE', 'txHash must be a 32-byte transaction hash.');
   if (f.trailingBytes !== undefined && (typeof f.trailingBytes !== 'string' || !/^0x(?:[0-9a-fA-F]{2})+$/.test(f.trailingBytes) || f.trailingBytes.length > 131074 || !f.txHash)) fail('INVALID_FIXTURE', 'trailingBytes must be non-empty even-length hex and needs the txHash of the transaction that carried them.');
+  if (f.argsFrom !== undefined) {
+    assertKeys(f.argsFrom, ['txHash', 'function'], 'argsFrom');
+    if (f.txHash !== undefined || typeof f.argsFrom.txHash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(f.argsFrom.txHash) || typeof f.argsFrom.function !== 'string' || !f.argsFrom.function || f.argsFrom.function.length > 4096) fail('INVALID_FIXTURE', 'argsFrom names the real transaction (txHash) and the function it called, and cannot be combined with txHash: the fixture is not that transaction.');
+  }
   if (f.localBinding !== undefined && typeof f.localBinding !== 'boolean') fail('INVALID_FIXTURE', 'localBinding must be a boolean.');
   if (f.tokens !== undefined) {
     assertKeys(f.tokens, Object.keys(f.tokens ?? {}), 'tokens');

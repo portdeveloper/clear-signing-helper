@@ -68,6 +68,7 @@ program.command('fixture').description('Encode an example transaction from the c
   .option('--tx <hash>','Copy a mined transaction sent to this contract: chain, target, calldata, value and sender (with --rpc-url)')
   .option('--rpc-url <url>','Read-only endpoint: with --tx the transaction is read from it; the fixture\'s missing token metadata (symbol, decimals, name) is read from it too')
   .option('--broadcast-tx <hash>','Take chain, target, calldata and value from a recorded broadcast transaction')
+  .option('--args-from <fixture>','Encode --function from the arguments, value and sender of a real-transaction fixture whose function takes the same argument types; the result is marked as an encoded example')
   .option('--value <wei>','Native transaction value in wei','0')
   .option('--from <address>','Sender for @.from fields')
   .option('--chain-name <name>','Chain display name for amount/chainId formats (with --native-currency)')
@@ -75,6 +76,7 @@ program.command('fixture').description('Encode an example transaction from the c
   .option('--local','Use an explicit undeployed draft binding')
   .action(async options=>{
     if(options.tx&&options.broadcastTx) throw new Failure('USAGE_ERROR','--tx and --broadcast-tx both name the transaction; pass one.',2);
+    if(options.argsFrom&&(options.tx||options.broadcastTx)) throw new Failure('USAGE_ERROR','--args-from encodes an example from a fixture; --tx and --broadcast-tx copy a transaction. Pass one.',2);
     if(options.tx&&!options.rpcUrl) throw new Failure('USAGE_ERROR','--tx needs --rpc-url to read the transaction from.',2);
     // Load the project before the network call, so a wrong --root or contract fails without one.
     const s=state(options), transaction=options.tx?await fetchTransaction(options.rpcUrl,options.tx):undefined;
