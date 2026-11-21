@@ -66,7 +66,7 @@ export function loadAbiProject(root: string): Project {
     if (source) assertKeys(source, ['source', 'importedAt', 'origin', 'chainId', 'address', 'match', 'url', 'proxy', 'userdoc', 'devdoc', 'immutables', 'sourceDir'], `${path.relative(root, sidecarFile)}`);
     const iface = new Interface(abi);
     const functions = iface.fragments.filter((f): f is FunctionFragment => f.type === 'function' && !['view', 'pure'].includes((f as FunctionFragment).stateMutability));
-    contracts.push({id: abiContractId(name), name, source: `${ABI_DIR}/${name}.json`, artifact: file, abi, functions: functions.sort((a, b) => a.format().localeCompare(b.format())), special: abi.filter((x: any) => ['fallback', 'receive'].includes(x.type)).map((x: any) => `${x.type}()`), metadata: {}, immutables: source?.immutables, userdoc: source?.userdoc, devdoc: source?.devdoc});
+    contracts.push({id: abiContractId(name), name, source: `${ABI_DIR}/${name}.json`, artifact: file, abi, functions: functions.sort((a, b) => a.format().localeCompare(b.format())), special: abi.filter((x: any) => ['fallback', 'receive'].includes(x.type)).map((x: any) => `${x.type}()`), metadata: {}, immutables: source?.immutables, sourceDir: source?.sourceDir, userdoc: source?.userdoc, devdoc: source?.devdoc});
     // A verified-source import binds the address it was fetched for; the proxy address when there is one.
     if (source?.chainId && source.address && isAddress(source.address)) deployments.push({chainId: source.chainId, contractName: name, address: getAddress(source.address), arguments: null, script: source.source, file: path.relative(root, sidecarFile)});
   }

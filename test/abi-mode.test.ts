@@ -504,3 +504,33 @@ await test('decisions: a leaf hidden as a whole with one byte slice of it shown 
   const checked=run(root,['check','--contract',id],1);
   assert.ok(!JSON.stringify(checked).includes('HIDDEN_AND_DISPLAYED'));
 });
+
+await test('init --address makes an enum argument an enum format when the verified ABI names the type and the saved source defines it',async t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const vault='0x7777777777777777777777777777777777777777';
+  const input=(name:string,internalType:string,type='uint8')=>({name,type,internalType});
+  const abi=[
+    {type:'function',name:'place',stateMutability:'nonpayable',outputs:[],inputs:[{name:'order',type:'tuple',internalType:'struct Vault.Order',components:[input('side','enum Types.Side'),input('amount','uint256','uint256')]},input('modes','enum Mode[]','uint8[]')]},
+    {type:'function',name:'clash',stateMutability:'nonpayable',outputs:[],inputs:[input('kind','enum Vault.Kind')]},
+    {type:'function',name:'gone',stateMutability:'nonpayable',outputs:[],inputs:[input('level','enum Vault.Level')]}];
+  // Side is in a library, Mode at file level; a comment and a string that look like definitions are not read.
+  // Kind is defined twice in Vault's scope name with different members (two files), so it is not adopted; Level is nowhere.
+  const sources={'src/Types.sol':{content:'// enum Side { WRONG }\nlibrary Types { enum Side { Buy, Sell } }\nenum Mode { Fast, /* enum Mode { X } */ Slow }\n'},
+    'src/Vault.sol':{content:'contract Vault { string s = "enum Mode { Y }"; enum Kind { A, B } function place() external {} }\n'},
+    'lib/Other.sol':{content:'contract Vault { enum Kind { B, A } }\n'}};
+  const server=createServer((req,res)=>{
+    const url=new URL(req.url!,'http://x');res.writeHead(200,{'content-type':'application/json'});
+    if(url.pathname===`/v2/contract/10143/${vault}`) return res.end(JSON.stringify({match:'exact_match',chainId:'10143',address:vault,abi,sources,compilation:{name:'Vault'}}));
+    res.writeHead(404);res.end(JSON.stringify({match:null}));
+  });
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>server.close());
+  const env={CLEAR_SIGNING_SOURCIFY_URL:`http://127.0.0.1:${(server.address() as any).port}`,ETHERSCAN_API_KEY:''};
+  const created=(await runAsync(root,['init','--address',vault,'--chain-id','10143','--owner','Example'],0,env)).result;
+  const d=read(path.join(root,created.contracts[0].descriptor));
+  assert.deepEqual(d.metadata.enums,{Side:{'0':'Buy','1':'Sell'},Mode:{'0':'Fast','1':'Slow'}});
+  const text=JSON.stringify(d.display.formats);
+  assert.match(text,/"\$ref":"\$\.metadata\.enums\.Side"/);assert.match(text,/"\$ref":"\$\.metadata\.enums\.Mode"/);
+  const p=created.provenance.filter((x:any)=>/^enum /.test(x.detail));
+  assert.deepEqual(p.map((x:any)=>[x.source,x.path]).sort(),[['verified','modes.[]'],['verified','order.side']]);
+  assert.match(p[0].detail,/type from the verified ABI, members from the verified source/);
+});

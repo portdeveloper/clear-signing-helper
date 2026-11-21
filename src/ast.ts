@@ -1,7 +1,7 @@
 // Read-only view over solc ASTs emitted by `forge build --ast`. Node ids are unique across one
 // compilation, so a single id map spans every artifact of the build.
 export interface AstIndex { nodes: Map<number, any>; contracts: any[] }
-export interface EnumLeaf { path: string; canonicalName: string; members: string[] }
+export interface EnumLeaf { path: string; canonicalName: string; members: string[]; kind?: 'verified' }
 export interface ConstructorBinding { name: string; paramIndex: number; typeString: string }
 export interface AddressConstant { name: string; value: string }
 

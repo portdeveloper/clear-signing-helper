@@ -1,4 +1,6 @@
-import { getAddress, isAddress } from 'ethers';
+import path from 'node:path';
+import { FunctionFragment, getAddress, isAddress } from 'ethers';
+import { definitionsIn, enumLeavesFromAbi } from './source-enums.js';
 import type { Contract, Project } from './foundry.js';
 import { deployedContracts } from './foundry.js';
 import { indexAsts, findContract, findFunction, enumLeaves, constructorBindings, addressConstants, type EnumLeaf } from './ast.js';
@@ -42,6 +44,15 @@ export function gatherEvidence(project: Project, c: Contract): Evidence {
       const values = deployments.map(d => d.arguments?.[b.paramIndex]).filter((v): v is string => typeof v === 'string' && isAddress(v)).map(v => getAddress(v));
       // A constant must hold for every bound deployment; differing values stay a human decision.
       if (values.length && values.length === deployments.length && new Set(values.map(v => v.toLowerCase())).size === 1) constants[b.name] = {value: values[0], source: `constructor argument ${b.paramIndex} in ${deployments.map(d => d.file).join(', ')}`};
+    }
+  }
+  // Address mode: enum arguments named by the verified ABI and defined in the saved verified source (source-enums.ts).
+  if (!node && c.sourceDir && /^[A-Za-z0-9_./-]+$/.test(c.sourceDir) && !c.sourceDir.split('/').includes('..')) {
+    const definitions = definitionsIn(path.join(project.root, c.sourceDir));
+    if (definitions.length) for (const f of c.functions) {
+      const entry = c.abi.find((x: any) => x.type === 'function' && FunctionFragment.from(x).selector === f.selector);
+      const leaves = entry ? enumLeavesFromAbi(entry.inputs ?? [], definitions) : [];
+      if (leaves.length) enums[f.format('sighash')] = leaves;
     }
   }
   // Address mode: immutables named from the verified record (see immutables.ts). They hold for every call to this deployment.

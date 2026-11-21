@@ -207,7 +207,7 @@ export function scaffoldFormatWithProvenance(f: FunctionFragment, evidence?: Evi
   const enumsHere = new Map((evidence?.enums[sig] ?? []).map(e => [e.path, e]));
   for (const r of resolveFields(built)) {
     const e = r.key ? enumsHere.get(r.key) : undefined, key = e && enumKeys.get(e.canonicalName);
-    if (e && key) { r.source.format = 'enum'; r.source.params = {$ref: `$.metadata.enums.${key}`}; provenance.push({signature: sig, path: r.key, source: 'ast', detail: `enum ${e.canonicalName} with members ${e.members.join(', ')}`}); }
+    if (e && key) { r.source.format = 'enum'; r.source.params = {$ref: `$.metadata.enums.${key}`}; provenance.push({signature: sig, path: r.key, source: e.kind === 'verified' ? 'verified' : 'ast', detail: `enum ${e.canonicalName} with members ${e.members.join(', ')}${e.kind === 'verified' ? ' (type from the verified ABI, members from the verified source)' : ''}`}); }
   }
   // Advisory: what other registry descriptors do with this selector. Reported, never applied.
   const priors = priorsFor(f.selector);
