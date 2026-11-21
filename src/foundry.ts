@@ -131,8 +131,16 @@ export function suggestedContracts(project: Project, selected: Contract[]) {
   }
   return [...suggestions.values()];
 }
+// A contract is named by its full identity (path:Name). Its bare name is accepted when exactly one contract in
+// the project has it; with several, the choice is refused rather than guessed.
+export function resolveContractId(project: Project, id: string): string {
+  if (project.contracts.some(c => c.id === id)) return id;
+  const named = project.contracts.filter(c => c.name === id);
+  if (named.length === 1) return named[0].id;
+  if (named.length > 1) fail('CONTRACT_AMBIGUOUS', `${id} names ${named.length} contracts; pass one of: ${named.map(c => c.id).join(', ')}`, 2);
+  return fail('CONTRACT_NOT_FOUND', `${id} is not a deployable compiled contract. Available: ${project.contracts.map(c => c.id).join(', ')}`, 2);
+}
 export function getContract(project: Project, id: string) {
-  const contract = project.contracts.find(c => c.id === id);
-  if (!contract) fail('CONTRACT_NOT_FOUND', `${id} is not a deployable compiled contract. Available: ${project.contracts.map(c => c.id).join(', ')}`, 2);
-  return contract;
+  const full = resolveContractId(project, id);
+  return project.contracts.find(c => c.id === full)!;
 }

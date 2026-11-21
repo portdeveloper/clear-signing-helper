@@ -1,6 +1,7 @@
 import { Command, CommanderError, Option } from 'commander';
 import { init, loadState, check, review, sync, preview, createFixture, fillTokenMetadata, fillTokens, discoverFixtures, runTests, checkClaims, exportBundle, upgrade, writeDecisions, applyDecisions } from './app.js';
 import { Failure } from './io.js';
+import { resolveContractId } from './foundry.js';
 import { servePreview } from './preview.js';
 import { displayText, humanOutput } from './output.js';
 import { addDeployment } from './registry-edit.js';
@@ -25,7 +26,12 @@ const output=(data:unknown)=>{if(program.opts().json)process.stdout.write(JSON.s
 // Progress for slow, opt-in steps (runner builds) goes to stderr so --json stdout stays clean.
 const progress=(line:string)=>{process.stderr.write(displayText(line)+'\n');};
 const select=(value:string,previous:string[])=>[...previous,value];
-const state=()=>loadState(program.opts());
+// Loads the project and, given a command's options, replaces a bare contract name in --contract by its full
+// identity, so every command accepts either. Call it before reading options.contract.
+const state=(options?:{contract?:string|string[]})=>{const loaded=loadState(program.opts());
+  if(typeof options?.contract==='string')options.contract=resolveContractId(loaded.project,options.contract);
+  else if(Array.isArray(options?.contract))options.contract=options.contract.map(id=>resolveContractId(loaded.project,id));
+  return loaded;};
 program.command('init').description('Discover contracts and create drafts without overwriting authoring')
   .option('--contract <path:name>','Select a compiled contract (repeatable)',select,[])
   .option('--owner <name>','Project owner label')
@@ -40,18 +46,18 @@ program.command('sync').description('Add newly introduced functions while preser
 program.command('decisions').description('Write the judgment slots for one contract (intents, denominations, show/hide, exclude) as a file to fill')
   .requiredOption('--contract <path:name>','Selected contract identity')
   .option('--out <file>','Output path (default clear-signing/decisions/<Name>.json)')
-  .action(options=>output(writeDecisions(state(),options.contract,options.out)));
+  .action(options=>output(writeDecisions(state(options),options.contract,options.out)));
 program.command('apply').description('Write descriptor, exclusions and hidden reasons from a filled decisions file; validates first, records who decided')
   .requiredOption('--decisions <file>','Decisions file written by the decisions command')
   .action(options=>output(applyDecisions(state(),options.decisions)));
 program.command('check').description('Check schema, ABI coverage, and review freshness')
   .option('--contract <path:name>','Check only this selected contract (repeatable)',select,[])
   .option('--strict-portability','Fail on known consumer compatibility issues; does not certify wallet support')
-  .action(options=>output(check(state(),options.strictPortability===true,options.contract)));
+  .action(options=>output(check(state(options),options.strictPortability===true,options.contract)));
 program.command('review').description('Record developer review of the current source and descriptors')
   .option('--contract <path:name>','Review a selected contract (repeatable)',select,[])
   .option('--accept','Acknowledge that you inspected source changes, labels, units and field visibility')
-  .action(options=>output(review(state(),options.contract,options.accept===true)));
+  .action(options=>output(review(state(options),options.contract,options.accept===true)));
 program.command('fixture').description('Encode an example transaction from the compiled ABI')
   .requiredOption('--name <name>','Fixture filename without .json')
   .requiredOption('--contract <path:name>','Selected contract identity')
@@ -71,7 +77,7 @@ program.command('fixture').description('Encode an example transaction from the c
     if(options.tx&&options.broadcastTx) throw new Failure('USAGE_ERROR','--tx and --broadcast-tx both name the transaction; pass one.',2);
     if(options.tx&&!options.rpcUrl) throw new Failure('USAGE_ERROR','--tx needs --rpc-url to read the transaction from.',2);
     // Load the project before the network call, so a wrong --root or contract fails without one.
-    const s=state(), transaction=options.tx?await fetchTransaction(options.rpcUrl,options.tx):undefined;
+    const s=state(options), transaction=options.tx?await fetchTransaction(options.rpcUrl,options.tx):undefined;
     const created=createFixture(s,{...options,local:options.local===true,transaction});
     output(options.rpcUrl?{...created,...await fillTokenMetadata(s,created.created,options.rpcUrl)}:created);
   });
@@ -84,12 +90,12 @@ program.command('discover').description('Find real transactions sent to a contra
   .option('--log-blocks <n>','Without ENVIO_API_TOKEN: how far back the log search (eth_getLogs) looks for calls that left a log at the contract','500000')
   .option('--time-limit <seconds>','Without ENVIO_API_TOKEN: stop searching after this long and report what was found; fixtures are written as they are found','240')
   .option('--max-blocks <n>','Without ENVIO_API_TOKEN: how many recent blocks are scanned in full for calls the log search cannot see','3000')
-  .action(async options=>output(await discoverFixtures(state(),{contract:options.contract,rpcUrl:options.rpcUrl[0],logRpcUrls:options.rpcUrl.slice(1),chainId:options.chainId,functions:options.function,perFunction:Number(options.perFunction),maxBlocks:Number(options.maxBlocks),logBlocks:Number(options.logBlocks),timeLimit:Number(options.timeLimit),log:progress})));
+  .action(async options=>output(await discoverFixtures(state(options),{contract:options.contract,rpcUrl:options.rpcUrl[0],logRpcUrls:options.rpcUrl.slice(1),chainId:options.chainId,functions:options.function,perFunction:Number(options.perFunction),maxBlocks:Number(options.maxBlocks),logBlocks:Number(options.logBlocks),timeLimit:Number(options.timeLimit),log:progress})));
 program.command('tokens').description('Fill missing token metadata (symbol, decimals, name) in existing fixtures, for the tokens their renderings need')
   .requiredOption('--rpc-url <url>','Read-only endpoint for the fixtures\' chain')
   .option('--contract <path:name>','Only fixtures of this selected contract (repeatable)',select,[])
   .option('--fixture <path>','Only this fixture, relative to the project root (repeatable)',select,[])
-  .action(async options=>output(await fillTokens(state(),{rpcUrl:options.rpcUrl,contracts:options.contract,fixtures:options.fixture})));
+  .action(async options=>output(await fillTokens(state(options),{rpcUrl:options.rpcUrl,contracts:options.contract,fixtures:options.fixture})));
 program.command('preview').description('Render one transaction fixture locally')
   .requiredOption('--fixture <path>','Fixture path relative to the project root')
   .option('--open','Serve on loopback and open a browser')
@@ -102,7 +108,7 @@ program.command('preview').description('Render one transaction fixture locally')
 program.command('test').description('Compare fixture renderings against checked-in expectations')
   .option('--contract <path:name>','Test only fixtures of this selected contract (repeatable)',select,[])
   .option('--update','Explicitly accept current renderings as expectations')
-  .action(async options=>{const r=await runTests(state(),options.update===true,options.contract);output({passed:r.passed,updated:r.updated});});
+  .action(async options=>{const r=await runTests(state(options),options.update===true,options.contract);output({passed:r.passed,updated:r.updated});});
 program.command('claims').description('Replay real-transaction fixtures on a local anvil fork and test each shown amount, limit and recipient against what the call does, also with hidden or raw arguments varied; writes nothing')
   .requiredOption('--contract <path:name>','Selected contract identity')
   .option('--rpc-url <url>','Endpoint for the fork; it must serve state at each fixture\'s block (an archive node for older transactions). Repeat it to name fallbacks, tried in order when an endpoint throttles or times out',select,[])
@@ -110,7 +116,7 @@ program.command('claims').description('Replay real-transaction fixtures on a loc
   .option('--budget <n>','Most calls to simulate per fixture','100')
   .option('--parallel <n>','Fixtures replayed at once, each on its own fork, 1 to 8','3')
   .option('--time-limit <seconds>','Start no new fixture after this long; fixtures not replayed are listed (one fixture of each function goes first)','900')
-  .action(async options=>output(await checkClaims(state(),{contract:options.contract,rpcUrls:options.rpcUrl,fixtures:options.fixture,budget:Number(options.budget),timeLimit:Number(options.timeLimit),parallel:Number(options.parallel),log:progress})));
+  .action(async options=>output(await checkClaims(state(options),{contract:options.contract,rpcUrls:options.rpcUrl,fixtures:options.fixture,budget:Number(options.budget),timeLimit:Number(options.timeLimit),parallel:Number(options.parallel),log:progress})));
 program.command('export').description('Validate and write a submission bundle; does not publish')
   .requiredOption('--out <directory>','New output directory inside the project')
   .option('--contract <path:name>','Export only this selected contract and its fixtures (repeatable)',select,[])
@@ -124,7 +130,7 @@ program.command('export').description('Validate and write a submission bundle; d
   .option('--registry <directory>','Read the erc7730 package, lint flags and runner revisions from this registry clone\'s CI definition instead of the built-in pins (nothing is written to the clone)')
   .addOption(new Option('--ci-pins <directory>','Former name of --registry').hideHelp())
   .action(async options=>{if(options.inlineAbi) throw new Failure('USAGE_ERROR','--inline-abi was removed: registry lint fails a v2 descriptor that sets context.contract.abi (ethereum/clear-signing-erc7730-registry#3128). Lint reads the ABI from the Sourcify-verified deployment instead.',2);
-    output(await exportBundle(state(),options.out,options.strictPortability===true,options.contract,{entity:options.entity,lint:options.lint!==false,registryRunners:options.registryRunners===true,skipRegistryRunners:options.skipRegistryRunners,acceptRunnerFailure:options.acceptRunnerFailure,ciPins:registryClone(options),log:progress}));});
+    output(await exportBundle(state(options),options.out,options.strictPortability===true,options.contract,{entity:options.entity,lint:options.lint!==false,registryRunners:options.registryRunners===true,skipRegistryRunners:options.skipRegistryRunners,acceptRunnerFailure:options.acceptRunnerFailure,ciPins:registryClone(options),log:progress}));});
 const registry=program.command('registry').description('Edit an existing registry clone; never commits or opens pull requests');
 registry.command('add-deployment').description('Add a verified deployment (and a rendered test case) to a descriptor already in the registry')
   .requiredOption('--registry <directory>','Path to a clone of ethereum/clear-signing-erc7730-registry')

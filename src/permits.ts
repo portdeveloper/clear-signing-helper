@@ -6,6 +6,8 @@
 // the same transaction. Permit2's `expiration` is, because the approval outlives the call. Detection is by
 // argument names and types, so it is a heuristic that only ever warns. Measured on registry 2c2ddeb: it flags
 // 7 fields in 3 files (Lido and Morpho permits hiding the approved value) and nothing that is not a permit.
+// Narrowed on 2026-11-21 (registry f4905fa): a bytes signature beside an amount alone matched 13 registry
+// functions, 9 of them not permits; it now matches the 4 that are (one permit, three EIP-3009 authorizations).
 export interface PermitGrant {path: string; what: string}
 export interface PermitInfo {kind: 'split signature' | 'signature bytes' | 'Permit2'; signature: string[]; grants: PermitGrant[]}
 type Leaf = {path: string; type: string};
@@ -34,7 +36,8 @@ export function permitOf(leaves: Leaf[]): PermitInfo | undefined {
   if (permit2Roots.size) {
     const roots = new Set([...permit2Roots, ...leaves.map(l => top(l.path)).filter(t => /^transferDetails$/i.test(t))]);
     const grants = leaves.filter(l => roots.has(top(l.path)) && PERMIT2[nameOf(l.path)]).map(l => ({path: l.path, what: PERMIT2[nameOf(l.path)]}));
-    const signature = leaves.filter(l => l.type === 'bytes' && /sig/i.test(nameOf(l.path))).map(l => l.path);
+    // The permit's signature is a top-level argument or sits in the permit; a signature in another struct (a fee or quote signature) is not it.
+    const signature = leaves.filter(l => l.type === 'bytes' && /sig/i.test(nameOf(l.path)) && (!l.path.includes('.') || roots.has(top(l.path)))).map(l => l.path);
     return {kind: 'Permit2', signature, grants};
   }
   // Split signature: v, r and s side by side; what it grants sits next to them.
@@ -44,12 +47,16 @@ export function permitOf(leaves: Leaf[]): PermitInfo | undefined {
       return {kind: 'split signature', signature: [`${p}v`, `${p}r`, `${p}s`], grants: siblings(leaves, p)};
     }
   }
-  // A signature as bytes counts only with an amount, unlimited flag or spender beside it: signed quotes,
-  // sessions and intents also carry a signature, and a token alone does not make one a permit.
+  // A signature as bytes counts only with a spender or an unlimited flag beside it, or as an EIP-3009
+  // authorization (validAfter and validBefore beside it). An amount alone does not make one a permit: signed
+  // quotes, fee discounts, orders, sessions and multisig executions carry a signature next to an amount too
+  // (TransitSwap's swap structs, 1inch fillContractOrder, Safe execTransaction, Gondi loan offers).
   for (const l of leaves) {
     if (l.type !== 'bytes' || !/signature|^sig$|permitSig/i.test(nameOf(l.path))) continue;
-    const grants = siblings(leaves, parentOf(l.path));
-    if (grants.some(g => g.what !== 'token')) return {kind: 'signature bytes', signature: [l.path], grants};
+    const p = parentOf(l.path), grants = siblings(leaves, p);
+    const approval = grants.some(g => g.what === 'spender' || g.what === 'unlimited approval flag');
+    const authorization = at.has(`${p}validAfter`) && at.has(`${p}validBefore`) && grants.some(g => g.what === 'approved amount');
+    if (approval || authorization) return {kind: 'signature bytes', signature: [l.path], grants};
   }
   return undefined;
 }

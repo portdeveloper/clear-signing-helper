@@ -44,6 +44,15 @@ await test('signatures that are not token permits are left alone',()=>{
   assert.equal(of('startBridge((address receiver,uint256 deadline,bytes signature) data)'),undefined);
   assert.equal(of('castVoteBySig(uint256 proposalId,uint8 support,uint8 v,bytes32 r,bytes32 s)')?.grants.length,0);
   assert.equal(of('revokeSessionBySig(address session,uint256 deadline,bytes signature)'),undefined);
+  // A swap struct with a fee-discount signature beside its amount (TransitSwap), an order fill, a multisig execution.
+  assert.equal(of('aggregate((address srcToken,address dstToken,address dstReceiver,uint256 amount,uint256 minReturnAmount,uint256 fee,string channel,bytes signature) desc)'),undefined);
+  assert.equal(of('fillContractOrder((uint256 salt,uint256 maker,uint256 makingAmount) order,bytes signature,uint256 amount,uint256 takerTraits)'),undefined);
+  assert.equal(of('execTransaction(address to,uint256 value,bytes data,bytes signatures)'),undefined);
+  // A permit and an EIP-3009 authorization with the signature as bytes still count.
+  assert.deepEqual(of('permit(address owner_,address spender,uint256 value,uint256 deadline,bytes signature)')?.grants.map(g=>g.path),['spender','value']);
+  assert.deepEqual(of('transferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce,bytes signature)')?.grants.map(g=>g.path),['value']);
+  // Permit2 beside a fee signature in another struct (Tycho): only the permit's own signature is the permit signature.
+  assert.deepEqual(of('swapPermit2(uint256 amountIn,(uint32 clientFeeBps,bytes clientSignature) clientFeeParams,((address token,uint160 amount,uint48 expiration,uint48 nonce) details,address spender,uint256 sigDeadline) permitSingle,bytes signature)')?.signature,['signature']);
   // A Lido-style permit struct: value is a grant, the signature's own deadline is not.
   assert.deepEqual(of('requestWithdrawalsWithPermit(uint256[] _amounts,address _owner,(uint256 value,uint256 deadline,uint8 v,bytes32 r,bytes32 s) _permit)')?.grants,[{path:'_permit.value',what:'approved amount'}]);
 });

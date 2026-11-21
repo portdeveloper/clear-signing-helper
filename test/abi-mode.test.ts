@@ -227,6 +227,9 @@ await test('init --address names the verified contract\'s address immutables as 
   const dec=run(root,['decisions','--contract',created.contracts[0].id]).result;
   const decisions=read(path.join(root,dec.created??dec.written??dec.file));
   assert.match(JSON.stringify(decisions.functions['stake(uint256)']),/\$\.metadata\.constants\.stakingToken/);
+  // The bare contract name stands for the full identity when one contract has it; an unknown name is refused.
+  assert.equal(run(root,['decisions','--contract','StakingRewards']).result.created,dec.created);
+  assert.equal(run(root,['decisions','--contract','Staking'],2).diagnostics[0].code,'CONTRACT_NOT_FOUND');
 });
 
 await test('a Sourcify record too large to fetch with its sources is fetched without them; the import works, with no named constants',async t=>{
