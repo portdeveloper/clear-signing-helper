@@ -534,3 +534,28 @@ await test('init --address makes an enum argument an enum format when the verifi
   assert.deepEqual(p.map((x:any)=>[x.source,x.path]).sort(),[['verified','modes.[]'],['verified','order.side']]);
   assert.match(p[0].detail,/type from the verified ABI, members from the verified source/);
 });
+
+await test('init --address tries Sourcify again after a 503 or a dropped connection, and gives up after three attempts',async t=>{
+  const record=read(path.join(repo,'test/fixtures/sourcify-staking-rewards.json')), staking='0xe23B3825F950637256e8DE1BF39743E8f29D97F1';
+  let calls=0, mode:'flaky'|'down'|'missing'='flaky';
+  const server=createServer((req,res)=>{
+    calls++;
+    if(mode==='missing'){res.writeHead(404,{'content-type':'application/json'});return res.end(JSON.stringify({match:null}));}
+    if(mode==='down'){res.writeHead(503);return res.end('unavailable');}
+    if(calls===1){res.writeHead(503);return res.end('unavailable');}
+    if(calls===2) return req.socket.destroy();
+    res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({...record,match:'exact_match',chainId:'10143',address:staking,compilation:{name:'StakingRewards'}}));
+  });
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>server.close());
+  const env={CLEAR_SIGNING_SOURCIFY_URL:`http://127.0.0.1:${(server.address() as any).port}`,ETHERSCAN_API_KEY:''};
+  const fresh=()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'csh-abi-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));return root;};
+  const created=(await runAsync(fresh(),['init','--address',staking,'--chain-id','10143','--owner','PuddleSwap'],0,env)).result;
+  assert.deepEqual([calls,created.imports[0].match],[3,'exact_match']);
+  calls=0;mode='down';
+  const down=fresh(), failed=await runAsync(down,['init','--address',staking,'--chain-id','10143'],2,env);
+  assert.deepEqual([calls,failed.diagnostics[0].code],[3,'FETCH_FAILED']);assert.match(failed.diagnostics[0].message,/HTTP 503.*3 attempts/);
+  assert.equal(fs.existsSync(path.join(down,'clear-signing.toml')),false);
+  // "Not verified" is an answer, not a failure: asked once.
+  calls=0;mode='missing';
+  assert.equal((await runAsync(fresh(),['init','--address',staking,'--chain-id','10143'],2,env)).diagnostics[0].code,'SOURCE_UNVERIFIED');assert.equal(calls,1);
+});

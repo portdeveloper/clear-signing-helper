@@ -27,12 +27,29 @@ async function getJson(url: string, timeoutMs = 30_000): Promise<{status: number
   } catch (e) { if (e instanceof Failure) throw e; if ((e as Error).name === 'AbortError') fail('FETCH_TIMEOUT', `${url} did not answer within ${timeoutMs / 1000}s.`, 2); fail('FETCH_FAILED', `${url}: ${(e as Error).message}`, 2); }
   finally { clearTimeout(timer); }
 }
+// Sourcify answers slowly or with a 5xx now and then, and this is the first command a new user runs. A timeout,
+// a network error, a 429 or a 5xx is tried again twice (after 1 s and 3 s); a 404 or a too-large record is an
+// answer and is not. The last failure says how many attempts were made.
+const RETRY_DELAYS = [1000, 3000];
+async function sourcifyJson(url: string): Promise<{status: number; body: any}> {
+  for (let attempt = 0; ; attempt++) {
+    let failure: Failure | undefined, response: {status: number; body: any} | undefined;
+    try { response = await getJson(url); } catch (e) { if (!(e instanceof Failure) || !['FETCH_TIMEOUT', 'FETCH_FAILED'].includes(e.code)) throw e; failure = e; }
+    if (response && response.status !== 429 && response.status < 500) return response;
+    if (attempt >= RETRY_DELAYS.length) {
+      const tries = `${attempt + 1} attempts`;
+      if (failure) fail(failure.code, `${failure.message} (${tries}). Sourcify may be slow or down; try again in a minute, or pass --abi <file>.`, 2);
+      fail('FETCH_FAILED', `Sourcify returned HTTP ${response!.status} for ${url} (${tries}). Try again in a minute, or pass --abi <file>.`, 2);
+    }
+    await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
+  }
+}
 async function fromSourcify(chainId: number, address: string, depth = 0): Promise<VerifiedContract | undefined> {
   // The bytecode, source map and sources only name immutables (immutables.ts); a record too large to
   // fetch with them is fetched without, and the draft simply has no named constants.
   const base = `${SOURCIFY}/v2/contract/${chainId}/${address}?fields=abi,userdoc,devdoc,proxyResolution,compilation`;
   let url = `${base},runtimeBytecode,sources,stdJsonOutput`, response;
-  try { response = await getJson(url); } catch (e) { if (!(e instanceof Failure && e.code === 'FETCH_TOO_LARGE')) throw e; url = base; response = await getJson(url); }
+  try { response = await sourcifyJson(url); } catch (e) { if (!(e instanceof Failure && e.code === 'FETCH_TOO_LARGE')) throw e; url = base; response = await sourcifyJson(url); }
   const {status, body} = response;
   if (status === 404 || !body?.match) return undefined;
   if (status !== 200) fail('FETCH_FAILED', `Sourcify returned HTTP ${status} for ${chainId}:${address}.`, 2);
