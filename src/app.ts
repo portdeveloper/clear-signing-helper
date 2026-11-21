@@ -517,7 +517,7 @@ export async function checkClaims(state: State, o: {contract: string; rpcUrls: s
         // With nothing replayed yet, a failure is the answer (the endpoint is down, anvil is missing).
         if (!results.some(x => !x.status.startsWith('failed'))) throw e;
         const message = e instanceof Failure ? `${e.code}: ${e.message}` : (e as Error).message;
-        r = {fixture: file, signature: '', status: `failed: ${message.slice(0, 300)}`, runs: 0, claims: [], findings: []};
+        r = {fixture: file, signature: '', status: `failed: ${message.slice(0, 300)}`, runs: 0, claims: [], findings: [], read: []};
         break;
       }
     }
@@ -533,6 +533,15 @@ export async function checkClaims(state: State, o: {contract: string; rpcUrls: s
   results.splice(0, results.length, ...slots.filter((r): r is NonNullable<typeof r> => !!r));
   if (notReplayed.length) o.log(`claims: time limit reached; not replayed: ${notReplayed.join(', ')}`);
   // Findings that say the same thing about the same argument in several fixtures are one thing to read in the source.
+  // An argument ignored in one transaction and read in another of the same function is branch-specific: the
+  // advice is then to keep it, and the finding names the fixtures that show the contract reading it.
+  for (const r of results) for (const x of r.findings) {
+    if (x.kind !== 'ignored' || !x.argument) continue;
+    const readIn = results.filter(k => k !== r && k.signature === r.signature && (k as {read?: string[]}).read?.includes(x.argument!)).map(k => k.fixture);
+    if (!readIn.length) continue;
+    x.readIn = readIn;
+    x.message = `With ${x.value} this call succeeds and changes exactly what the real transaction changed, so this call ignores it. But ${readIn.join(', ')} ${readIn.length === 1 ? 'is a call' : 'are calls'} to the same function where changing it changes the outcome: the contract reads it on another branch. Do not hide it. Find in the source what selects the branch (often the native value sent, or a token argument being the zero address) and say in the PR that the argument has no effect there; the format cannot show it on one branch only.`;
+  }
   const findings = results.flatMap(r => r.findings), causes: {kind: string; arguments: string[]; claim: string; fixtures: string[]}[] = [];
   for (const x of findings) {
     const claim = x.claim.split(' says ')[0], args = x.cases?.map(k => k.argument) ?? (x.argument ? [x.argument] : []);

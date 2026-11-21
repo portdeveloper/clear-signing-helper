@@ -33,6 +33,8 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
   await (await tokenIn.approve(await swap.getAddress(), 1000n)).wait();
   const receipt = await (await swap.buy(100n, 100n, 0n, recipient, 4_000_000_000n, 4_000_000_000n)).wait();
   const tx = (await rpc.getTransaction(receipt.hash))!;
+  const viaEth = (await rpc.getTransaction((await (await swap.deposit('0x0000000000000000000000000000000000000000', 7n, {value: 5n})).wait()).hash))!;
+  const viaToken = (await rpc.getTransaction((await (await swap.deposit(await tokenIn.getAddress(), 50n)).wait()).hash))!;
   const paid = (await rpc.getTransaction((await (await swap.pay([recipient, await signer.getAddress()], [10n, 20n])).wait()).hash))!;
 
   const write = (stopAt: Record<string, unknown>, expires: Record<string, unknown> = {format: 'date', params: {encoding: 'timestamp'}}) => {
@@ -83,4 +85,16 @@ await test('claims: a hidden argument that voids an exact amount is found, and m
   // With no endpoint left to fall back to, the endpoint's failure is the answer.
   await assert.rejects(checkClaims(loadState({root}), {contract: id, rpcUrls: ['http://127.0.0.1:9'], budget: 100, log: () => {}}), /127\.0\.0\.1:9/);
   assert.deepEqual(pinned.findings, []);
+
+  // An argument ignored on one branch only: deposit ignores amount when ETH is sent and reads it for a token.
+  const fx = (name: string, t: typeof viaEth) => { writeJson(path.join(root, `clear-signing/fixtures/${name}.json`), {contract: id, chainId: 31337, to: t.to, data: t.data, value: String(t.value), from: t.from, txHash: t.hash}); return `clear-signing/fixtures/${name}.json`; };
+  const eth = fx('deposit-eth', viaEth), token = fx('deposit-token', viaToken);
+  const alone = await checkClaims(loadState({root}), {contract: id, rpcUrls: [url], fixtures: [eth], budget: 100, log: () => {}});
+  const ignoredAlone = alone.findings.filter(f => f.kind === 'ignored');
+  assert.deepEqual(ignoredAlone.map(f => [f.argument, f.readIn]), [['amount', undefined]], JSON.stringify(alone.findings));
+  assert.match(ignoredAlone[0].message, /Read in the source whether any branch uses it/);
+  const both = await checkClaims(loadState({root}), {contract: id, rpcUrls: [url], fixtures: [eth, token], budget: 100, log: () => {}});
+  const ignoredBoth = both.findings.filter(f => f.kind === 'ignored');
+  assert.deepEqual(ignoredBoth.map(f => [f.argument, f.fixture.endsWith('deposit-eth.json'), f.readIn?.map(x => path.basename(x))]), [['amount', true, ['deposit-token.json']]], JSON.stringify(both.findings));
+  assert.match(ignoredBoth[0].message, /reads it on another branch\. Do not hide it/);
 });

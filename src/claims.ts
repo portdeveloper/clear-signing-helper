@@ -35,7 +35,7 @@ export interface Claim {path: string; label: string; kind: ClaimKind; asset: str
 // state: logs and the storage, balance and code writes of the run (prestateTracer diff), when asked for.
 interface Effects {delta: Map<string, Map<string, bigint>>; wrapped: Set<string>; approvals: Map<string, bigint>; state?: string}
 interface Run {ok: boolean; effects?: Effects; error?: string}
-export interface ClaimFinding {fixture: string; signature: string; claim: string; kind: 'baseline' | 'argument' | 'limit' | 'exact' | 'path-tail' | 'retained' | 'ignored'; argument?: string; value?: string; message: string; asset?: string; cases?: {argument: string; value: string; kept: string}[]}
+export interface ClaimFinding {fixture: string; signature: string; claim: string; kind: 'baseline' | 'argument' | 'limit' | 'exact' | 'path-tail' | 'retained' | 'ignored'; argument?: string; value?: string; message: string; readIn?: string[]; asset?: string; cases?: {argument: string; value: string; kept: string}[]}
 
 // ---- calldata as a tree: tuples keyed by component name, so descriptor paths read and write it.
 type Tree = any;
@@ -246,7 +246,7 @@ function ladder(type: string, current: bigint): bigint[] {
 export interface ClaimsOptions {rpcUrl: string; budget: number; log: (line: string) => void}
 export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor, contract: Contract, o: ClaimsOptions) {
   const {fn} = decodeCanonical(contract, f.data), signature = fn.format('sighash'), iface = new Interface(contract.abi);
-  const result = {fixture: file, signature, status: 'checked' as string, runs: 0, claims: [] as {claim: string; baseline: string}[], findings: [] as ClaimFinding[]};
+  const result = {fixture: file, signature, status: 'checked' as string, runs: 0, claims: [] as {claim: string; baseline: string}[], findings: [] as ClaimFinding[], read: [] as string[]};
   if (!f.txHash) return {...result, status: 'skipped: no real transaction (txHash) to replay'};
   const tx = await fetchTransaction(o.rpcUrl, f.txHash);
   const tail = (f.trailingBytes ?? '0x').slice(2).toLowerCase();
@@ -421,9 +421,9 @@ export async function checkFixtureClaims(file: string, f: Fixture, d: Descriptor
       for (const v of tries) {
         if (!budgetLeft()) { ignored = false; break; }
         const outcome = await run(setAt(root, leaf.path, v as any), value, true);
-        if (!outcome.ok || outcome.effects!.state !== reference!.effects!.state) { ignored = false; break; }
+        if (!outcome.ok || outcome.effects!.state !== reference!.effects!.state) { ignored = false; result.read.push(leaf.path); break; }
       }
-      if (ignored) result.findings.push({fixture: file, signature, claim: `${leaf.path} is shown`, kind: 'ignored', argument: leaf.path, value: tries.map(String).join(', '), message: `With ${tries.map(String).join(', ')} the call succeeds and changes exactly what the real transaction changed: the contract ignores it, so the screen shows a value that does nothing. Hide it with that reason.`});
+      if (ignored) result.findings.push({fixture: file, signature, claim: `${leaf.path} is shown`, kind: 'ignored', argument: leaf.path, value: tries.map(String).join(', '), message: `With ${tries.map(String).join(', ')} the call succeeds and changes exactly what the real transaction changed: this call ignores it, so here the screen shows a value that does nothing. That is one transaction: a function can read an argument on one branch and ignore it on another (a deposit that takes "amount" for a token and the value sent for ETH). Read in the source whether any branch uses it. If none does, hide it with that reason; if one does, keep it visible and say in the PR on which branch it is ignored.`});
     }
     if (!budgetLeft()) result.status = `checked, stopped at the ${o.budget}-run budget`;
     return result;

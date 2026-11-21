@@ -1,3 +1,32 @@
+# Clear Signing Helper 0.6.0-preview.9 — developer preview
+
+Six fixes from the blind comparison runs: each is something an agent using the tool was misled by or had to do by hand.
+
+## What changed
+
+- **`discover` sets unusual calls aside.** A call with an amount of 2^255 or more that is not the type's maximum, or with a shown amount in an address that does not answer as an ERC-20, is listed under `setAside` with the reason and not made a fixture. The newest such call becomes a fixture, reported as `unusual`, only when the function has no other call. By argument name and for `uint256` only.
+- **A signature next to an amount is no longer called a permit.** A `bytes` signature counts as a permit only with a spender or an unlimited flag beside it, or with `validAfter` and `validBefore` (EIP-3009). On the registry the old rule matched 13 functions, 9 of them not permits (signed quotes, order fills, multisig executions); `PERMIT_GRANT_HIDDEN` gives the same 7 warnings as before. With Permit2, only the permit's own signature is named as the one that may be hidden.
+- **`fixture --function <f> --args-from <fixture>`** encodes a function nobody called from the arguments, value and sender of a real-transaction fixture whose function takes the same argument types. The fixture records the transaction (`argsFrom`), carries no `txHash`, and the exported test description says it is an encoded example. `discover` lists such functions under `siblings` with the command. Types only: nothing checks that the call would succeed.
+- **Enums in address mode.** `init --address` makes an argument an `enum` format when the verified ABI names its enum type and the saved verified source defines it. Two definitions with different members are not resolved; the argument stays raw.
+- **`claims` no longer advises hiding an argument that one call ignores.** It says the replayed call ignores it and asks the reader to check the source for another branch. When another fixture of the same function shows the contract reading the argument, the finding names it (`readIn`) and says to keep the argument visible.
+- **Sourcify requests are retried.** A timeout, a network error, a 429 or a 5xx is tried again after 1 s and 3 s, in `init --address` and `registry add-deployment`.
+- **`--contract` takes the bare contract name** when exactly one contract in the project has it.
+- **Priors** at registry `4b7ff1c` (2026-11-20): 641 descriptors, 1,105 selectors. The validator accepts 601 of the registry's 641 calldata descriptors; the 40 it rejects use the nested `calldata` format (39) or an encrypted field (1). Registry CI pins and schemas are unchanged since 0.6.0-preview.7.
+
+## Upgrade from 0.6.0-preview.8
+
+Nothing to run: renderer, schema and validator subset are unchanged, so reviews and expectations stay valid. In an address-mode project, `sync` adds enum formats only to functions it adds; existing fields are not rewritten.
+
+## Install
+
+```sh
+sha256sum --check clear-signing-helper-0.6.0-preview.9.tgz.sha256
+npm install --global --ignore-scripts ./clear-signing-helper-0.6.0-preview.9.tgz
+clear-signing --version
+```
+
+Expected version: `0.6.0-preview.9`. No new network use. Scope and validation are otherwise as described for 0.6.0-preview.8 below.
+
 # Clear Signing Helper 0.6.0-preview.8 — developer preview
 
 Makes real transactions usable as tests on contracts where they were refused or never found, and makes the fork replay fast enough to run on every fixture. It comes out of a blind comparison on four contracts between an agent using this tool and descriptors written by a plain model.

@@ -41,10 +41,13 @@ contract PlainToken {
 /// @notice Sells `tokenOut` for `tokenIn` one for one. A nonzero `stopAt` caps the output and skips the check
 /// that the full `amountOut` was delivered, the way Uniswap V3's sqrtPriceLimitX96 does in exactOutputSingle.
 /// `deadline` is checked; `expires` is accepted and ignored, the way CoW EthFlow's invalidateOrder ignores validTo.
+/// `deposit` takes `amount` of a token, or the value sent when `asset` is zero, where `amount` is ignored: the
+/// way THORChain-style routers do, so an argument can be ignored on one branch and read on the other.
 /// `pay` sends `tokenIn` to a list, the way Disperse does; any recipient, the swap itself included, is on screen.
 contract StopSwap {
     PlainToken public immutable tokenIn;
     PlainToken public immutable tokenOut;
+    uint256 public deposited;
 
     constructor(PlainToken input, PlainToken output) {
         tokenIn = input;
@@ -59,6 +62,15 @@ contract StopSwap {
         require(delivered <= amountInMaximum, "too much");
         tokenIn.transferFrom(msg.sender, address(this), delivered);
         tokenOut.transfer(recipient, delivered);
+    }
+
+    function deposit(address asset, uint256 amount) external payable {
+        if (asset == address(0)) {
+            require(msg.value > 0, "no value");
+            deposited += msg.value;
+        } else {
+            PlainToken(asset).transferFrom(msg.sender, address(this), amount);
+        }
     }
 
     function pay(address[] calldata recipients, uint256[] calldata values) external {
