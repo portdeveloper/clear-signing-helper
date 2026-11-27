@@ -29,9 +29,13 @@ const RECIPIENT = /^_?(to|recipient|receiver|beneficiary|dst|destination)$/i;
 const SAYS_MAX = /\bmax|at most|up to|\bcap\b|or less/i, SAYS_MIN = /\bmin|at least|or more|\+$/i;
 // "Minimum Before Fees" bounds an amount the signer does not receive; nothing to compare it with.
 const QUALIFIED = /before (fees?|tax)/i;
+// A fee or cost is a part of what moves (taken out of the amount, or added to it), or a cap on such a part:
+// the sender's balance change cannot confirm or refute it, so it makes no claim here.
+const FEE_LABEL = /\b(fees?|costs?|commission|tip)\b/i, FEE_NAME = /fee|cost/i;
 
 export type ClaimKind = 'exact' | 'maximum' | 'minimum';
-export interface Claim {path: string; label: string; kind: ClaimKind; asset: string; amount: bigint; recipients: string[]}
+// total: the native value sent, when the screen shows it too; a native argument is then a part of it.
+export interface Claim {path: string; label: string; kind: ClaimKind; asset: string; amount: bigint; recipients: string[]; total?: bigint}
 // state: logs and the storage, balance and code writes of the run (prestateTracer diff), when asked for.
 interface Effects {delta: Map<string, Map<string, bigint>>; wrapped: Set<string>; approvals: Map<string, bigint>; state?: string}
 interface Run {ok: boolean; effects?: Effects; error?: string}
@@ -102,6 +106,7 @@ export function claimsOf(d: Descriptor, fn: FunctionFragment, root: Tree, tx: {f
   const recipients = fields.filter(f => f.field.format === 'addressName' && RECIPIENT.test(segments(f.field.path!).pop() ?? ''))
     .map(f => asAddress(valueAt(root, f.field.path!, tx))).filter((a): a is string => !!a);
   const claims: Claim[] = [];
+  const showsValue = fields.some(f => f.field.path === '@.value' && (f.field.format === 'amount' || f.field.format === 'tokenAmount'));
   for (const {field} of fields) {
     if (field.format !== 'tokenAmount' && field.format !== 'amount') continue;
     const amount = valueAt(root, field.path!, tx);
@@ -110,7 +115,12 @@ export function claimsOf(d: Descriptor, fn: FunctionFragment, root: Tree, tx: {f
     if (!asset) continue;
     const kind = kindOf(field, sentence);
     if (!kind) continue;
-    claims.push({path: field.path!, label: field.label ?? field.path!, kind, asset, amount, recipients: recipients.length ? recipients : [tx.from.toLowerCase()]});
+    // At or above its threshold the wallet shows the message ("Unlimited", "All"), not the number.
+    const threshold = thresholdOf(d, field);
+    if (threshold !== undefined && amount >= threshold) continue;
+    // An exact zero is a placeholder ("0 if shares"): it holds for any call the sender does not pay for and says nothing.
+    if (kind === 'exact' && amount === 0n) continue;
+    claims.push({path: field.path!, label: field.label ?? field.path!, kind, asset, amount, recipients: recipients.length ? recipients : [tx.from.toLowerCase()], ...(asset === 'native' && field.path !== '@.value' && showsValue ? {total: tx.value} : {})});
   }
   return claims;
 }
@@ -124,16 +134,23 @@ function assetOf(d: Descriptor, field: Field, root: Tree, tx: {from: string; to:
   if (!token) return undefined;
   return natives.has(token) ? 'native' : token;
 }
+function thresholdOf(d: Descriptor, field: Field): bigint | undefined {
+  const t = field.params?.threshold, v = typeof t === 'string' && t.startsWith('$.') ? constantAt(d, t) : t;
+  try { return typeof v === 'string' || typeof v === 'number' || typeof v === 'bigint' ? BigInt(v) : undefined; } catch { return undefined; }
+}
 function kindOf(field: Field, sentence: string): ClaimKind | undefined {
   const label = field.label ?? '', path = stripRoot(field.path!);
   const at = sentence.search(new RegExp(`\\{(#\\.)?${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\}`));
   const clause = at < 0 ? '' : (sentence.slice(0, at).split(/\bfor\b|[,;]/i).pop() ?? '') + ' ' + (/^\S*\s*(or more|or less|\+)/i.exec(sentence.slice(at).replace(/^\{[^}]*\}/, ''))?.[0] ?? '');
   if (QUALIFIED.test(label) || QUALIFIED.test(clause)) return undefined;
+  if (FEE_LABEL.test(label) || FEE_NAME.test(path.split('.').pop() ?? '')) return undefined;
   if (SAYS_MAX.test(label)) return 'maximum';
   if (SAYS_MIN.test(label)) return 'minimum';
   if (SAYS_MAX.test(clause)) return 'maximum';
   if (SAYS_MIN.test(clause)) return 'minimum';
-  return 'exact';
+  // The value sent is what leaves the wallet at most: a contract that uses less sends the rest back, and one
+  // that keeps the rest is the "retained" finding.
+  return path === '@.value' ? 'maximum' : 'exact';
 }
 
 // ---- what a run did, and whether a claim holds for it
@@ -149,7 +166,9 @@ function judge(c: Claim, e: Effects, sender: string): Verdict {
   const observed = `sender paid ${paid}, ${c.recipients.length > 1 || c.recipients[0] !== sender ? 'recipient' : 'sender'} received ${most}`;
   if (paid === 0n && most === 0n) return {status: 'unmoved', observed};
   // A minimum can bound either side: what arrives (amountOutMin) or what is put in (addLiquidity's amountAMin).
-  const holds = c.kind === 'exact' ? paid === c.amount || received.includes(c.amount) : c.kind === 'maximum' ? paid <= c.amount : most >= c.amount || paid >= c.amount;
+  // A native argument beside the shown value sent is a part of that value (the rest is fees the call takes).
+  const part = c.total !== undefined && c.amount <= paid && paid <= c.total;
+  const holds = c.kind === 'exact' ? paid === c.amount || received.includes(c.amount) || part : c.kind === 'maximum' ? paid <= c.amount : most >= c.amount || paid >= c.amount;
   return {status: holds ? 'holds' : 'fails', observed};
 }
 const describe = (c: Claim) => `"${c.label}" (${c.path}) says ${c.kind === 'exact' ? '' : c.kind === 'maximum' ? 'at most ' : 'at least '}${c.amount} of ${c.asset}`;
