@@ -4,7 +4,8 @@ Every Ethereum mainnet contract from the [Sourcify clear-signing dashboard](http
 
 - **Checked:** 2026-11-10, against registry master `b021a8d` and the dashboard's 24h ranking (`window=24h&limit=25&exclude=eth,token,unverified,infra`).
 - **To filter a list:** use the CSV at the bottom (lowercase addresses, one per line). Drop every row whose status is `done`, `skip` or `in-progress`. Rows marked `open` are free to take.
-- **Source of the decisions:** `docs/TARGETS.md` (read by `scripts/rank-targets.ts`); per-contract records are in `docs/DOGFOOD.md`.
+- **Source of the decisions:** `docs/TARGETS.md` (read by `scripts/rank-targets.ts`); per-contract records are in `docs/DOGFOOD.md`. Those files are on the [`tool` branch](https://github.com/portdeveloper/clear-signing-helper/tree/tool).
+- **Not kept current:** registry PRs #3254 to #3282 (opened 2026-11-23 and 2026-11-24) are not in this list. Check the registry's deployments and open PRs first.
 
 ## Summary
 

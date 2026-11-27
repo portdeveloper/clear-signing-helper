@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Clear Signing Helper</title>
-<meta name="description" content="Go from a deployed contract to an ERC-7730 clear-signing registry submission that passes the registry's own checks.">
+<title>ERC-7730 coverage skill</title>
+<meta name="description" content="An agent skill for writing ERC-7730 clear-signing descriptors for the most-used contracts and opening them as registry PRs.">
 <link rel="alternate" type="text/plain" href="llms.txt" title="Instructions for AI agents">
 <style>
   :root{color-scheme:light dark;--bg:#fbfaf7;--fg:#1c1c1a;--muted:#5d5b55;--line:#e3dfd6;--card:#ffffff;--accent:#0b5e4a;--accent-soft:#e6f2ee;--code:#f1efe9}
@@ -32,48 +32,36 @@
 <body>
 <main>
 <header>
-  <h1>Clear Signing Helper</h1>
-  <p class="lead">Turns a deployed contract into an <a href="https://eips.ethereum.org/EIPS/eip-7730">ERC-7730</a> descriptor and test file for the <a href="https://github.com/ethereum/clear-signing-erc7730-registry">clear-signing registry</a>, so wallets show your transactions as readable text instead of hex. It computes everything with one right answer, asks you only what the contract cannot answer, and runs the registry's own checks before you open the pull request.</p>
-  <p><span class="pill">0.6.0-preview.9</span><span class="pill">MIT</span> <a href="https://github.com/portdeveloper/clear-signing-helper">GitHub and README</a> · <a href="https://www.npmjs.com/package/clear-signing-helper">npm</a></p>
+  <h1>ERC-7730 coverage skill</h1>
+  <p class="lead">An agent skill for writing <a href="https://eips.ethereum.org/EIPS/eip-7730">ERC-7730</a> descriptors for the most-used contracts on Ethereum mainnet and opening them as draft PRs in the <a href="https://github.com/ethereum/clear-signing-erc7730-registry">clear-signing registry</a>, so wallets show those transactions as readable text instead of hex.</p>
+  <p><span class="pill">MIT</span> <a href="https://github.com/portdeveloper/clear-signing-helper">GitHub and README</a> · <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/SKILL.md">SKILL.md</a></p>
 </header>
 
 <h2>Use it</h2>
-<p>Paste one of these into Claude Code, Cursor or another coding agent. In your Foundry repo:</p>
-<pre><code>read https://github.com/portdeveloper/clear-signing-helper and use it to make the contracts in this repo clear-signable</code></pre>
-<p>For a deployed contract verified on Sourcify:</p>
-<pre><code>read https://github.com/portdeveloper/clear-signing-helper and use it to make my contract clear-signable: &lt;address&gt; on &lt;chain&gt;</code></pre>
-<p>The agent checks whether the registry already covers your protocol, runs the tool, asks you the few questions only you can answer, and stops at a reviewed draft. You open the PR.</p>
+<p>Paste into Claude Code or another coding agent:</p>
+<pre><code>read https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/SKILL.md and follow it to cover the next uncovered contracts of the ranking</code></pre>
+<p>The agent needs <code>git</code>, <code>gh</code>, <code>uvx</code>, Node, <code>cargo</code> and Foundry's <code>cast</code>.</p>
 
 <div class="card">
   <h3>If you are an AI agent</h3>
-  <p>Follow <a href="https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/.claude/skills/clear-signing-helper/SKILL.md">SKILL.md</a> (also in <a href="llms.txt">llms.txt</a>). In short:</p>
-  <ol>
-    <li>Search the registry first. If the protocol is there, add the chain with <code>clear-signing registry add-deployment</code>.</li>
-    <li>Otherwise run <code>clear-signing init</code>, then <code>decisions</code>, fill the decisions file, and <code>apply</code>. Do not write descriptor JSON by hand.</li>
-    <li>Ask the user for intent wording, which token an amount is in, and what to hide whenever the hints do not settle it. Do not guess.</li>
-    <li>Set <code>"author": "llm:&lt;your model&gt;"</code>. Put <code>"author": "human"</code> only on the values the user decided.</li>
-    <li>Run <code>fixture</code> (real transactions with <code>--tx &lt;hash&gt; --rpc-url &lt;url&gt;</code> where they exist), <code>preview</code>, <code>check</code>, <code>claims</code> (replays real transactions on a fork and reports argument values that make the screen false), and <code>export --registry-runners</code>. Let the user look at the preview before <code>review --accept</code>.</li>
-    <li>Stop at the exported bundle and show the user the diff and the <code>git</code> commands. Open the PR only if the user explicitly asks, from an account tied to the contract owner.</li>
-  </ol>
+  <p>Follow <a href="https://raw.githubusercontent.com/portdeveloper/clear-signing-helper/main/SKILL.md">SKILL.md</a> (summary in <a href="llms.txt">llms.txt</a>).</p>
 </div>
 
-<h2>What it does</h2>
+<h2>What is in it</h2>
 <ul>
-  <li><strong>Computes</strong> the functions, argument paths, types and deployments from your ABI, Foundry build or verified source. It also computes the test file's expected wallet text, by rendering each example through the wallet renderer.</li>
-  <li><strong>Leaves to you</strong> what code cannot prove: what each function does in words, which token an amount is in, and what to hide. Each decision is recorded with who made it.</li>
-  <li><strong>Checks</strong> the result with the registry's linter and both of its CI test runners, and writes nothing if any check fails.</li>
-  <li><strong>Adds a chain</strong> to a descriptor already in the registry with one command, after proving the new address is the same contract.</li>
+  <li><strong>Picking contracts</strong> from the <a href="https://erc7730.sourcify.dev">Sourcify ranking</a>, and which to skip: covered, custom encoding, unverified code, paused, bot-only, short-lived.</li>
+  <li><strong>Rules for the screen</strong>: what the sentence must name, which arguments to pin so the screen holds for any value, label and intent lengths.</li>
+  <li><strong>Tests</strong> from real transactions, with expected text taken from the registry's runners.</li>
+  <li><strong>Checks</strong>: the registry's linter and both of its test runners, run before pushing.</li>
+  <li><strong>The PR</strong>: one draft per protocol, labelled as not from the contract's owner.</li>
 </ul>
-<p>It never signs or sends transactions, and never opens the PR. Not yet supported: writing new EIP-712 descriptors, and nested calls.</p>
 
-<h2>Why use it</h2>
-<p>Other tools (<code>erc7730</code>, Ledger's JSON Builder, Cyfrin's <code>clearsig</code>) draft a descriptor. None writes the test file with its expected wallet text, or runs the registry's CI checks before you submit.</p>
-<p>A capable agent can get there alone, but with the tool it was faster and cheaper: 7.6 to 8.2 min and about $2.60 per run, against 11.6 to 22.5 min and up to $4.36 without (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/COMPARISON.md">comparison</a>). On 9 contracts the registry later fixed after an audit, an agent using it avoided 10 of 11 of the auditors' findings (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/AUDIT-REPLAY.md">audit replay</a>). Both are small samples.</p>
-<p>It does not make the screens more correct than a strong model alone. We ran its checks over 37 descriptors written with a plain prompt to Claude Fable 5.2 and found no confirmed error in them; most of what the replay flagged was the tool being wrong (<a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/docs/DESCRIPTOR-REPLAY.md">replay</a>).</p>
-<p>First submission: <a href="https://github.com/ethereum/clear-signing-erc7730-registry/pull/3003">registry PR #3003</a>, produced by the tool, merged on 2026-10-16 with no change requested.</p>
+<h2>Status</h2>
+<p>The rules come from the reviews of about 40 registry PRs written this way. One blind run on 2026-11-27: an agent given only the skill produced files that passed the linter and both runners in about 20 minutes. What it tripped on was added afterwards; the changed skill has not been run again.</p>
+<p>This repository used to be a CLI, <code>clear-signing-helper</code>. It is on the <a href="https://github.com/portdeveloper/clear-signing-helper/tree/tool"><code>tool</code> branch</a> and on <a href="https://www.npmjs.com/package/clear-signing-helper">npm</a>, and is not being developed further for now.</p>
 
 <footer>
-  <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/LICENSE">MIT licensed</a>. Built by <a href="https://github.com/portdeveloper">portdeveloper</a>. Inclusion in the registry is not an audit, and neither is this tool.
+  <a href="https://github.com/portdeveloper/clear-signing-helper/blob/main/LICENSE">MIT licensed</a>. Built by <a href="https://github.com/portdeveloper">portdeveloper</a>. Inclusion in the registry is not an audit, and neither is this skill.
 </footer>
 </main>
 </body>
